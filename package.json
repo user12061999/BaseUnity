@@ -1,0 +1,12 @@
+{
+  "name": "com.baseunity.foundation",
+  "version": "0.1.0",
+  "displayName": "BaseUnity Foundation",
+  "description": "Reusable game foundation for Git submodules and Unity packages.",
+  "unity": "6000.0",
+  "dependencies": {
+    "com.unity.modules.audio": "1.0.0",
+    "com.unity.modules.jsonserialize": "1.0.0"
+  },
+  "samples": [{ "displayName": "Quick Start", "description": "Bootstrap and core service usage.", "path": "Samples~/QuickStart" }]
+}

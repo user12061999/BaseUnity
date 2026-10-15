@@ -1,0 +1,22 @@
+# Allow only distributable library content. Local Unity sandbox stays untracked.
+/*
+!/.gitignore
+!/.gitattributes
+!/package.json
+!/package.json.meta
+!/README.md
+!/README.md.meta
+!/CHANGELOG.md
+!/CHANGELOG.md.meta
+!/Runtime/
+!/Runtime.meta
+!/Editor/
+!/Editor.meta
+!/Tests/
+!/Tests.meta
+!/Samples~/
+**/bin/
+**/obj/
+**/*.csproj
+**/*.sln
+**/.DS_Store

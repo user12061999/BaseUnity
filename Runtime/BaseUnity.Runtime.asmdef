@@ -1,0 +1,6 @@
+{
+  "name": "BaseUnity.Runtime",
+  "rootNamespace": "BaseUnity",
+  "references": [],
+  "autoReferenced": true
+}

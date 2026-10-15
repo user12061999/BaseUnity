@@ -1,0 +1,7 @@
+{
+  "name": "BaseUnity.InputSystem",
+  "rootNamespace": "BaseUnity.Input",
+  "references": ["BaseUnity.Runtime", "Unity.InputSystem"],
+  "defineConstraints": ["BASEUNITY_INPUT_SYSTEM"],
+  "versionDefines": [{ "name": "com.unity.inputsystem", "expression": "1.0.0", "define": "BASEUNITY_INPUT_SYSTEM" }]
+}

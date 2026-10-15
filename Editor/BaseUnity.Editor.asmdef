@@ -1,0 +1,6 @@
+{
+  "name": "BaseUnity.Editor",
+  "rootNamespace": "BaseUnity.Editor",
+  "references": ["BaseUnity.Runtime"],
+  "includePlatforms": ["Editor"]
+}

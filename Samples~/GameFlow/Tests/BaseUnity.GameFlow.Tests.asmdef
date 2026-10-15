@@ -1,0 +1,7 @@
+{
+  "name": "BaseUnity.GameFlow.Tests",
+  "references": ["BaseUnity.Runtime", "BaseUnity.GameFlow", "Unity.ugui"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+  "autoReferenced": false
+}

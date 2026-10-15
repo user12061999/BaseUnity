@@ -1,0 +1,5 @@
+{
+  "name": "BaseUnity.GameFlow",
+  "rootNamespace": "BaseUnity.GameFlow",
+  "references": ["BaseUnity.Runtime", "Unity.ugui"]
+}

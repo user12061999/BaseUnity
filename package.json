@@ -1,6 +1,6 @@
 {
   "name": "com.baseunity.foundation",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "displayName": "BaseUnity Foundation",
   "description": "Reusable game foundation for Git submodules and Unity packages.",
   "unity": "6000.0",
@@ -8,5 +8,8 @@
     "com.unity.modules.audio": "1.0.0",
     "com.unity.modules.jsonserialize": "1.0.0"
   },
-  "samples": [{ "displayName": "Quick Start", "description": "Bootstrap and core service usage.", "path": "Samples~/QuickStart" }]
+  "samples": [
+    { "displayName": "Quick Start", "description": "Bootstrap and core service usage.", "path": "Samples~/QuickStart" },
+    { "displayName": "Game Flow", "description": "Bootstrap, Home, InGame, loading, settings, pause and result. Requires Unity UI.", "path": "Samples~/GameFlow" }
+  ]
 }

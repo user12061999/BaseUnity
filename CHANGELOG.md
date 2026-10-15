@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0
+
+- Game Flow sample: Bootstrap → Home → InGame → Result, Settings, Pause/Resume, Retry, Loading.
+- Editor installer copies editable source and generates scenes/config without overwriting game changes.
+- Best score/session persistence, scene validation, transition input guard and gameplay event hooks.
+- PlayMode integration test for scene and button flows.
+
 ## 0.1.0
 
 - Repository thư viện cho Git submodule và UPM, tách khỏi Unity sandbox.

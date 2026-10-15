@@ -1,0 +1,5 @@
+{
+  "name": "BaseUnity.GameFlow.Editor",
+  "references": ["BaseUnity.Runtime", "BaseUnity.GameFlow"],
+  "includePlatforms": ["Editor"]
+}

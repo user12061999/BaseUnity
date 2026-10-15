@@ -1,0 +1,6 @@
+<linker>
+  <!-- Optional runtime UI input module is selected by reflection. Keep it in IL2CPP players. -->
+  <assembly fullname="Unity.InputSystem" ignoreIfMissing="1">
+    <type fullname="UnityEngine.InputSystem.UI.InputSystemUIInputModule" preserve="all" />
+  </assembly>
+</linker>

@@ -2,7 +2,25 @@
 
 Base game Unity tái sử dụng qua **Git submodule trong `Assets/BaseUnity`**.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản đầu tiên: **0.1.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.2.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+
+## Luồng game có sẵn
+
+Chọn **Tools > BaseUnity > Install Game Flow Sample**, chờ compile và mở
+`Assets/BaseUnityGameFlow/Scenes/Bootstrap.unity`, sau đó nhấn Play.
+Yêu cầu Unity UI (`com.unity.ugui`); phần core không yêu cầu package này.
+
+Mẫu cung cấp **Bootstrap → Loading → Home → InGame → Result**, có Settings,
+Pause/Resume, Retry, trở về Home và lưu điểm cao nhất/số phiên chơi.
+Menu tạo ba scene + `GameFlowConfig.asset`, đăng ký scene vào Build Settings và giữ nguyên scene khác.
+Nếu Build Profile đang ghi đè danh sách scene, thêm ba scene vào profile đó với Bootstrap đầu tiên.
+UI được dựng lúc chạy, không cần import TMP Essentials.
+
+Code mẫu nằm trong `Samples~/GameFlow`. Installer copy vào Assets để bạn sửa cho từng game,
+không sửa code bên trong submodule. Khi đã cài, chạy **Tools > BaseUnity > Game Flow > Generate Missing Scenes**
+để tạo scene còn thiếu; các scene/config có sẵn không bị ghi đè.
+UPM cũng hỗ trợ import sample **Game Flow**, sau đó chạy menu tạo scene.
+Xem thêm [hướng dẫn mẫu](Samples~/GameFlow/README.md).
 
 ## Cài vào dự án khác
 
@@ -209,6 +227,10 @@ Tests không vào bản build thông thường. Không bật test assemblies cho
 Đã kiểm thử v0.1 trên Unity 6000.3.26f1/Windows: **20 EditMode + 5 PlayMode tests đều pass**.
 Đã kiểm tra compile với Input System 1.20.0 và chạy core tests khi không cài Input System.
 Sample cũng được import để kiểm tra compile. Chưa kiểm thử player build trên Android/iOS/WebGL.
+
+V0.2 được kiểm tra trực tiếp qua Unity MCP trong project BaseUnity: **6 PlayMode tests pass**
+(5 core + 1 bài test toàn bộ game flow). Bài test flow được chạy lại sau chỉnh sửa UI cuối cùng và pass.
+Đã kiểm tra Home trong Game View và xác nhận chạy lại generator không đổi scene/config có sẵn.
 
 Trong workspace phát triển ban đầu, `Assets/BaseUnity/Runtime`, `Editor`, `Tests` là junction
 đến source ở root, giúp Editor import trực tiếp mà Git vẫn chỉ lưu thư viện.

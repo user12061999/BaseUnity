@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.1
+
+- Feature Manager utility window with Ads, Firebase and Project Setup tabs; config save and Undo support.
+- AdMob/MAX selection, app IDs, ad-unit IDs, SDK key and provider creation/assignment without editing source.
+- Optional sync of non-empty app IDs/SDK key into installed vendor settings, with App ID validation.
+- Validated Firebase JSON/plist import, matching application identifiers, ID preview and replacement backups.
+- Five EditMode tests for Firebase parsing/client selection and App ID validation.
+
 ## 0.6.0
 
 - Optional Ads/Firebase services with per-feature config, SDK-independent core and non-blocking initialization.

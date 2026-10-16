@@ -6,6 +6,24 @@ No SDK binaries, account configuration or advertising IDs are distributed in thi
 
 ## Feature configuration
 
+Open **Tools > BaseUnity > Feature Manager** (also available on the FeatureConfig inspector).
+The utility window has **Ads**, **Firebase** and **Project Setup** tabs. Edits support Undo; **Save**
+writes the selected config asset. The window is read-only during Play Mode.
+
+The Ads tab stores Android/iOS App IDs, per-format ad-unit IDs and a MAX SDK key. **Apply app IDs /
+SDK key to installed SDK** writes non-empty values to the installed SDK settings asset; blank values
+preserve existing vendor settings. SDK versions with unrecognized settings fields report an error
+without changing IDs. The selected network is a setup preference; the assigned provider asset is
+the runtime implementation. Switching networks clears the old provider reference so you can assign
+the matching implementation and check unit IDs. No SDK is required merely to enter and save IDs.
+
+The Firebase tab imports the official JSON/plist into the Assets root, previews Project ID/App ID,
+and validates the current Android package or iOS bundle identifier. Duplicate config locations are
+rejected. Replacing an existing file backs it up under `ProjectSettings/BaseUnityConfigBackups`;
+an identical file is left untouched. Firebase identifiers are read from these files rather than
+stored as disconnected manual fields. Project Setup links to Player Settings and can assign the
+selected FeatureConfig to a selected GameFlowConfig or scene Bootstrap.
+
 Use **Tools > BaseUnity > Features > Create Feature Config**, then assign the asset to
 `GameBootstrap.FeatureConfig` or `GameFlowConfig.features`. New GameFlow installations create one
 automatically. Ads and Firebase are disabled by default. Bootstrap clones the config at startup:

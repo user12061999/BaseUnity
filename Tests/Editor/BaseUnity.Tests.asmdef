@@ -1,7 +1,7 @@
 {
   "name": "BaseUnity.Tests",
   "rootNamespace": "BaseUnity.Tests",
-  "references": ["BaseUnity.Runtime"],
+  "references": ["BaseUnity.Runtime", "BaseUnity.Editor"],
   "includePlatforms": ["Editor"],
   "optionalUnityReferences": ["TestAssemblies"],
   "defineConstraints": ["UNITY_INCLUDE_TESTS"],

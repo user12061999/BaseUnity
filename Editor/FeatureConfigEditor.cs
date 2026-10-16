@@ -8,6 +8,7 @@ namespace BaseUnity.Editor
     {
         public override void OnInspectorGUI()
         {
+            if (UnityEngine.GUILayout.Button("Open Feature Manager")) FeatureManagerWindow.Open((FeatureConfig)target);
             DrawDefaultInspector();
             var config = (FeatureConfig)target;
             if (config.ads.enabled && !config.adsProvider)

@@ -3,9 +3,13 @@ using UnityEngine;
 
 namespace BaseUnity.Features
 {
+    public enum AdsNetwork { AdMob, AppLovinMax }
     [Serializable] public sealed class AdsSettings
     {
         public bool enabled;
+        public AdsNetwork network;
+        [Tooltip("Applied to installed SDK settings from the Feature Manager editor window.")]
+        public string androidAppId, iosAppId, maxSdkKey;
         public bool banner = true, interstitial = true, rewarded = true;
         [Tooltip("Use Google test ad units. Keep enabled during development.")]
         public bool testMode = true;

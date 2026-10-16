@@ -2,7 +2,7 @@
 
 Base game Unity tái sử dụng qua **Git submodule trong `Assets/BaseUnity`**.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.6.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.6.1**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
 
 ## Luồng game có sẵn
 
@@ -64,6 +64,12 @@ qua **Assets > Create > BaseUnity > Level Data** và để trống gameplayPrefa
 ## Cài vào dự án khác
 
 ### Ads và Firebase tùy chọn
+
+Mở **Tools > BaseUnity > Feature Manager** để cấu hình bằng popup: bật/tắt chức năng,
+chọn AdMob/MAX, nhập App ID/ad-unit ID/SDK key, tạo provider và import file cấu hình Firebase.
+Nút **Save** lưu FeatureConfig; nút **Apply app IDs / SDK key** đồng bộ các trường không rỗng
+sang SDK đã cài. Tab Firebase hiển thị Project ID/App ID lấy từ file chính thức và kiểm tra
+package/bundle ID trước khi import. File cũ được sao lưu khi thay thế.
 
 Tạo **Tools > BaseUnity > Features > Create Feature Config**, gắn vào Bootstrap hoặc
 `GameFlowConfig.features`. Bản cài GameFlow mới có sẵn asset này; mặc định cả hai module tắt.

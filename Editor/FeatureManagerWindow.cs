@@ -27,7 +27,7 @@ namespace BaseUnity.Editor
         }
         public static void Open(FeatureConfig value) { Open(); GetWindow<FeatureManagerWindow>().Select(value); }
         private void OnEnable() { FindConfig(); }
-        private void Select(FeatureConfig value) { config = value; serialized = value ? new SerializedObject(value) : null; Repaint(); }
+        private void Select(FeatureConfig value) { if (config != value) notice = null; config = value; serialized = value ? new SerializedObject(value) : null; Repaint(); }
         private void FindConfig()
         {
             if (config) { Select(config); return; }
@@ -58,7 +58,8 @@ namespace BaseUnity.Editor
             if (!config) { EditorGUILayout.HelpBox("Choose a FeatureConfig asset or create a new one. No SDK is needed to configure features.", MessageType.Info); return; }
             if (serialized == null || serialized.targetObject != config) serialized = new SerializedObject(config);
             if (EditorApplication.isPlayingOrWillChangePlaymode) EditorGUILayout.HelpBox("Stop Play Mode to edit startup configuration.", MessageType.Info);
-            tab = GUILayout.Toolbar(tab, new[] { "Ads", "Firebase", "Project Setup" });
+            int chosenTab = GUILayout.Toolbar(tab, new[] { "Ads", "Firebase", "Project Setup" });
+            if (chosenTab != tab) { tab = chosenTab; notice = null; scroll = Vector2.zero; }
             scroll = EditorGUILayout.BeginScrollView(scroll);
             using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
             {
@@ -79,17 +80,26 @@ namespace BaseUnity.Editor
         private SerializedProperty Field(string path, string label, bool children = false)
         {
             var property = serialized.FindProperty(path);
-            EditorGUILayout.PropertyField(property, new GUIContent(label), children); return property;
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.PropertyField(property, new GUIContent(label), children);
+            if (EditorGUI.EndChangeCheck()) notice = null;
+            return property;
         }
         private void Header(string title) { EditorGUILayout.Space(12); EditorGUILayout.LabelField(title, EditorStyles.boldLabel); }
         private void DrawAds()
         {
-            Header("Advertising"); Field("ads.enabled", "Enable Ads");
-            EditorGUILayout.HelpBox("You can enter IDs while Ads is off. App IDs contain '~'; AdMob ad-unit IDs contain '/'.", MessageType.Info);
+            Header("Advertising");
+            if (!Field("ads.enabled", "Enable Ads").boolValue) return;
+            EditorGUILayout.HelpBox("App IDs contain '~'; AdMob ad-unit IDs contain '/'.", MessageType.Info);
             var network = serialized.FindProperty("ads.network");
             EditorGUI.BeginChangeCheck(); EditorGUILayout.PropertyField(network, new GUIContent("Network"));
             if (EditorGUI.EndChangeCheck()) { serialized.FindProperty("adsProvider").objectReferenceValue = null; notice = "Provider cleared. Assign the new provider and check the ad-unit IDs for this network."; noticeType = MessageType.Info; }
             bool max = network.enumValueIndex == (int)AdsNetwork.AppLovinMax;
+            if (max)
+            {
+                EditorGUILayout.HelpBox("To use MAX and AdMob together, add Google AdMob as a mediated network in MAX. Keep MAX as this config's provider; use MAX ad-unit IDs below.", MessageType.Info);
+                if (GUILayout.Button("MAX + AdMob mediation setup")) Application.OpenURL("https://support.applovin.com/en/max/unity/preparing-mediated-networks");
+            }
             Field("adsProvider", "Provider asset");
             string typeName = max ? "BaseUnity.Integrations.AppLovinMaxProvider" : "BaseUnity.Integrations.AdMobProvider";
             DrawProvider(typeName, "adsProvider", max ? (Action)FeatureSetupMenu.InstallMax : FeatureSetupMenu.InstallAdMob);
@@ -106,11 +116,23 @@ namespace BaseUnity.Editor
                 Run(() => FeatureConfigurationUtility.ApplyAdsSdkSettings(config));
             }
             Header("Ad formats and unit IDs");
-            Field("ads.banner", "Banner"); Field("ads.interstitial", "Interstitial"); Field("ads.rewarded", "Rewarded");
-            Header("Android"); Field("ads.androidBanner", "Banner unit ID"); Field("ads.androidInterstitial", "Interstitial unit ID"); Field("ads.androidRewarded", "Rewarded unit ID");
-            Header("iOS"); Field("ads.iosBanner", "Banner unit ID"); Field("ads.iosInterstitial", "Interstitial unit ID"); Field("ads.iosRewarded", "Rewarded unit ID");
-            Header("Timing"); Field("ads.requestTimeoutSeconds", "Request timeout (seconds)"); Field("ads.interstitialCooldownSeconds", "Interstitial cooldown (seconds)");
-            if (max && provider && provider.GetType().FullName == typeName)
+            bool banner = Field("ads.banner", "Banner").boolValue;
+            bool interstitial = Field("ads.interstitial", "Interstitial").boolValue;
+            bool rewarded = Field("ads.rewarded", "Rewarded").boolValue;
+            if (banner || interstitial || rewarded)
+            {
+                Header("Android");
+                if (banner) Field("ads.androidBanner", "Banner unit ID");
+                if (interstitial) Field("ads.androidInterstitial", "Interstitial unit ID");
+                if (rewarded) Field("ads.androidRewarded", "Rewarded unit ID");
+                Header("iOS");
+                if (banner) Field("ads.iosBanner", "Banner unit ID");
+                if (interstitial) Field("ads.iosInterstitial", "Interstitial unit ID");
+                if (rewarded) Field("ads.iosRewarded", "Rewarded unit ID");
+                Header("Timing"); Field("ads.requestTimeoutSeconds", "Request timeout (seconds)");
+                if (interstitial) Field("ads.interstitialCooldownSeconds", "Interstitial cooldown (seconds)");
+            }
+            if (max && serialized.FindProperty("ads.testMode").boolValue && provider && provider.GetType().FullName == typeName)
             {
                 Header("MAX test devices");
                 var providerSettings = new SerializedObject(provider); providerSettings.Update();
@@ -121,16 +143,24 @@ namespace BaseUnity.Editor
         }
         private void DrawFirebase()
         {
-            Header("Firebase"); Field("firebase.enabled", "Enable Firebase");
+            Header("Firebase");
+            if (!Field("firebase.enabled", "Enable Firebase").boolValue) return;
+            bool analytics = Field("firebase.analytics", "Analytics").boolValue;
+            bool crashlytics = Field("firebase.crashlytics", "Crashlytics").boolValue;
+            bool remoteConfig = Field("firebase.remoteConfig", "Remote Config").boolValue;
+            if (!analytics && !crashlytics && !remoteConfig) return;
             Field("firebaseProvider", "Provider asset");
             DrawProvider("BaseUnity.Integrations.FirebaseSdkProvider", "firebaseProvider", FeatureSetupMenu.InstallFirebase);
-            Field("firebase.analytics", "Analytics"); Field("firebase.crashlytics", "Crashlytics"); Field("firebase.remoteConfig", "Remote Config");
             Header("Firebase project / app IDs");
             EditorGUILayout.HelpBox("Import the configuration downloaded from Firebase Console. It supplies Project ID, App ID and API key together; an ID alone is not enough to configure the native SDK.", MessageType.Info);
             DrawFirebaseFile(false); DrawFirebaseFile(true);
-            Header("Remote Config"); Field("firebase.requestTimeoutSeconds", "Request timeout (seconds)");
-            Field("firebase.minimumFetchIntervalSeconds", "Minimum fetch interval (seconds)");
-            Field("firebase.defaults", "Local default values", true);
+            Header("Connection"); Field("firebase.requestTimeoutSeconds", "Request timeout (seconds)");
+            if (remoteConfig)
+            {
+                Header("Remote Config");
+                Field("firebase.minimumFetchIntervalSeconds", "Minimum fetch interval (seconds)");
+                Field("firebase.defaults", "Local default values", true);
+            }
         }
         private void DrawFirebaseFile(bool ios)
         {

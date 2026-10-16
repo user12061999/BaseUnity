@@ -1,6 +1,6 @@
 {
   "name": "com.baseunity.foundation",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "displayName": "BaseUnity Foundation",
   "description": "Reusable game foundation for Git submodules and Unity packages.",
   "unity": "6000.0",

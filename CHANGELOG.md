@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.2
+
+- Feature Manager hides disabled Ads/Firebase settings while preserving saved values.
+- Ad-unit IDs, interstitial cooldown, MAX test devices and Remote Config settings follow their feature switches.
+- MAX tab includes guidance for adding AdMob through mediation; stale notices clear when editing or switching contexts.
+
 ## 0.6.1
 
 - Feature Manager utility window with Ads, Firebase and Project Setup tabs; config save and Undo support.

@@ -10,6 +10,17 @@ Open **Tools > BaseUnity > Feature Manager** (also available on the FeatureConfi
 The utility window has **Ads**, **Firebase** and **Project Setup** tabs. Edits support Undo; **Save**
 writes the selected config asset. The window is read-only during Play Mode.
 
+Disabled modules hide their settings without clearing saved values. Enable a module to edit its
+details. Each ad format shows only its own unit IDs; interstitial cooldown follows Interstitial,
+MAX test devices follow Test Mode, and fetch interval/defaults follow Remote Config. Firebase's
+shared setup is hidden when all three products are disabled.
+
+To use MAX and AdMob together, select MAX as the single BaseUnity provider and configure AdMob
+through [MAX mediation](https://support.applovin.com/en/max/unity/preparing-mediated-networks).
+Install the Google adapter through MAX Integration Manager and configure the network in MAX.
+Use MAX ad-unit IDs for the BaseUnity placements; AdMob App IDs belong in the mediation app fields.
+The window does not install mediation adapters or configure the network dashboard automatically.
+
 The Ads tab stores Android/iOS App IDs, per-format ad-unit IDs and a MAX SDK key. **Apply app IDs /
 SDK key to installed SDK** writes non-empty values to the installed SDK settings asset; blank values
 preserve existing vendor settings. SDK versions with unrecognized settings fields report an error

@@ -36,6 +36,9 @@ namespace BaseUnity.GameFlow
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(900, 1600);
             scaler.matchWidthOrHeight = 0.5f;
+            var safeContent = Rect("Safe Area Content", root.transform, new Vector2(900, 1600), Vector2.zero);
+            var safe = root.AddComponent<GameFlowSafeArea>(); safe.canvas = component; safe.content = safeContent;
+            canvas = safeContent;
             var input = new GameObject("Game Flow EventSystem", typeof(EventSystem));
             input.transform.SetParent(transform, false);
             // Keep the sample source independent of a required Input System assembly reference.
@@ -48,6 +51,7 @@ namespace BaseUnity.GameFlow
 #endif
             flow.Changed += Rebuild;
             Rebuild();
+            LevelSelectionView.Create(flow, canvas, font);
         }
 
         private RectTransform Rect(string name, Transform parent, Vector2 size, Vector2 position)
@@ -103,8 +107,19 @@ namespace BaseUnity.GameFlow
                     Label("LEVEL " + flow.HomeLevel, 40, 24, accent);
                     Button("Play", -20, flow.Play, true);
                     Button("Settings", -70, OpenSettings);
+                    Button("Choose Level", -140, flow.ShowLevels);
                     break;
                 case FlowPhase.Playing:
+                    if (flow.Levels && flow.Levels.Instance)
+                    {
+                        page.GetComponent<Image>().color = Color.clear;
+                        page.GetComponent<Image>().raycastTarget = false;
+                        foreach (var text in page.GetComponentsInChildren<Text>()) text.gameObject.SetActive(false);
+                        Label("LEVEL " + flow.CurrentLevel + "  /  SCORE " + flow.Score, 700, 36);
+                        timerLabel = Label("", 610, 28);
+                        Button("Pause", 520, flow.Pause);
+                        break;
+                    }
                     Label("LEVEL " + flow.CurrentLevel, 180, 48);
                     Label($"SCORE  {flow.Score}", 100, 32, accent);
                     timerLabel = Label("TARGET " + (flow.CurrentDefinition?.targetScore ?? 0), 40, 22);
@@ -131,6 +146,9 @@ namespace BaseUnity.GameFlow
                     Label("Unable to continue", 130, 40);
                     Label(flow.ErrorMessage, 30, 20);
                     Button("Return Home", -90, flow.GoHome, true);
+                    break;
+                case FlowPhase.LevelSelect:
+                    page.SetActive(false);
                     break;
                 default:
                     Label("Getting ready", 80, 48);

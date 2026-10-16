@@ -17,6 +17,7 @@ namespace BaseUnity.GameFlow.Tests
         private GameFlowBootstrap flow;
         private string originalSlot;
         private string testSlot;
+        private GameFlowConfig testConfig;
 
         private IEnumerator WaitFor(FlowPhase phase)
         {
@@ -51,6 +52,10 @@ namespace BaseUnity.GameFlow.Tests
             yield return WaitFor(FlowPhase.Home);
             Assert.AreEqual(flow.Config.homeScene, SceneManager.GetActiveScene().path);
             originalSlot = flow.Config.saveSlot;
+            testConfig = UnityEngine.Object.Instantiate(flow.Config);
+            // This test covers the legacy HUD controls; prefab gameplay has its own lifecycle tests.
+            testConfig.levels = new[] { new GameLevel { targetScore = 100, timeLimitSeconds = 0 } };
+            flow.Config = testConfig;
             testSlot = "flow_test_" + Guid.NewGuid().ToString("N");
             flow.Config.saveSlot = testSlot;
             var audio = flow.Services.Get<AudioService>();
@@ -103,6 +108,7 @@ namespace BaseUnity.GameFlow.Tests
             }
             UnityEngine.Time.timeScale = 1;
             yield return null;
+            if (testConfig) UnityEngine.Object.Destroy(testConfig);
         }
     }
 }

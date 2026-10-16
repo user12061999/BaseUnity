@@ -32,6 +32,7 @@ namespace BaseUnity.GameFlow.Editor
                 config.homeScene = scenes + "/Home.unity";
                 config.inGameScene = scenes + "/InGame.unity";
                 AssetDatabase.CreateAsset(config, configPath);
+                LevelAssetBuilder.Generate(config);
             }
             var previous = SceneManager.GetActiveScene();
             var paths = new[] { scenes + "/Bootstrap.unity", scenes + "/Home.unity", scenes + "/InGame.unity" };

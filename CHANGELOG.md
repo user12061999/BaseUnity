@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0
+
+- LevelData assets and a non-destructive generator for ordered level definitions and gameplay prefabs.
+- LevelManager instantiates scene-local gameplay, resets it on Retry/Next and cleans up on Home.
+- Session-scoped LevelContext connects prefab score/Win/Lose callbacks and rejects stale or paused input.
+- Portrait level selection with locked/completed states, six levels per page and replay of unlocked levels.
+- Playable tap-target/trap sample; the HUD automatically hides legacy demo controls when a gameplay prefab is present.
+- PlayMode coverage for prefab lifecycle, stale callbacks and paginated selection.
+
 ## 0.4.0
 
 - Portrait 900×1600 UI, level/target/timer HUD and distinct Win/Lose result states.

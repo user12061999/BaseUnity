@@ -168,7 +168,7 @@ namespace BaseUnity.GameFlow.Editor
             Picture("Hero", root, hero, 370, 420, 0, 70);
             v.playButton = Button("Play", root, "PLAY LEVEL 1", yellow, 700, 130, 0, -505, 48);
             v.homeLevel = v.playButton.GetComponentInChildren<Text>();
-            Label("Hint", root, "Win levels to unlock the next challenge", 800, 50, 0, -630, 27, Pale);
+            v.levelsButton = Button("Choose Level", root, "CHOOSE LEVEL", blue, 600, 100, 0, -650, 34);
         }
         private static void Gameplay(GameFlowView v)
         {

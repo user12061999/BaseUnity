@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement;
 
 namespace BaseUnity.GameFlow
 {
-    public enum FlowPhase { Boot, Loading, Home, Playing, Paused, Result, Error }
+    public enum FlowPhase { Boot, Loading, Home, Playing, Paused, Result, Error, LevelSelect }
     public enum LevelOutcome { None, Win, Lose }
     public readonly struct SessionStarted
     {
@@ -57,10 +57,17 @@ namespace BaseUnity.GameFlow
         private float resumeScale = 1;
         private float originalScale;
         private bool loading;
+        public LevelManager Levels { get; private set; }
+        public bool IsLevelUnlocked(int number) => config && number >= 1 && number <= config.LevelCount && number <= HomeLevel;
+        public bool IsLevelCompleted(int number) => IsLevelUnlocked(number) && number <= Progress.highestCompletedLevel;
+        public void ShowLevels() { if (!loading && Phase == FlowPhase.Home) SetPhase(FlowPhase.LevelSelect); }
+        public void CloseLevels() { if (Phase == FlowPhase.LevelSelect) SetPhase(FlowPhase.Home); }
 
         protected override void OnReady()
         {
             originalScale = UnityEngine.Time.timeScale;
+            Levels = gameObject.AddComponent<LevelManager>();
+            Levels.Initialize(this);
             if (config && config.uiPrefab)
                 Instantiate(config.uiPrefab, transform).Initialize(this);
             else gameObject.AddComponent<GameFlowUI>().Initialize(this);
@@ -90,7 +97,7 @@ namespace BaseUnity.GameFlow
 
         public void StartLevel(int number)
         {
-            if (loading || (Phase != FlowPhase.Home && Phase != FlowPhase.Result) || !config) return;
+            if (loading || (Phase != FlowPhase.Home && Phase != FlowPhase.Result && Phase != FlowPhase.LevelSelect) || !config) return;
             if (number < 1 || number > config.LevelCount || number > HomeLevel) return;
             var definition = config.GetLevel(number);
             if (definition == null) { Fail("Level " + number + " has no configuration."); return; }
@@ -108,9 +115,12 @@ namespace BaseUnity.GameFlow
         private void ValidateLevels()
         {
             if (config.LevelCount == 0) throw new InvalidOperationException("Configure at least one level in GameFlowConfig.");
-            foreach (var level in config.levels)
+            for (int number = 1; number <= config.LevelCount; number++)
+            {
+                var level = config.GetLevel(number);
                 if (level == null || level.targetScore < 1 || float.IsNaN(level.timeLimitSeconds) || float.IsInfinity(level.timeLimitSeconds) || level.timeLimitSeconds < 0)
                     throw new InvalidOperationException("Levels need a positive target score and a non-negative finite time limit.");
+            }
         }
         private void NormalizeProgress()
         {
@@ -123,6 +133,7 @@ namespace BaseUnity.GameFlow
         private async Task Transition(string scene, FlowPhase destination)
         {
             loading = true;
+            Levels.Clear();
             LoadingProgress = 0;
             ErrorMessage = null;
             UnityEngine.Time.timeScale = 1;
@@ -133,6 +144,7 @@ namespace BaseUnity.GameFlow
                     throw new InvalidOperationException($"Scene is missing or disabled in the active Build Profile: {scene}");
                 await Services.Get<SceneService>().LoadAsync(scene, LoadSceneMode.Single, new LoadProgress(this), destroyCancellationToken);
                 if (!this || !IsReady) return;
+                if (destination == FlowPhase.Playing) Levels.LoadGameplay();
                 SetPhase(destination);
                 if (destination == FlowPhase.Playing) Services.Get<EventBus>().Publish(new SessionStarted(CurrentLevel));
             }

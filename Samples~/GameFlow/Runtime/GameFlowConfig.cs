@@ -6,6 +6,9 @@ namespace BaseUnity.GameFlow
     [Serializable]
     public sealed class GameLevel
     {
+        [Tooltip("Optional asset; when assigned its values replace the inline definition below.")]
+        public LevelData data;
+        public GameObject gameplayPrefab;
         public string title = "Level";
         [Min(1)] public int targetScore = 30;
         [Min(0)] public float timeLimitSeconds = 60;
@@ -29,6 +32,11 @@ namespace BaseUnity.GameFlow
             new GameLevel { title = "Final challenge", targetScore = 80, timeLimitSeconds = 60 }
         };
         public int LevelCount => levels?.Length ?? 0;
-        public GameLevel GetLevel(int number) => number >= 1 && number <= LevelCount ? levels[number - 1] : null;
+        public GameLevel GetLevel(int number)
+        {
+            if (number < 1 || number > LevelCount) return null;
+            var entry = levels[number - 1];
+            return entry != null && entry.data ? entry.data.CreateDefinition() : entry;
+        }
     }
 }

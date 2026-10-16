@@ -23,6 +23,7 @@ namespace BaseUnity.GameFlow
         public Button playButton, settingsButton, collectButton, finishButton, pauseButton, resumeButton;
         public Button pauseHomeButton, retryButton, resultHomeButton, errorHomeButton;
         public Button loseButton, nextLevelButton;
+        public Button levelsButton;
         [Header("Settings")]
         public Slider masterSlider, musicSlider, effectsSlider;
         public Text masterValue, musicValue, effectsValue, soundLabel, settingsError;
@@ -45,6 +46,18 @@ namespace BaseUnity.GameFlow
             input.AddComponent<StandaloneInputModule>();
 #endif
             playButton.onClick.AddListener(flow.Play);
+            // Upgrade old project-owned prefabs without forcing a destructive rebuild.
+            if (!levelsButton)
+            {
+                levelsButton = Instantiate(playButton, playButton.transform.parent);
+                levelsButton.onClick = new Button.ButtonClickedEvent();
+                levelsButton.name = "Choose Level";
+                var rect = (RectTransform)levelsButton.transform;
+                rect.anchoredPosition = new Vector2(0, -650); rect.sizeDelta = new Vector2(600, 100);
+                levelsButton.GetComponentInChildren<Text>().text = "CHOOSE LEVEL";
+                var hint = home.transform.Find("Hint"); if (hint) hint.gameObject.SetActive(false);
+            }
+            levelsButton.onClick.AddListener(flow.ShowLevels);
             settingsButton.onClick.AddListener(OpenSettings);
             collectButton.onClick.AddListener(() => flow.AddScore(10));
             finishButton.onClick.AddListener(flow.CompleteSession);
@@ -68,6 +81,7 @@ namespace BaseUnity.GameFlow
             if (flow.Config) title.text = flow.Config.gameTitle;
             flow.Changed += Refresh;
             Refresh();
+            LevelSelectionView.Create(flow, home.transform.parent, title.font, playButton.image.sprite);
         }
 
         private void OpenSettings()
@@ -110,8 +124,15 @@ namespace BaseUnity.GameFlow
         private void Refresh()
         {
             var phase = flow.Phase;
+            bool hasGameplay = flow.Levels && flow.Levels.Instance;
+            if (gameplayDemo) gameplayDemo.SetActive(!hasGameplay);
+            collectButton.gameObject.SetActive(!hasGameplay);
+            finishButton.gameObject.SetActive(!hasGameplay);
+            if (loseButton) loseButton.gameObject.SetActive(!hasGameplay);
+            foreach (var name in new[] { "Demo instruction", "Demo label" })
+            { var item = gameplay.transform.Find(name); if (item) item.gameObject.SetActive(!hasGameplay); }
             if (fullScreenBackground) fullScreenBackground.SetActive(
-                phase == FlowPhase.Home || phase == FlowPhase.Boot || phase == FlowPhase.Loading ||
+                phase == FlowPhase.Home || phase == FlowPhase.LevelSelect || phase == FlowPhase.Boot || phase == FlowPhase.Loading ||
                 phase == FlowPhase.Error || (gameplayDemo && gameplayDemo.activeSelf));
             if (phase != FlowPhase.Home) settingsOpen = false;
             home.SetActive(phase == FlowPhase.Home);

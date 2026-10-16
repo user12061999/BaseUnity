@@ -2,7 +2,7 @@
 
 Base game Unity tái sử dụng qua **Git submodule trong `Assets/BaseUnity`**.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.4.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.5.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
 
 ## Luồng game có sẵn
 
@@ -47,7 +47,19 @@ Mỗi màn có thể dùng chung InGame scene hoặc đặt `sceneOverride` riê
 Play ở Home mở màn cao nhất đã mở khóa. Màn cuối hiện **All levels complete**, không có Next Level.
 Tiến trình được lưu qua lần khởi động lại; save cũ giữ điểm/số phiên và bắt đầu từ level 1.
 `CompleteSession()` cũ vẫn dùng được, tương đương `WinLevel()`.
-HUD mẫu có nút Collect +10 và Win/Lose để thử logic; thay bằng điều kiện của gameplay thật.
+Level có prefab sẽ tự ẩn các nút thử Collect/Win/Lose và dùng gameplay riêng.
+
+### LevelData, prefab gameplay và chọn màn
+
+- Mỗi entry trong `GameFlowConfig.levels` tham chiếu một `LevelData`: tên, mục tiêu, thời gian, scene và prefab gameplay.
+- `flow.Levels` là `LevelManager`, tạo prefab trong scene InGame, dọn prefab cũ khi Retry/Next/Home.
+- Prefab triển khai `ILevelGameplay.Initialize(LevelContext)` để nhận `AddScore`, `Win`, `Lose`; callback cũ hoặc lúc Pause bị bỏ qua.
+- Home có **Choose Level**: hiển thị màn khóa/đã hoàn thành, phân trang 6 màn, cho chơi lại màn đã mở.
+- Gameplay mẫu: chạm mục tiêu vàng để lấy điểm, tránh bẫy đỏ. Có 3 LevelData mẫu trong thư mục `Levels`.
+
+Với bản cài cũ, chạy **Tools > BaseUnity > Game Flow > Generate Level Assets** để tạo dữ liệu từ cấu hình
+inline hiện có. Asset/prefab đã có không bị ghi đè. Game dùng scene riêng có thể tạo LevelData thủ công
+qua **Assets > Create > BaseUnity > Level Data** và để trống gameplayPrefab.
 
 ## Cài vào dự án khác
 
@@ -261,6 +273,10 @@ V0.2 được kiểm tra trực tiếp qua Unity MCP trong project BaseUnity: **
 
 V0.4: **11/11 PlayMode tests pass** trong project BaseUnity qua Unity MCP, gồm cả mở khóa level,
 Next/Retry, timer khi pause, kết thúc lặp, màn cuối, lưu qua restart và save cũ.
+
+V0.5: **15/15 PlayMode tests pass**, bổ sung vòng đời prefab, callback từ màn cũ,
+phân trang/chọn màn khóa, tương tác mục tiêu/bẫy và UI mặc định không có Layer Lab.
+Đã kiểm tra trực quan Game View dọc và xác nhận raycast chạm đúng mục tiêu gameplay.
 
 Trong workspace phát triển ban đầu, `Assets/BaseUnity/Runtime`, `Editor`, `Tests` là junction
 đến source ở root, giúp Editor import trực tiếp mà Git vẫn chỉ lưu thư viện.

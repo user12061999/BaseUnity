@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.3
+
+- Read-only pre-build validation window, accessible from Feature Manager > Project Setup or the Tools menu.
+- Platform-specific checks for enabled Ads/Firebase modules, providers, SDK types, ad IDs, test settings and Firebase app configuration.
+- Checks enabled build scenes, selected GameFlow Home/InGame/level overrides and FeatureConfig assignment.
+- EditMode regression coverage for disabled modules/formats, platform selection, demo ads and missing build scenes.
+
 ## 0.6.2
 
 - Feature Manager hides disabled Ads/Firebase settings while preserving saved values.

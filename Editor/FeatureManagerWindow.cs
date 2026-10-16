@@ -209,6 +209,9 @@ namespace BaseUnity.Editor
         }
         private void DrawSetup()
         {
+            Header("Pre-build validation");
+            if (GUILayout.Button("Validate build configuration"))
+            { serialized.ApplyModifiedProperties(); FeatureValidationWindow.Open(config); }
             Header("Application identifiers");
             EditorGUILayout.LabelField("Android package", FeatureConfigurationUtility.ApplicationId(false));
             EditorGUILayout.LabelField("iOS bundle", FeatureConfigurationUtility.ApplicationId(true));

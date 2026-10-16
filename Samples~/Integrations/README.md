@@ -6,6 +6,19 @@ No SDK binaries, account configuration or advertising IDs are distributed in thi
 
 ## Feature configuration
 
+Before building, open **Tools > BaseUnity > Validate Build Configuration**, or **Feature Manager >
+Project Setup > Validate build configuration**. Choose Android/iOS, the FeatureConfig and optionally
+the GameFlowConfig; click **Run validation**. Errors and warnings include suggested fixes and buttons
+to select related assets. Run again after edits; reports are snapshots, not live monitoring.
+
+Checks include enabled providers/SDK types, platform ad units, MAX test devices, timeouts, Firebase
+file/package matching and duplicate configs/default keys. AdMob demo mode does not require custom
+unit IDs. Blank app IDs/SDK keys are warnings because vendor settings may already contain them.
+The report also checks enabled Editor build scenes and GameFlow Home/InGame/level scene overrides.
+Review custom Build Profile scene overrides and Bootstrap ordering separately. This is a manual,
+read-only preflight, not an automatic build blocker. It does not verify vendor credentials, applied
+SDK settings, mediation dashboards, native dependency resolution or device behavior.
+
 Open **Tools > BaseUnity > Feature Manager** (also available on the FeatureConfig inspector).
 The utility window has **Ads**, **Firebase** and **Project Setup** tabs. Edits support Undo; **Save**
 writes the selected config asset. The window is read-only during Play Mode.

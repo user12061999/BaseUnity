@@ -53,15 +53,16 @@ namespace BaseUnity.GameFlow.Editor
             {
                 var canvas = root.GetComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.sortingOrder = 100;
                 var scaler = root.GetComponent<CanvasScaler>(); scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-                scaler.referenceResolution = new Vector2(1600, 900); scaler.matchWidthOrHeight = 0.5f;
+                scaler.referenceResolution = new Vector2(900, 1600); scaler.matchWidthOrHeight = 0.5f;
                 var view = root.AddComponent<GameFlowView>();
                 var background = Picture("Full screen background", root.transform, backdrop, 0, 0, 0, 0, true);
                 background.rectTransform.anchorMin = Vector2.zero;
                 background.rectTransform.anchorMax = Vector2.one;
                 background.rectTransform.offsetMin = background.rectTransform.offsetMax = Vector2.zero;
                 view.fullScreenBackground = background.gameObject;
-                var content = Rect("Safe Area Content", root.transform, 1600, 900, 0, 0);
+                var content = Rect("Safe Area Content", root.transform, 900, 1600, 0, 0);
                 var safe = root.AddComponent<GameFlowSafeArea>(); safe.content = content; safe.canvas = canvas;
+                safe.referenceResolution = new Vector2(900, 1600);
                 view.home = Screen("Home", content);
                 Home(view);
                 view.gameplay = Screen("InGame", content);
@@ -103,7 +104,7 @@ namespace BaseUnity.GameFlow.Editor
         }
         private static GameObject Screen(string name, Transform parent)
         {
-            var root = Rect(name, parent, 1600, 900, 0, 0).gameObject;
+            var root = Rect(name, parent, 900, 1600, 0, 0).gameObject;
             root.AddComponent<CanvasGroup>(); return root;
         }
         private static Image Picture(string name, Transform parent, Sprite sprite, float w, float h, float x, float y, bool sliced = false, Color? color = null)
@@ -140,50 +141,54 @@ namespace BaseUnity.GameFlow.Editor
         }
         private static void Background(Transform root)
         {
-            Picture("Blue background", root, backdrop, 1600, 900, 0, 0, true);
+            Picture("Blue background", root, backdrop, 900, 1600, 0, 0, true);
             Picture("Arena floor", root, floor, 1600, 900, 0, 0);
         }
         private static void TopBar(Transform root, string section)
         {
-            Picture("Top shade", root, null, 1600, 112, 0, 394, false, new Color(0.02f, 0.08f, 0.18f, 0.75f));
-            Label("Brand", root, "BASE UNITY", 270, 45, -605, 404, 30);
-            Label("Section", root, section, 270, 30, -605, 368, 17, Pale);
+            Picture("Top shade", root, null, 900, 150, 0, 725, false, new Color(0.02f, 0.08f, 0.18f, 0.75f));
+            Label("Brand", root, "BASE UNITY", 270, 48, -270, 750, 34);
+            Label("Section", root, section, 270, 34, -270, 708, 22, Pale);
         }
         private static void Home(GameFlowView v)
         {
             var root = v.home.transform; Background(root); TopBar(root, "HOME");
-            Picture("Best icon", root, trophy, 60, 60, 140, 393);
-            Label("Best label", root, "PERSONAL BEST", 200, 30, 275, 412, 16, Pale);
-            v.homeBest = Label("Best value", root, "0", 200, 42, 275, 375, 32);
-            Label("Sessions label", root, "SESSIONS", 180, 30, 500, 412, 16, Pale);
-            v.sessions = Label("Sessions value", root, "0", 180, 42, 500, 375, 32);
-            v.settingsButton = IconButton("Settings", root, gear, 700, 394);
-            v.title = Label("Game title", root, "YOUR GAME", 660, 100, -340, 230, 68);
-            Label("Subtitle", root, "A NEW ADVENTURE AWAITS", 600, 45, -340, 154, 24, Pale);
-            var card = Picture("Adventure card", root, panel, 540, 220, -340, -10, true);
+            Picture("Best icon", root, trophy, 70, 70, -270, 580);
+            Label("Best label", root, "PERSONAL BEST", 220, 35, -100, 610, 21, Pale);
+            v.homeBest = Label("Best value", root, "0", 220, 50, -100, 563, 40);
+            Label("Sessions label", root, "SESSIONS", 200, 35, 220, 610, 21, Pale);
+            v.sessions = Label("Sessions value", root, "0", 200, 50, 220, 563, 40);
+            v.settingsButton = IconButton("Settings", root, gear, 350, 730);
+            v.title = Label("Game title", root, "YOUR GAME", 800, 110, 0, 430, 76);
+            Label("Subtitle", root, "A NEW ADVENTURE AWAITS", 800, 50, 0, 340, 28, Pale);
+            var card = Picture("Adventure card", root, panel, 730, 210, 0, -280, true);
             Picture("Star", card.transform, star, 68, 68, -175, 20);
             Label("Ready", card.transform, "READY TO PLAY?", 330, 52, 55, 42, 30);
             Label("Description", card.transform, "Jump in. Collect points.\nBeat your personal best.", 360, 90, 45, -32, 23, Pale);
-            Picture("Hero", root, hero, 390, 440, 360, 20);
-            Label("Hero caption", root, "LET'S DO THIS!", 360, 50, 360, -240, 28);
-            v.playButton = Button("Play", root, "PLAY", yellow, 470, 110, -340, -225, 48);
-            Label("Hint", root, "Your progress is saved automatically", 600, 38, -340, -311, 20, Pale);
+            Picture("Hero", root, hero, 370, 420, 0, 70);
+            v.playButton = Button("Play", root, "PLAY LEVEL 1", yellow, 700, 130, 0, -505, 48);
+            v.homeLevel = v.playButton.GetComponentInChildren<Text>();
+            Label("Hint", root, "Win levels to unlock the next challenge", 800, 50, 0, -630, 27, Pale);
         }
         private static void Gameplay(GameFlowView v)
         {
             var root = v.gameplay.transform;
             // Remove this single group to expose the real scene behind the HUD.
-            v.gameplayDemo = Rect("Demo Backdrop - remove for real gameplay", root, 1600, 900, 0, 0).gameObject;
+            v.gameplayDemo = Rect("Demo Backdrop - remove for real gameplay", root, 900, 1600, 0, 0).gameObject;
             Background(v.gameplayDemo.transform);
-            Picture("Demo hero", v.gameplayDemo.transform, hero, 310, 360, 0, 30);
+            Picture("Demo hero", v.gameplayDemo.transform, hero, 380, 440, 0, 100);
             TopBar(root, "IN GAME");
-            Picture("Score icon", root, coin, 62, 62, -130, 394);
-            Label("Score label", root, "SCORE", 220, 26, 20, 416, 16, Pale);
-            v.score = Label("Score value", root, "0", 220, 50, 20, 374, 38);
-            v.pauseButton = IconButton("Pause", root, pauseIcon, 700, 394);
-            Label("Demo instruction", root, "COLLECT POINTS AND SET A NEW RECORD", 1000, 55, 0, 258, 30);
-            v.collectButton = Button("Collect +10", root, "COLLECT +10", yellow, 390, 105, -220, -300, 36);
-            v.finishButton = Button("Finish session", root, "FINISH", blue, 320, 105, 200, -300, 36);
+            v.levelLabel = Label("Level", root, "LEVEL 1", 360, 60, 0, 590, 44);
+            Picture("Score icon", root, coin, 60, 60, -75, 735);
+            v.score = Label("Score value", root, "0", 170, 65, 70, 735, 48);
+            v.pauseButton = IconButton("Pause", root, pauseIcon, 350, 730);
+            v.targetLabel = Label("Target", root, "TARGET 30", 400, 55, -200, 490, 32, Pale);
+            v.timerLabel = Label("Timer", root, "TIME 60s", 400, 55, 200, 490, 32, Pale);
+            Label("Demo instruction", root, "REACH THE TARGET TO WIN", 800, 60, 0, -200, 32);
+            v.collectButton = Button("Collect +10", root, "COLLECT +10", yellow, 700, 125, 0, -375, 44);
+            Label("Demo label", root, "DEMO CONTROLS", 800, 40, 0, -495, 22, Pale);
+            v.finishButton = Button("Finish session", root, "WIN", blue, 330, 110, -185, -590, 38);
+            v.loseButton = Button("Lose level", root, "LOSE", grey, 330, 110, 185, -590, 38);
         }
         private static Transform Modal(Transform root, string title, float w, float h)
         {
@@ -195,19 +200,19 @@ namespace BaseUnity.GameFlow.Editor
         }
         private static void Settings(GameFlowView v)
         {
-            var box = Modal(v.settings.transform, "SETTINGS", 940, 720);
-            v.closeSettingsButton = IconButton("Close settings", box, close, 410, 307);
-            v.masterSlider = Slider(box, "Master", 155, out v.masterValue);
-            v.musicSlider = Slider(box, "Music", 60, out v.musicValue);
-            v.effectsSlider = Slider(box, "Effects", -35, out v.effectsValue);
-            v.volumeDownButton = Button("Volume -", box, "-", blue, 55, 52, -355, 155, 28);
-            v.volumeUpButton = Button("Volume +", box, "+", blue, 55, 52, 355, 155, 28);
-            v.soundButton = Button("Sound toggle", box, "", grey, 300, 70, 0, -140);
+            var box = Modal(v.settings.transform, "SETTINGS", 820, 1200);
+            v.closeSettingsButton = IconButton("Close settings", box, close, 350, 535);
+            v.masterSlider = Slider(box, "Master", 300, out v.masterValue);
+            v.musicSlider = Slider(box, "Music", 100, out v.musicValue);
+            v.effectsSlider = Slider(box, "Effects", -100, out v.effectsValue);
+            v.volumeDownButton = Button("Volume -", box, "-", blue, 55, 65, -355, 300, 28);
+            v.volumeUpButton = Button("Volume +", box, "+", blue, 55, 65, 355, 300, 28);
+            v.soundButton = Button("Sound toggle", box, "", grey, 380, 100, 0, -280);
             v.soundLabel = v.soundButton.GetComponentInChildren<Text>();
             v.soundLabel.text = "SOUND ON";
-            v.cancelButton = Button("Cancel", box, "CANCEL", blue, 300, 85, -170, -260, 32);
-            v.saveButton = Button("Save & Back", box, "SAVE", yellow, 300, 85, 170, -260, 32);
-            v.settingsError = Label("Save error", box, "", 800, 42, 0, -202, 17, new Color(1, 0.7f, 0.55f));
+            v.cancelButton = Button("Cancel", box, "CANCEL", blue, 330, 110, -185, -465, 34);
+            v.saveButton = Button("Save & Back", box, "SAVE", yellow, 330, 110, 185, -465, 34);
+            v.settingsError = Label("Save error", box, "", 760, 65, 0, -370, 20, new Color(1, 0.7f, 0.55f));
         }
         private static Slider Slider(Transform parent, string name, float y, out Text value)
         {
@@ -230,34 +235,38 @@ namespace BaseUnity.GameFlow.Editor
         }
         private static void Pause(GameFlowView v)
         {
-            var box = Modal(v.pause.transform, "TAKE A BREAK", 680, 600);
-            Picture("Pause icon", box, pauseIcon, 75, 75, 0, 130);
-            Label("Message", box, "Your adventure will be right here.", 580, 45, 0, 35, 23, Pale);
-            v.resumeButton = Button("Resume", box, "RESUME", yellow, 400, 95, 0, -65, 36);
-            v.pauseHomeButton = Button("Home", box, "BACK HOME", blue, 400, 85, 0, -175, 30);
+            var box = Modal(v.pause.transform, "TAKE A BREAK", 800, 1000);
+            Picture("Pause icon", box, pauseIcon, 110, 110, 0, 235);
+            Label("Message", box, "Your adventure will be right here.", 730, 80, 0, 80, 29, Pale);
+            v.resumeButton = Button("Resume", box, "RESUME", yellow, 620, 120, 0, -110, 42);
+            v.pauseHomeButton = Button("Home", box, "BACK HOME", blue, 620, 110, 0, -290, 36);
         }
         private static void Result(GameFlowView v)
         {
-            var box = Modal(v.result.transform, "", 900, 740);
-            Picture("Victory ribbon", box, ribbon, 780, 110, 0, 290);
-            Label("Result title", box, "SESSION COMPLETE!", 700, 70, 0, 296, 43);
-            Picture("Star left", box, star, 100, 100, -135, 145);
-            Picture("Star center", box, star, 140, 140, 0, 165);
-            Picture("Star right", box, star, 100, 100, 135, 145);
-            Label("Score label", box, "YOUR SCORE", 330, 40, -195, 35, 25, Pale);
-            Label("Best label", box, "PERSONAL BEST", 330, 40, 195, 35, 25, Pale);
-            v.resultScore = Label("Score", box, "0", 330, 80, -195, -35, 60);
-            v.resultBest = Label("Best", box, "0", 330, 80, 195, -35, 60, new Color(1, 0.84f, 0.2f));
-            Label("Message", box, "ONE MORE ROUND?", 650, 45, 0, -140, 26, Pale);
-            v.retryButton = Button("Retry", box, "PLAY AGAIN", yellow, 350, 100, 195, -255, 32);
-            v.resultHomeButton = Button("Home", box, "HOME", blue, 350, 100, -195, -255, 32);
-            v.saveWarning = Label("Save warning", box, "", 780, 40, 0, -195, 16);
+            var box = Modal(v.result.transform, "", 820, 1220);
+            Picture("Result ribbon", box, ribbon, 800, 135, 0, 490, true);
+            v.resultTitle = Label("Result title", box, "LEVEL COMPLETE!", 740, 90, 0, 495, 40);
+            v.resultStars = Rect("Victory stars", box, 600, 200, 0, 280).gameObject;
+            Picture("Star left", v.resultStars.transform, star, 100, 100, -135, 0);
+            Picture("Star center", v.resultStars.transform, star, 140, 140, 0, 20);
+            Picture("Star right", v.resultStars.transform, star, 100, 100, 135, 0);
+            v.resultFailure = Rect("Failure badge", box, 400, 200, 0, 280).gameObject;
+            Picture("Failure icon", v.resultFailure.transform, close, 110, 110, 0, 0, false, new Color(1, 0.5f, 0.5f));
+            Label("Score label", box, "YOUR SCORE", 330, 40, -185, 110, 27, Pale);
+            Label("Best label", box, "PERSONAL BEST", 330, 40, 185, 110, 27, Pale);
+            v.resultScore = Label("Score", box, "0", 330, 90, -185, 30, 66);
+            v.resultBest = Label("Best", box, "0", 330, 90, 185, 30, 66, new Color(1, 0.84f, 0.2f));
+            v.resultSubtitle = Label("Message", box, "LEVEL COMPLETED!", 740, 70, 0, -85, 29, Pale);
+            v.nextLevelButton = Button("Next Level", box, "NEXT LEVEL", yellow, 650, 110, 0, -200, 40);
+            v.retryButton = Button("Retry", box, "RETRY", blue, 650, 110, 0, -325, 38);
+            v.resultHomeButton = Button("Home", box, "HOME", grey, 650, 110, 0, -450, 36);
+            v.saveWarning = Label("Save warning", box, "", 760, 60, 0, -545, 18);
         }
         private static void Loading(GameFlowView v)
         {
             var root = v.loading.transform; Background(root);
-            Picture("Star", root, star, 130, 130, 0, 150);
-            Label("Loading title", root, "GET READY!", 900, 90, 0, 15, 64);
+            Picture("Star", root, star, 160, 160, 0, 270);
+            Label("Loading title", root, "GET READY!", 900, 90, 0, 90, 64);
             Picture("Progress track", root, grey, 660, 44, 0, -110, true);
             v.loadingFill = Picture("Progress fill", root, yellow, 640, 30, 0, -106);
             v.loadingFill.preserveAspect = false; v.loadingFill.type = Image.Type.Filled; v.loadingFill.fillMethod = Image.FillMethod.Horizontal;
@@ -265,9 +274,9 @@ namespace BaseUnity.GameFlow.Editor
         }
         private static void Error(GameFlowView v)
         {
-            var box = Modal(v.error.transform, "LET'S TRY AGAIN", 900, 550);
-            v.errorText = Label("Error message", box, "", 760, 190, 0, 10, 23, Pale);
-            v.errorHomeButton = Button("Return Home", box, "RETURN HOME", yellow, 430, 90, 0, -160, 32);
+            var box = Modal(v.error.transform, "LET'S TRY AGAIN", 820, 900);
+            v.errorText = Label("Error message", box, "", 740, 280, 0, 40, 27, Pale);
+            v.errorHomeButton = Button("Return Home", box, "RETURN HOME", yellow, 650, 110, 0, -260, 38);
         }
     }
 }

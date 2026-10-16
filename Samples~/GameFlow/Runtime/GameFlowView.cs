@@ -15,10 +15,14 @@ namespace BaseUnity.GameFlow
         public GameObject fullScreenBackground;
         [Header("Content")]
         public Text title, homeBest, sessions, score, resultScore, resultBest, loadingText, errorText, saveWarning;
+        public Text homeLevel, levelLabel, targetLabel, timerLabel, resultTitle, resultSubtitle;
+        public GameObject resultStars;
+        public GameObject resultFailure;
         public Image loadingFill;
         [Header("Actions")]
         public Button playButton, settingsButton, collectButton, finishButton, pauseButton, resumeButton;
         public Button pauseHomeButton, retryButton, resultHomeButton, errorHomeButton;
+        public Button loseButton, nextLevelButton;
         [Header("Settings")]
         public Slider masterSlider, musicSlider, effectsSlider;
         public Text masterValue, musicValue, effectsValue, soundLabel, settingsError;
@@ -44,10 +48,12 @@ namespace BaseUnity.GameFlow
             settingsButton.onClick.AddListener(OpenSettings);
             collectButton.onClick.AddListener(() => flow.AddScore(10));
             finishButton.onClick.AddListener(flow.CompleteSession);
+            if (loseButton) loseButton.onClick.AddListener(flow.LoseLevel);
+            if (nextLevelButton) nextLevelButton.onClick.AddListener(flow.NextLevel);
             pauseButton.onClick.AddListener(flow.Pause);
             resumeButton.onClick.AddListener(flow.Resume);
             pauseHomeButton.onClick.AddListener(flow.GoHome);
-            retryButton.onClick.AddListener(flow.Play);
+            retryButton.onClick.AddListener(flow.RetryLevel);
             resultHomeButton.onClick.AddListener(flow.GoHome);
             errorHomeButton.onClick.AddListener(flow.GoHome);
             volumeDownButton.onClick.AddListener(() => masterSlider.value -= 0.1f);
@@ -118,6 +124,21 @@ namespace BaseUnity.GameFlow
             homeBest.text = flow.Progress.bestScore.ToString("N0");
             sessions.text = flow.Progress.sessions.ToString("N0");
             score.text = flow.Score.ToString("N0");
+            if (homeLevel) homeLevel.text = "PLAY LEVEL " + flow.HomeLevel;
+            if (levelLabel) levelLabel.text = "LEVEL " + flow.CurrentLevel;
+            if (targetLabel) targetLabel.text = "TARGET  " + (flow.CurrentDefinition?.targetScore ?? 0);
+            bool won = flow.Outcome == LevelOutcome.Win;
+            if (resultTitle) resultTitle.text = won ? (flow.CanNextLevel ? "LEVEL COMPLETE!" : "ALL LEVELS COMPLETE!") : "LEVEL FAILED";
+            if (resultSubtitle) resultSubtitle.text = flow.OutcomeReason ?? "";
+            if (resultStars) resultStars.SetActive(won);
+            if (resultFailure) resultFailure.SetActive(!won);
+            if (resultTitle) resultTitle.color = won ? Color.white : new Color(1, 0.65f, 0.65f);
+            if (nextLevelButton)
+            {
+                nextLevelButton.gameObject.SetActive(flow.CanNextLevel);
+                ((RectTransform)retryButton.transform).anchoredPosition = new Vector2(0, flow.CanNextLevel ? -325 : -200);
+                ((RectTransform)resultHomeButton.transform).anchoredPosition = new Vector2(0, flow.CanNextLevel ? -450 : -330);
+            }
             resultScore.text = flow.Score.ToString("N0");
             resultBest.text = flow.Progress.bestScore.ToString("N0");
             saveWarning.text = flow.SaveWarning ?? "";
@@ -144,7 +165,9 @@ namespace BaseUnity.GameFlow
         }
         private void Update()
         {
-            if (!flow || !loading.activeSelf) return;
+            if (!flow) return;
+            if (timerLabel) timerLabel.text = flow.HasTimeLimit ? "TIME  " + Mathf.CeilToInt(flow.RemainingTime) + "s" : "NO TIME LIMIT";
+            if (!loading.activeSelf) return;
             loadingFill.fillAmount = flow.LoadingProgress;
             loadingText.text = "LOADING  " + Mathf.RoundToInt(flow.LoadingProgress * 100) + "%";
         }

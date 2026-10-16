@@ -30,8 +30,9 @@ first if the project contains multiple configs.
 The tool creates an editable `UI/LayerLabGameFlow.prefab` beside the config and assigns `uiPrefab`.
 It uses the pack's sprites and Lilita One font for Home, HUD, Loading, Settings, Pause and Result.
 Settings includes Master/Music/Effects sliders, mute, Save and Cancel. Modal screens block
-underlying pointer and keyboard interaction. The 1600×900 landscape layout fits inside the safe
-area, with a full-screen background at other aspect ratios; a dedicated portrait layout is not included.
+underlying pointer and keyboard interaction. The 900×1600 portrait layout fits inside the safe
+area, with a full-screen background at other aspect ratios. Set the game's default orientation
+to Portrait in Player Settings when deploying to mobile.
 
 Edit the generated prefab in Prefab Mode. Every generator run creates a new variant instead of
 overwriting prefab edits. Clear `uiPrefab` to use the lightweight default UI.
@@ -44,15 +45,45 @@ in the game project; other projects using this theme need their own imported pac
 ## Flow behavior
 
 Bootstrap reads progress/settings → Loading → Home → Play → Loading → InGame.
-InGame supports Collect +10 (demo), Pause/Resume and Finish session.
-Result supports Retry or Home. Settings edits master volume/mute and persists on Save & Back.
-Progress saves best score/session count. Pause and Result stop scaled game time. Scene transitions and exit restore time; UI remains usable while paused.
+InGame supports Collect +10, manual Win/Lose (demo), Pause/Resume and a timed score goal.
+Win offers Next Level, Retry and Home. Lose offers Retry/Home. The final win shows all levels complete.
+Settings persists only on Save. Pause and Result stop scaled game time, including the level timer;
+scene transitions restore time, and UI remains usable while paused.
+
+## Level configuration and gameplay API
+
+`GameFlowConfig.levels` is an ordered list, numbered from 1. The three defaults have target scores
+30/50/80 and a 60-second timer. A zero timer is unlimited. `sceneOverride` optionally selects a
+different Build Settings scene for a level; otherwise all levels use the common InGame scene.
+An empty/invalid level list produces a configuration error instead of starting a session.
+
+```csharp
+var flow = (BaseUnity.GameFlow.GameFlowBootstrap)BaseUnity.Core.GameBootstrap.Instance;
+flow.AddScore(10);    // Wins automatically at target when autoWinAtTarget is enabled.
+flow.WinLevel();      // Or call when your own gameplay win condition is met.
+flow.LoseLevel("Out of moves!");
+flow.RetryLevel();    // Only from Result, stays on the same level.
+flow.NextLevel();     // Only after Win, only when another level exists.
+```
+
+Call the relevant method at the relevant gameplay event; the lines above demonstrate separate actions.
+Disable `autoWinAtTarget` for games whose win condition is unrelated to score.
+`CurrentLevel`, `CurrentDefinition`, `RemainingTime`, `Outcome` and `CanNextLevel` expose live state.
+`StartLevel(number)` accepts only unlocked levels from Home/Result. Play at Home resumes the highest
+unlocked level. Retry resets score, timer and outcome. Concurrent load requests and repeated end
+calls are ignored, so a level cannot be counted twice.
+
+Win updates the highest completed/unlocked level; Lose never unlocks a level. Scores, sessions,
+wins and losses persist in the configured save slot. Old saves with only score/session fields are
+normalized to level 1 without losing their existing data. The last level is capped; it does not loop.
+Keep level ordering stable in shipped games: progress currently uses level numbers, not stable IDs.
+If saving fails, the result UI reports it and progress remains available for the current run.
 
 ## Add your game
 
 1. Change title/scene paths/save slot in GameFlowConfig.
-2. Add gameplay objects to InGame. `GameFlowBootstrap` exposes `AddScore(int)`, `CompleteSession()`, `Pause()`, `Resume()`, `GoHome()` and `Play()`.
-3. Subscribe to `SessionStarted` / `SessionEnded` via the core EventBus, disposing subscriptions with their owner. `SessionStarted` fires after scene loading completes; objects should subscribe in Awake/OnEnable.
+2. Add gameplay objects to InGame. Use `AddScore`, `WinLevel`, `LoseLevel`, `Pause`, `Resume`, `GoHome`, `RetryLevel` and `NextLevel`. Legacy `CompleteSession()` remains an alias for `WinLevel()`.
+3. Subscribe to `SessionStarted` / `SessionEnded` via the core EventBus, disposing subscriptions with their owner. Both carry the level number; ended events also carry score/outcome. `SessionStarted` fires after scene loading completes; objects should subscribe in Awake/OnEnable.
 4. Replace `GameFlowUI` with your own prefab-based screens. The sample uses generated uGUI screens so it needs no TMP font setup. Its full-screen demo view is intended to be replaced when adding visible gameplay.
 5. Put project modifications in the installed copy. Updating the submodule leaves that copy untouched; port desired sample updates manually. There is deliberately no overwrite/update button.
 
@@ -61,3 +92,7 @@ Only generated scenes/config belong to the game project. The library repository 
 ## Verify
 
 After generating scenes, run `BaseUnity.GameFlow.Tests` in PlayMode. Its integration test drives the actual scenes and button callbacks through Settings cancel, Play, scoring, Pause/Resume, Result, saved progress, Retry and Home. It uses a temporary save slot and cleans it up. It does not replace visual/device input testing.
+
+LevelFlowTests also checks win/lose guards, locked levels, next-level loading, timer pause/timeout,
+final-level behavior, progress after restarting the bootstrap, and old-save compatibility.
+Tests clone config and use disposable save slots to preserve project settings and player progress.

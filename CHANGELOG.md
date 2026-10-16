@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0
+
+- Portrait 900×1600 UI, level/target/timer HUD and distinct Win/Lose result states.
+- Configurable ordered levels with score targets, optional timers and scene overrides.
+- Win, Lose, Retry and Next Level APIs; only wins unlock levels, final level cannot advance past the list.
+- Persistent unlocked/completed level and win/loss counts, compatible with older score/session saves.
+- PlayMode coverage for duplicate finish calls, locked levels, timer pause/timeout, restart persistence and legacy saves.
+
 ## 0.3.0
 
 - Optional Layer Lab UI builder creates a project-owned editable prefab using installed CasualGame sprites/fonts.

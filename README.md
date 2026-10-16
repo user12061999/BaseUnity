@@ -2,7 +2,7 @@
 
 Base game Unity tái sử dụng qua **Git submodule trong `Assets/BaseUnity`**.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.3.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.4.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
 
 ## Luồng game có sẵn
 
@@ -29,7 +29,25 @@ Menu tạo prefab UI có thể chỉnh sửa và gắn vào `GameFlowConfig.uiPr
 Home, HUD, Settings (Master/Music/Effects, mute), Pause, Result và Loading.
 Prefab dùng sprite/font đang có trong dự án; không đưa asset Layer Lab vào submodule.
 Chạy lại menu sẽ tạo bản prefab mới để giữ nguyên các chỉnh sửa trước đó.
-Bố cục dành cho game landscape, tự fit trong safe area; chưa có bố cục portrait riêng.
+Bố cục dọc **900×1600**, tự fit trong safe area. Khi cài vào game mobile khác, đặt
+Player Settings > Resolution and Presentation > Default Orientation thành **Portrait**.
+
+### Win / Lose / Next Level
+
+`GameFlowConfig.levels` có sẵn 3 màn, mục tiêu 30/50/80 điểm và thời gian 60 giây.
+Mỗi màn có thể dùng chung InGame scene hoặc đặt `sceneOverride` riêng.
+Đạt mục tiêu sẽ Win khi `autoWinAtTarget` bật; hết thời gian sẽ Lose. Đặt thời gian 0 để bỏ giới hạn.
+
+- `WinLevel()`: kết thúc thắng, lưu và mở khóa màn kế tiếp.
+- `LoseLevel()` hoặc `LoseLevel(reason)`: kết thúc thua, không mở khóa màn.
+- `RetryLevel()`: chơi lại màn vừa thắng/thua và reset điểm/timer.
+- `NextLevel()`: chỉ có hiệu lực sau Win và còn màn kế tiếp.
+- `StartLevel(number)`: chọn màn đã mở khóa, đánh số từ 1.
+
+Play ở Home mở màn cao nhất đã mở khóa. Màn cuối hiện **All levels complete**, không có Next Level.
+Tiến trình được lưu qua lần khởi động lại; save cũ giữ điểm/số phiên và bắt đầu từ level 1.
+`CompleteSession()` cũ vẫn dùng được, tương đương `WinLevel()`.
+HUD mẫu có nút Collect +10 và Win/Lose để thử logic; thay bằng điều kiện của gameplay thật.
 
 ## Cài vào dự án khác
 
@@ -240,6 +258,9 @@ Sample cũng được import để kiểm tra compile. Chưa kiểm thử player
 V0.2 được kiểm tra trực tiếp qua Unity MCP trong project BaseUnity: **6 PlayMode tests pass**
 (5 core + 1 bài test toàn bộ game flow). Bài test flow được chạy lại sau chỉnh sửa UI cuối cùng và pass.
 Đã kiểm tra Home trong Game View và xác nhận chạy lại generator không đổi scene/config có sẵn.
+
+V0.4: **11/11 PlayMode tests pass** trong project BaseUnity qua Unity MCP, gồm cả mở khóa level,
+Next/Retry, timer khi pause, kết thúc lặp, màn cuối, lưu qua restart và save cũ.
 
 Trong workspace phát triển ban đầu, `Assets/BaseUnity/Runtime`, `Editor`, `Tests` là junction
 đến source ở root, giúp Editor import trực tiếp mà Git vẫn chỉ lưu thư viện.

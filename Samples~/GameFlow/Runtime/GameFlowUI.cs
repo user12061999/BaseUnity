@@ -13,6 +13,7 @@ namespace BaseUnity.GameFlow
         private Transform canvas;
         private GameObject page;
         private Text loadingLabel;
+        private Text timerLabel;
         private Font font;
         private bool settings;
         private float volume;
@@ -33,7 +34,7 @@ namespace BaseUnity.GameFlow
             component.sortingOrder = 100;
             var scaler = root.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1280, 720);
+            scaler.referenceResolution = new Vector2(900, 1600);
             scaler.matchWidthOrHeight = 0.5f;
             var input = new GameObject("Game Flow EventSystem", typeof(EventSystem));
             input.transform.SetParent(transform, false);
@@ -61,7 +62,7 @@ namespace BaseUnity.GameFlow
         }
         private Text Label(string text, float y, int size = 26, Color? color = null)
         {
-            var label = Rect("Label", page.transform, new Vector2(1000, 70), new Vector2(0, y)).gameObject.AddComponent<Text>();
+            var label = Rect("Label", page.transform, new Vector2(800, 70), new Vector2(0, y)).gameObject.AddComponent<Text>();
             label.font = font; label.fontSize = size; label.text = text;
             label.alignment = TextAnchor.MiddleCenter; label.color = color ?? Color.white;
             label.raycastTarget = false;
@@ -86,6 +87,7 @@ namespace BaseUnity.GameFlow
             if (EventSystem.current) EventSystem.current.SetSelectedGameObject(null);
             if (page) { page.SetActive(false); Destroy(page); }
             loadingLabel = null;
+            timerLabel = null;
             page = Rect("Page", canvas, Vector2.zero, Vector2.zero).gameObject;
             var full = page.GetComponent<RectTransform>();
             full.anchorMin = Vector2.zero; full.anchorMax = Vector2.one; full.offsetMin = full.offsetMax = Vector2.zero;
@@ -98,16 +100,18 @@ namespace BaseUnity.GameFlow
                 case FlowPhase.Home:
                     Label(flow.Config.gameTitle, 180, 56);
                     Label($"BEST {flow.Progress.bestScore}    /    SESSIONS {flow.Progress.sessions}", 95, 22);
-                    Button("Play", 0, flow.Play, true);
+                    Label("LEVEL " + flow.HomeLevel, 40, 24, accent);
+                    Button("Play", -20, flow.Play, true);
                     Button("Settings", -70, OpenSettings);
                     break;
                 case FlowPhase.Playing:
-                    Label("IN GAME", 180, 48);
+                    Label("LEVEL " + flow.CurrentLevel, 180, 48);
                     Label($"SCORE  {flow.Score}", 100, 32, accent);
-                    Label("Replace this demo with your gameplay", 40, 22);
+                    timerLabel = Label("TARGET " + (flow.CurrentDefinition?.targetScore ?? 0), 40, 22);
                     Button("Collect +10", -30, () => flow.AddScore(10), true);
                     Button("Finish session", -100, flow.CompleteSession);
                     Button("Pause", -170, flow.Pause);
+                    Button("Lose level", -240, flow.LoseLevel);
                     break;
                 case FlowPhase.Paused:
                     Label("PAUSED", 170, 48);
@@ -116,10 +120,11 @@ namespace BaseUnity.GameFlow
                     Button("Home", -70, flow.GoHome);
                     break;
                 case FlowPhase.Result:
-                    Label("SESSION COMPLETE", 180, 44);
+                    Label(flow.Outcome == LevelOutcome.Win ? (flow.CanNextLevel ? "LEVEL COMPLETE" : "ALL LEVELS COMPLETE") : "LEVEL FAILED", 180, 40);
                     Label($"SCORE {flow.Score}    /    BEST {flow.Progress.bestScore}", 95, 30, accent);
-                    Button("Retry", 0, flow.Play, true);
-                    Button("Home", -70, flow.GoHome);
+                    if (flow.CanNextLevel) Button("Next Level", 0, flow.NextLevel, true);
+                    Button("Retry", -70, flow.RetryLevel, !flow.CanNextLevel);
+                    Button("Home", -140, flow.GoHome);
                     if (!string.IsNullOrEmpty(flow.SaveWarning)) Label(flow.SaveWarning, -180, 18);
                     break;
                 case FlowPhase.Error:
@@ -162,7 +167,11 @@ namespace BaseUnity.GameFlow
             if (!string.IsNullOrEmpty(settingsError)) Label(settingsError, -265, 16);
         }
         private void Update()
-        { if (loadingLabel) loadingLabel.text = $"Loading  {Mathf.RoundToInt(flow.LoadingProgress * 100)}%"; }
+        {
+            if (loadingLabel) loadingLabel.text = $"Loading  {Mathf.RoundToInt(flow.LoadingProgress * 100)}%";
+            if (timerLabel) timerLabel.text = "TARGET " + (flow.CurrentDefinition?.targetScore ?? 0) +
+                (flow.HasTimeLimit ? "  /  TIME " + Mathf.CeilToInt(flow.RemainingTime) + "s" : "");
+        }
         private void OnDestroy() { if (flow) flow.Changed -= Rebuild; }
     }
 }

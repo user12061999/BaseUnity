@@ -11,20 +11,44 @@ using UnityEngine.SceneManagement;
 namespace BaseUnity.GameFlow
 {
     public enum FlowPhase { Boot, Loading, Home, Playing, Paused, Result, Error }
-    public readonly struct SessionStarted { }
+    public enum LevelOutcome { None, Win, Lose }
+    public readonly struct SessionStarted
+    {
+        public readonly int Level;
+        public SessionStarted(int level) { Level = level; }
+    }
     public readonly struct SessionEnded
     {
         public readonly int Score;
-        public SessionEnded(int score) { Score = score; }
+        public readonly int Level;
+        public readonly LevelOutcome Outcome;
+        public SessionEnded(int score) : this(score, 1, LevelOutcome.Win) { }
+        public SessionEnded(int score, int level, LevelOutcome outcome) { Score = score; Level = level; Outcome = outcome; }
     }
 
     public sealed class GameFlowBootstrap : GameBootstrap
     {
-        [Serializable] public sealed class ProgressData { public int bestScore; public int sessions; }
+        [Serializable] public sealed class ProgressData
+        {
+            public int bestScore;
+            public int sessions;
+            public int highestUnlockedLevel = 1;
+            public int highestCompletedLevel;
+            public int wins;
+            public int losses;
+        }
         [SerializeField] private GameFlowConfig config;
         public GameFlowConfig Config { get => config; set => config = value; }
         public FlowPhase Phase { get; private set; } = FlowPhase.Boot;
         public int Score { get; private set; }
+        public int CurrentLevel { get; private set; } = 1;
+        public GameLevel CurrentDefinition => config ? config.GetLevel(CurrentLevel) : null;
+        public LevelOutcome Outcome { get; private set; }
+        public string OutcomeReason { get; private set; }
+        public float RemainingTime { get; private set; }
+        public bool HasTimeLimit => CurrentDefinition != null && CurrentDefinition.timeLimitSeconds > 0;
+        public bool CanNextLevel => Phase == FlowPhase.Result && Outcome == LevelOutcome.Win && config && CurrentLevel < config.LevelCount;
+        public int HomeLevel => config ? Mathf.Clamp(Progress.highestUnlockedLevel, 1, Math.Max(1, config.LevelCount)) : 1;
         public ProgressData Progress { get; private set; } = new ProgressData();
         public float LoadingProgress { get; private set; }
         public string ErrorMessage { get; private set; }
@@ -50,6 +74,8 @@ namespace BaseUnity.GameFlow
             try
             {
                 if (Services.Get<ISaveStore>().TryLoad<ProgressData>(config.saveSlot, out var saved)) Progress = saved;
+                ValidateLevels();
+                NormalizeProgress();
             }
             catch (Exception error) { Fail(error.Message); yield break; }
             GoHome();
@@ -58,8 +84,40 @@ namespace BaseUnity.GameFlow
         public void GoHome() { if (!loading && config) _ = Transition(config.homeScene, FlowPhase.Home); }
         public void Play()
         {
-            if (loading || (Phase != FlowPhase.Home && Phase != FlowPhase.Result)) return;
-            _ = Transition(config.inGameScene, FlowPhase.Playing);
+            if (Phase == FlowPhase.Home) StartLevel(HomeLevel);
+            else if (Phase == FlowPhase.Result) RetryLevel();
+        }
+
+        public void StartLevel(int number)
+        {
+            if (loading || (Phase != FlowPhase.Home && Phase != FlowPhase.Result) || !config) return;
+            if (number < 1 || number > config.LevelCount || number > HomeLevel) return;
+            var definition = config.GetLevel(number);
+            if (definition == null) { Fail("Level " + number + " has no configuration."); return; }
+            CurrentLevel = number;
+            Score = 0;
+            Outcome = LevelOutcome.None;
+            OutcomeReason = null;
+            SaveWarning = null;
+            RemainingTime = Math.Max(0, definition.timeLimitSeconds);
+            _ = Transition(string.IsNullOrWhiteSpace(definition.sceneOverride) ? config.inGameScene : definition.sceneOverride, FlowPhase.Playing);
+        }
+        public void RetryLevel() { if (Phase == FlowPhase.Result) StartLevel(CurrentLevel); }
+        public void NextLevel() { if (CanNextLevel) StartLevel(CurrentLevel + 1); }
+
+        private void ValidateLevels()
+        {
+            if (config.LevelCount == 0) throw new InvalidOperationException("Configure at least one level in GameFlowConfig.");
+            foreach (var level in config.levels)
+                if (level == null || level.targetScore < 1 || float.IsNaN(level.timeLimitSeconds) || float.IsInfinity(level.timeLimitSeconds) || level.timeLimitSeconds < 0)
+                    throw new InvalidOperationException("Levels need a positive target score and a non-negative finite time limit.");
+        }
+        private void NormalizeProgress()
+        {
+            // Additive v1 save migration: older saves contain only score/session fields.
+            Progress.highestCompletedLevel = Mathf.Clamp(Progress.highestCompletedLevel, 0, config.LevelCount);
+            Progress.highestUnlockedLevel = Mathf.Clamp(Math.Max(Progress.highestUnlockedLevel, Progress.highestCompletedLevel + 1), 1, config.LevelCount);
+            Progress.wins = Math.Max(0, Progress.wins); Progress.losses = Math.Max(0, Progress.losses);
         }
 
         private async Task Transition(string scene, FlowPhase destination)
@@ -75,9 +133,8 @@ namespace BaseUnity.GameFlow
                     throw new InvalidOperationException($"Scene is missing or disabled in the active Build Profile: {scene}");
                 await Services.Get<SceneService>().LoadAsync(scene, LoadSceneMode.Single, new LoadProgress(this), destroyCancellationToken);
                 if (!this || !IsReady) return;
-                if (destination == FlowPhase.Playing) Score = 0;
                 SetPhase(destination);
-                if (destination == FlowPhase.Playing) Services.Get<EventBus>().Publish(new SessionStarted());
+                if (destination == FlowPhase.Playing) Services.Get<EventBus>().Publish(new SessionStarted(CurrentLevel));
             }
             catch (OperationCanceledException) { }
             catch (Exception error) { if (this) Fail(error.Message); }
@@ -95,7 +152,8 @@ namespace BaseUnity.GameFlow
         {
             if (Phase != FlowPhase.Playing || amount <= 0) return;
             Score = (int)Math.Min(int.MaxValue, (long)Score + amount);
-            Changed?.Invoke();
+            if (config.autoWinAtTarget && CurrentDefinition != null && Score >= CurrentDefinition.targetScore) WinLevel();
+            else Changed?.Invoke();
         }
         public void Pause()
         {
@@ -110,17 +168,39 @@ namespace BaseUnity.GameFlow
             UnityEngine.Time.timeScale = resumeScale;
             SetPhase(FlowPhase.Playing);
         }
-        public void CompleteSession()
+        // Compatibility alias for v0.2/v0.3 gameplay integrations.
+        public void CompleteSession() => WinLevel();
+        public void WinLevel() => EndLevel(LevelOutcome.Win, "Level completed!");
+        public void LoseLevel() => LoseLevel("You can do it. Try again!");
+        public void LoseLevel(string reason) => EndLevel(LevelOutcome.Lose, reason);
+
+        private void EndLevel(LevelOutcome outcome, string reason)
         {
             if (Phase != FlowPhase.Playing) return;
+            Outcome = outcome;
+            OutcomeReason = reason;
             UnityEngine.Time.timeScale = 0;
             Progress.bestScore = Math.Max(Progress.bestScore, Score);
             Progress.sessions = (int)Math.Min(int.MaxValue, (long)Progress.sessions + 1);
+            if (outcome == LevelOutcome.Win)
+            {
+                Progress.wins = (int)Math.Min(int.MaxValue, (long)Progress.wins + 1);
+                Progress.highestCompletedLevel = Math.Max(Progress.highestCompletedLevel, CurrentLevel);
+                Progress.highestUnlockedLevel = Math.Max(Progress.highestUnlockedLevel, Math.Min(CurrentLevel + 1, config.LevelCount));
+            }
+            else Progress.losses = (int)Math.Min(int.MaxValue, (long)Progress.losses + 1);
             SaveWarning = null;
             try { Services.Get<ISaveStore>().Save(config.saveSlot, Progress); }
             catch (Exception error) { SaveWarning = "Progress could not be saved: " + error.Message; }
             SetPhase(FlowPhase.Result);
-            Services.Get<EventBus>().Publish(new SessionEnded(Score));
+            Services.Get<EventBus>().Publish(new SessionEnded(Score, CurrentLevel, outcome));
+        }
+        protected override void Update()
+        {
+            base.Update();
+            if (Phase != FlowPhase.Playing || !HasTimeLimit) return;
+            RemainingTime = Mathf.Max(0, RemainingTime - UnityEngine.Time.deltaTime);
+            if (RemainingTime <= 0) LoseLevel("Time is up. Try again!");
         }
         private void SetPhase(FlowPhase phase)
         {

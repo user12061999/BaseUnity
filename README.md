@@ -2,7 +2,7 @@
 
 Base game Unity tái sử dụng qua **Git submodule trong `Assets/BaseUnity`**.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.2.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.3.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
 
 ## Luồng game có sẵn
 
@@ -21,6 +21,15 @@ không sửa code bên trong submodule. Khi đã cài, chạy **Tools > BaseUnit
 để tạo scene còn thiếu; các scene/config có sẵn không bị ghi đè.
 UPM cũng hỗ trợ import sample **Game Flow**, sau đó chạy menu tạo scene.
 Xem thêm [hướng dẫn mẫu](Samples~/GameFlow/README.md).
+
+### UI Layer Lab tùy chọn
+
+Nếu dự án có **Layer Lab GUI Pro-CasualGame**, chọn **Tools > BaseUnity > Game Flow > Apply Layer Lab UI**.
+Menu tạo prefab UI có thể chỉnh sửa và gắn vào `GameFlowConfig.uiPrefab`:
+Home, HUD, Settings (Master/Music/Effects, mute), Pause, Result và Loading.
+Prefab dùng sprite/font đang có trong dự án; không đưa asset Layer Lab vào submodule.
+Chạy lại menu sẽ tạo bản prefab mới để giữ nguyên các chỉnh sửa trước đó.
+Bố cục dành cho game landscape, tự fit trong safe area; chưa có bố cục portrait riêng.
 
 ## Cài vào dự án khác
 

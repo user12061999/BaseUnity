@@ -37,7 +37,9 @@ namespace BaseUnity.GameFlow
         protected override void OnReady()
         {
             originalScale = UnityEngine.Time.timeScale;
-            gameObject.AddComponent<GameFlowUI>().Initialize(this);
+            if (config && config.uiPrefab)
+                Instantiate(config.uiPrefab, transform).Initialize(this);
+            else gameObject.AddComponent<GameFlowUI>().Initialize(this);
             StartCoroutine(BootAfterFirstFrame());
         }
 

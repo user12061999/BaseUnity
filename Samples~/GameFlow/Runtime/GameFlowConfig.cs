@@ -9,5 +9,6 @@ namespace BaseUnity.GameFlow
         public string inGameScene;
         public string saveSlot = "gameflow_progress";
         public string gameTitle = "YOUR GAME";
+        public GameFlowView uiPrefab;
     }
 }

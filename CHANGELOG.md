@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- Optional Layer Lab UI builder creates a project-owned editable prefab using installed CasualGame sprites/fonts.
+- Home, gameplay HUD, Settings sliders, Pause, Result and Loading with modal input blocking.
+- Safe-area layout and full-screen background; original code-built UI remains available without the art pack.
+
 ## 0.2.0
 
 - Game Flow sample: Bootstrap → Home → InGame → Result, Settings, Pause/Resume, Retry, Loading.

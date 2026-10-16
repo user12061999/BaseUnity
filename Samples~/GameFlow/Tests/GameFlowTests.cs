@@ -55,8 +55,22 @@ namespace BaseUnity.GameFlow.Tests
             flow.Config.saveSlot = testSlot;
             var audio = flow.Services.Get<AudioService>();
             float originalVolume = audio.MasterVolume;
-            Click("Settings"); Click("Volume -"); Click("Cancel");
+            float originalMusic = audio.MusicVolume, originalEffects = audio.EffectsVolume;
+            Click("Settings"); Click("Volume -");
+            var view = UnityEngine.Object.FindFirstObjectByType<GameFlowView>();
+            if (view)
+            {
+                Assert.IsFalse(view.home.GetComponent<CanvasGroup>().interactable);
+                Assert.IsTrue(view.settings.activeSelf);
+                view.musicSlider.value = 0.25f; view.effectsSlider.value = 0.5f;
+                foreach (var slider in new[] { view.masterSlider, view.musicSlider, view.effectsSlider })
+                    Assert.LessOrEqual(slider.fillRect.rect.width, ((RectTransform)slider.fillRect.parent).rect.width + 0.1f);
+            }
+            Click("Cancel");
             Assert.AreEqual(originalVolume, audio.MasterVolume);
+            Assert.AreEqual(originalMusic, audio.MusicVolume);
+            Assert.AreEqual(originalEffects, audio.EffectsVolume);
+            if (view) Assert.IsTrue(view.home.GetComponent<CanvasGroup>().interactable);
             Click("Play");
             // Repeated input must not start a second load.
             flow.Play(); flow.GoHome();
@@ -66,6 +80,7 @@ namespace BaseUnity.GameFlow.Tests
             Assert.AreEqual(20, flow.Score);
             Click("Pause");
             Assert.AreEqual(FlowPhase.Paused, flow.Phase); Assert.AreEqual(0, UnityEngine.Time.timeScale);
+            if (view) Assert.IsFalse(view.gameplay.GetComponent<CanvasGroup>().interactable);
             flow.AddScore(10); Assert.AreEqual(20, flow.Score);
             Click("Resume"); Assert.AreEqual(1, UnityEngine.Time.timeScale);
             Click("Finish session");

@@ -21,7 +21,27 @@ Scene generation does not overwrite existing scenes or config. It puts the three
 
 Start from Bootstrap; opening Home/InGame alone does not initialize the flow. Use only the sample bootstrap, not an additional GameBootstrap or QuickStartBootstrap. The sample owns one persistent Canvas/EventSystem; avoid duplicate EventSystems in Home/InGame.
 
-## Flow
+## Optional Layer Lab UI
+
+Import **Layer Lab GUI Pro-CasualGame** at `Assets/Layer Lab/GUI Pro-CasualGame`, then choose
+**Tools > BaseUnity > Game Flow > Apply Layer Lab UI**. Select the destination GameFlowConfig
+first if the project contains multiple configs.
+
+The tool creates an editable `UI/LayerLabGameFlow.prefab` beside the config and assigns `uiPrefab`.
+It uses the pack's sprites and Lilita One font for Home, HUD, Loading, Settings, Pause and Result.
+Settings includes Master/Music/Effects sliders, mute, Save and Cancel. Modal screens block
+underlying pointer and keyboard interaction. The 1600×900 landscape layout fits inside the safe
+area, with a full-screen background at other aspect ratios; a dedicated portrait layout is not included.
+
+Edit the generated prefab in Prefab Mode. Every generator run creates a new variant instead of
+overwriting prefab edits. Clear `uiPrefab` to use the lightweight default UI.
+Remove or disable `Demo Backdrop - remove for real gameplay` from InGame to expose your own scene,
+then replace the demo collect/finish controls with game-specific HUD.
+
+Only builder/binding code is distributed. Layer Lab textures, fonts and generated prefabs stay
+in the game project; other projects using this theme need their own imported pack.
+
+## Flow behavior
 
 Bootstrap reads progress/settings → Loading → Home → Play → Loading → InGame.
 InGame supports Collect +10 (demo), Pause/Resume and Finish session.

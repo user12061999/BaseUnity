@@ -7,6 +7,7 @@ using BaseUnity.Save;
 using BaseUnity.Scenes;
 using BaseUnity.Time;
 using BaseUnity.UI;
+using BaseUnity.Features;
 
 namespace BaseUnity.Core
 {
@@ -19,6 +20,9 @@ namespace BaseUnity.Core
         public bool IsReady { get; private set; }
         private TimerService timers;
         private StateMachine states;
+        [SerializeField] private FeatureConfig featureConfig;
+        public FeatureConfig FeatureConfig { get => featureConfig; set => featureConfig = value; }
+        protected virtual FeatureConfig GetFeatureConfig() => featureConfig;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics() => Instance = null;
@@ -43,7 +47,10 @@ namespace BaseUnity.Core
                 Services.Register(manual);
                 Services.Register(new InputRouter(CreateInputSource(manual)));
                 Configure(Services);
+                var features = new FeatureServices(GetFeatureConfig());
+                features.Register(Services);
                 IsReady = true;
+                _ = features.InitializeAsync();
                 OnReady();
             }
             catch (Exception error)

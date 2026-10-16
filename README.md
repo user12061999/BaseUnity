@@ -2,7 +2,7 @@
 
 Base game Unity tái sử dụng qua **Git submodule trong `Assets/BaseUnity`**.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.5.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.6.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
 
 ## Luồng game có sẵn
 
@@ -62,6 +62,21 @@ inline hiện có. Asset/prefab đã có không bị ghi đè. Game dùng scene 
 qua **Assets > Create > BaseUnity > Level Data** và để trống gameplayPrefab.
 
 ## Cài vào dự án khác
+
+### Ads và Firebase tùy chọn
+
+Tạo **Tools > BaseUnity > Features > Create Feature Config**, gắn vào Bootstrap hoặc
+`GameFlowConfig.features`. Bản cài GameFlow mới có sẵn asset này; mặc định cả hai module tắt.
+
+- Ads: chọn **AdMob hoặc AppLovin MAX**, bật/tắt Banner, Interstitial, Rewarded; có test mode, timeout và cooldown.
+- Firebase: bật/tắt Analytics, Crashlytics, Remote Config riêng; Remote Config có giá trị mặc định khi offline.
+- Core vẫn compile/chạy khi không cài SDK. Menu Install Adapter kiểm tra SDK trước khi copy code vào Assets.
+- Config được copy lúc khởi động; thay asset cần khởi động lại Play. Trong runtime dùng `SetEnabled(bool)` trên service.
+
+Xem [hướng dẫn cài SDK, provider và API](Samples~/Integrations/README.md). Adapter source đã có;
+SDK bên thứ ba, App ID/ad-unit ID và file cấu hình Firebase thuộc từng dự án game, không nằm trong submodule.
+
+### Git submodule
 
 Chạy ở thư mục gốc của **dự án game đích** đã có Git:
 
@@ -277,6 +292,11 @@ Next/Retry, timer khi pause, kết thúc lặp, màn cuối, lưu qua restart v�
 V0.5: **15/15 PlayMode tests pass**, bổ sung vòng đời prefab, callback từ màn cũ,
 phân trang/chọn màn khóa, tương tác mục tiêu/bẫy và UI mặc định không có Layer Lab.
 Đã kiểm tra trực quan Game View dọc và xác nhận raycast chạm đúng mục tiêu gameplay.
+
+V0.6: **26 EditMode + 15 PlayMode tests pass** khi không cài SDK quảng cáo/Firebase.
+Test dùng backend giả để kiểm tra công tắc, provider thiếu, cooldown, kết quả thưởng và callback đến muộn.
+Adapter SDK riêng chưa được compile với binary của nhà cung cấp hoặc kiểm thử trên Android/iOS;
+cần cài SDK và cấu hình tài khoản trong dự án game để kiểm tra tích hợp thật.
 
 Trong workspace phát triển ban đầu, `Assets/BaseUnity/Runtime`, `Editor`, `Tests` là junction
 đến source ở root, giúp Editor import trực tiếp mà Git vẫn chỉ lưu thư viện.

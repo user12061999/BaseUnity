@@ -32,6 +32,15 @@ namespace BaseUnity.GameFlow.Editor
                 config.homeScene = scenes + "/Home.unity";
                 config.inGameScene = scenes + "/InGame.unity";
                 AssetDatabase.CreateAsset(config, configPath);
+                string featuresPath = root + "/FeatureConfig.asset";
+                var features = AssetDatabase.LoadAssetAtPath<BaseUnity.Features.FeatureConfig>(featuresPath);
+                if (!features)
+                {
+                    features = ScriptableObject.CreateInstance<BaseUnity.Features.FeatureConfig>();
+                    AssetDatabase.CreateAsset(features, featuresPath);
+                }
+                config.features = features;
+                EditorUtility.SetDirty(config);
                 LevelAssetBuilder.Generate(config);
             }
             var previous = SceneManager.GetActiveScene();

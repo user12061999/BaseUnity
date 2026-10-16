@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0
+
+- Optional Ads/Firebase services with per-feature config, SDK-independent core and non-blocking initialization.
+- Ads facade for banner/interstitial/rewarded, cooldown, request timeout, duplicate-show guards and cancellation-safe rewards.
+- Optional AdMob and AppLovin MAX adapter source, installed only after the corresponding SDK is present.
+- Firebase Analytics, Crashlytics and Remote Config adapter with local defaults and bounded fetch operations.
+- Feature config editor/creation menu, GameFlow integration and SDK setup documentation.
+- Tests cover disabled/missing providers, feature flags, reward gating, shutdown races and remote defaults.
+
 ## 0.5.0
 
 - LevelData assets and a non-destructive generator for ordered level definitions and gameplay prefabs.

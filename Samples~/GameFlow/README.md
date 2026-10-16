@@ -12,6 +12,7 @@ The installer copies editable source into `Assets/BaseUnityGameFlow` and generat
 
 ```text
 GameFlowConfig.asset
+FeatureConfig.asset     optional Ads/Firebase settings, disabled by default
 Scenes/Bootstrap.unity   persistent services, flow controller and UI
 Scenes/Home.unity        home scene content
 Scenes/InGame.unity      gameplay scene content
@@ -22,6 +23,15 @@ Levels/TapTargetGameplay.prefab   playable example
 Scene generation does not overwrite existing scenes or config. It puts the three scenes first in the shared Build Settings list and preserves other entries. If an active Unity 6 Build Profile overrides this list, add the three generated scenes to that profile, with Bootstrap first.
 
 Start from Bootstrap; opening Home/InGame alone does not initialize the flow. Use only the sample bootstrap, not an additional GameBootstrap or QuickStartBootstrap. The sample owns one persistent Canvas/EventSystem; avoid duplicate EventSystems in Home/InGame.
+
+## Optional Ads and Firebase
+
+Assign `GameFlowConfig.features` to a FeatureConfig. Fresh installs generate a disabled config;
+existing installs can create one via **Tools > BaseUnity > Features > Create Feature Config**.
+The core exposes AdsService and FirebaseService even without SDKs. Install AdMob or AppLovin MAX,
+or Firebase Analytics/Crashlytics/Remote Config, using the separate adapter workflow documented
+in the repository's `Samples~/Integrations/README.md`. Ads placements and Analytics events are explicit
+game calls; the sample does not automatically show ads or grant currency.
 
 ## Optional Layer Lab UI
 

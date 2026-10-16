@@ -39,6 +39,7 @@ namespace BaseUnity.GameFlow
         }
         [SerializeField] private GameFlowConfig config;
         public GameFlowConfig Config { get => config; set => config = value; }
+        protected override BaseUnity.Features.FeatureConfig GetFeatureConfig() => config && config.features ? config.features : base.GetFeatureConfig();
         public FlowPhase Phase { get; private set; } = FlowPhase.Boot;
         public int Score { get; private set; }
         public int CurrentLevel { get; private set; } = 1;

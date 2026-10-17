@@ -161,6 +161,20 @@ asmdef, add references to BaseUnity.Runtime and the chosen SDK assemblies yourse
 
 Core tests use deterministic fake backends to verify flags, missing providers, cooldowns, rewards,
 disposal and late callbacks. Ads adapters reject Editor simulation; they cannot manufacture rewards.
-This version has not been validated against installed vendor SDK binaries or on Android/iOS.
+Editor compilation with Android selected was verified in Unity 6000.3.26f1 using MAX Unity 8.6.6,
+the MAX Google adapter (Android 25.5.0.0 / iOS 13.11.0.0), Firebase Unity 14.0.0 (Analytics,
+Crashlytics and Remote Config) and External Dependency Manager 1.2.190. The MAX and Firebase
+provider assets were created and assigned, Android dependency resolution completed, and all 38
+BaseUnity EditMode tests passed with these SDKs installed. The standalone AdMob adapter and an
+iOS build have not been validated against installed SDK binaries. No device or APK validation
+has been completed; SDK installation does not verify live account configuration.
+
+For the host game, set its actual Android package name, import the matching Firebase JSON, and
+enter the MAX SDK key, AdMob mediation App ID, MAX placement IDs and test-device advertising ID.
+Apply the app IDs/key to the vendor settings from Feature Manager. Keep test mode enabled while
+connecting the game, and configure the AdMob network in the MAX dashboard separately.
+If the resolver cannot create `mainTemplate.gradle` in a new project, ensure `Assets/Plugins/Android`
+exists, then run Android Resolver again and allow it to create the Gradle templates.
+
 After installing SDKs and account files, build to a test device and verify test ads, Firebase DebugView,
 Remote Config and Crashlytics delivery before switching to production ad units.

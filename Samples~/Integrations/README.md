@@ -176,5 +176,12 @@ connecting the game, and configure the AdMob network in the MAX dashboard separa
 If the resolver cannot create `mainTemplate.gradle` in a new project, ensure `Assets/Plugins/Android`
 exists, then run Android Resolver again and allow it to create the Gradle templates.
 
+If Gradle reports `JAVA_HOME is not set`, BaseUnity's Editor initialization supplies Unity's configured
+JDK to the Editor process when JAVA_HOME is empty. It validates `bin/java` and `bin/javac`, preserves
+an explicit JAVA_HOME, and does not modify Windows user/system settings. Install OpenJDK through
+Unity Hub and check Preferences > External Tools if no valid JDK is found. The same setup can be
+retried with **Tools > BaseUnity > Features > Configure Java for Android Resolver**, followed by
+**Assets > External Dependency Manager > Android Resolver > Force Resolve**.
+
 After installing SDKs and account files, build to a test device and verify test ads, Firebase DebugView,
 Remote Config and Crashlytics delivery before switching to production ad units.

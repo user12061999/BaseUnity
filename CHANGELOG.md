@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.4
+
+- Supply Unity's configured JDK as process-local JAVA_HOME when it is missing, so Android Resolver's Gradle wrapper can locate Java.
+- Preserve explicit JAVA_HOME values and leave system/user environment variables unchanged; include a manual configuration menu.
+
 ## 0.6.3
 
 - Read-only pre-build validation window, accessible from Feature Manager > Project Setup or the Tools menu.

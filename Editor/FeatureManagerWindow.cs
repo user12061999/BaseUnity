@@ -45,7 +45,7 @@ namespace BaseUnity.Editor
         {
             EditorGUILayout.Space(10);
             EditorGUILayout.LabelField("BASE UNITY", EditorStyles.boldLabel);
-            EditorGUILayout.LabelField("Ads & Firebase configuration", EditorStyles.largeLabel);
+            EditorGUILayout.LabelField("Mobile game configuration", EditorStyles.largeLabel);
             EditorGUILayout.Space(8);
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -58,13 +58,13 @@ namespace BaseUnity.Editor
             if (!config) { EditorGUILayout.HelpBox("Choose a FeatureConfig asset or create a new one. No SDK is needed to configure features.", MessageType.Info); return; }
             if (serialized == null || serialized.targetObject != config) serialized = new SerializedObject(config);
             if (EditorApplication.isPlayingOrWillChangePlaymode) EditorGUILayout.HelpBox("Stop Play Mode to edit startup configuration.", MessageType.Info);
-            int chosenTab = GUILayout.Toolbar(tab, new[] { "Ads", "Firebase", "Project Setup" });
+            int chosenTab = GUILayout.Toolbar(tab, new[] { "Offline", "Language", "Ads", "Firebase", "Game", "Setup" });
             if (chosenTab != tab) { tab = chosenTab; notice = null; scroll = Vector2.zero; }
             scroll = EditorGUILayout.BeginScrollView(scroll);
             using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
             {
                 serialized.Update();
-                if (tab == 0) DrawAds(); else if (tab == 1) DrawFirebase(); else DrawSetup();
+                if (tab == 0) DrawOffline(); else if (tab == 1) DrawLanguage(); else if (tab == 2) DrawAds(); else if (tab == 3) DrawFirebase(); else if (tab == 4) DrawGame(); else DrawSetup();
                 serialized.ApplyModifiedProperties();
             }
             EditorGUILayout.EndScrollView();
@@ -86,6 +86,42 @@ namespace BaseUnity.Editor
             return property;
         }
         private void Header(string title) { EditorGUILayout.Space(12); EditorGUILayout.LabelField(title, EditorStyles.boldLabel); }
+        private void DrawOffline()
+        {
+            Header("Wallet and offline progression");
+            if (!Field("offline.enabled", "Enable Offline features").boolValue) return;
+            Field("offline.saveSlot", "Save slot");
+            Field("offline.startingCoins", "Starting coins"); Field("offline.startingGems", "Starting gems");
+            EditorGUILayout.HelpBox("Starting balances apply only to new saves. Shop prices and all rewards use one transactional local save. Daily rewards and missions use UTC device time.", MessageType.Info);
+            if (Field("offline.levelRewards", "Level rewards").boolValue)
+            { Field("offline.winCoins", "Coins per win"); Field("offline.firstWinBonus", "First win bonus"); Field("offline.rewardedMultiplier", "Rewarded ad x2"); }
+            if (Field("offline.shop", "Shop").boolValue) Field("offline.items", "Items", true);
+            if (Field("offline.dailyReward", "Daily rewards").boolValue) Field("offline.dailyCoins", "Daily cycle coins", true);
+            if (Field("offline.missions", "Daily missions").boolValue) Field("offline.dailyMissions", "Missions", true);
+        }
+        private void DrawLanguage()
+        {
+            Header("Localization");
+            if (!Field("localization.enabled", "Enable Localization").boolValue) return;
+            Field("localization.defaultLanguage", "Default language (en / vi)");
+            Field("localization.translations", "Custom translations", true);
+        }
+        private void DrawGame()
+        {
+            Header("Game flow integration");
+            if (serialized.FindProperty("firebase.enabled").boolValue)
+            {
+                if (serialized.FindProperty("firebase.analytics").boolValue) Field("gameIntegration.analyticsEvents", "Game analytics events");
+                if (serialized.FindProperty("firebase.remoteConfig").boolValue) Field("gameIntegration.fetchRemoteConfigAtHome", "Fetch Remote Config at Home");
+            }
+            if (serialized.FindProperty("ads.enabled").boolValue)
+            {
+                if (serialized.FindProperty("ads.banner").boolValue) Field("gameIntegration.bannerAtHome", "Banner at Home");
+                if (serialized.FindProperty("ads.interstitial").boolValue && Field("gameIntegration.interstitialBetweenLevels", "Interstitial between levels").boolValue)
+                    Field("gameIntegration.interstitialEveryWins", "Every N wins");
+            }
+            EditorGUILayout.HelpBox("Integration settings are used by the Game Flow sample. Disabled parent features hide their options. Restart Play after changes.", MessageType.Info);
+        }
         private void DrawAds()
         {
             Header("Advertising");

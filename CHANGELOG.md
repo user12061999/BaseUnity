@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.0
+
+- Optional offline wallet, inventory, transactional shop, first-win rewards, daily rewards and daily missions.
+- English/Vietnamese localization, custom text overrides and saved language selection.
+- Portrait Home menu and result reward controls, reusing project-owned Layer Lab button art when available.
+- Verified rewarded-ad multiplier, preloaded interstitial cadence, Home banner, flow analytics and optional Remote Config fetch.
+- Retry failed progress/reward saves before leaving results; prevent duplicate completion/reward callbacks.
+- Feature Manager tabs and validation for offline, localization and flow integration settings.
+- Firebase Editor missing-config guard keeps offline gameplay usable without native configuration errors.
+- Economy/localization tests and PlayMode coverage for UI transactions, rewards and save retries.
+
 ## 0.6.4
 
 - Supply Unity's configured JDK as process-local JAVA_HOME when it is missing, so Android Resolver's Gradle wrapper can locate Java.

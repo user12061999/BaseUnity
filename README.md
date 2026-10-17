@@ -2,7 +2,7 @@
 
 Base game Unity tái sử dụng qua **Git submodule trong `Assets/BaseUnity`**.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.6.4**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.7.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
 
 ## Luồng game có sẵn
 
@@ -60,6 +60,64 @@ Level có prefab sẽ tự ẩn các nút thử Collect/Win/Lose và dùng gamep
 Với bản cài cũ, chạy **Tools > BaseUnity > Game Flow > Generate Level Assets** để tạo dữ liệu từ cấu hình
 inline hiện có. Asset/prefab đã có không bị ghi đè. Game dùng scene riêng có thể tạo LevelData thủ công
 qua **Assets > Create > BaseUnity > Level Data** và để trống gameplayPrefab.
+
+## Base mobile offline (0.7)
+
+Mở **Tools > BaseUnity > Feature Manager**, chọn `FeatureConfig` gắn vào `GameFlowConfig`:
+
+| Tab | Cấu hình |
+| --- | --- |
+| Offline | Bật Wallet; tiền ban đầu; thưởng thắng/lần đầu; Shop; chu kỳ Daily Reward; nhiệm vụ |
+| Language | Bật Việt/Anh, ngôn ngữ mặc định `en`/`vi`, thêm bản dịch tùy chỉnh |
+| Ads / Firebase | Provider, ID, SDK key và file cấu hình của từng dịch vụ |
+| Game | Analytics của luồng chơi, fetch Remote Config ở Home, banner Home, interstitial mỗi N lần thắng |
+| Setup | Kiểm tra cấu hình, scene, SDK và thông tin ứng dụng |
+
+Tắt module sẽ ẩn các trường con trong cửa sổ và phần UI liên quan; giá trị cũ vẫn được giữ.
+Core mặc định tắt các module tùy chọn. Sửa config khi không Play; khởi động lại Play để áp dụng.
+
+Ở **Home > MENU** có Shop, Daily Reward, Missions, Inventory và nút đổi ngôn ngữ.
+UI dọc tự fit safe area, dùng sprite nút của prefab Layer Lab nếu có; không cần Layer Lab để chạy.
+Shop mua bằng Coin/Gem, thêm vật phẩm, có giới hạn tổng số lần mua theo item ID (0 = không giới hạn).
+Inventory hiển thị số lượng; hiệu ứng sử dụng vật phẩm thuộc gameplay của game, gọi `ConsumeItem` khi sử dụng.
+
+Thắng màn nhận `winCoins` và `firstWinBonus` nếu lần đầu hoàn thành level đó; thua chỉ cập nhật nhiệm vụ.
+**X2 REWARD** chỉ hiện khi reward/Ads/rewarded đều bật, chỉ cộng thưởng sau callback `Rewarded` của SDK.
+Chặn chuyển màn khi đang xem quảng cáo. Đóng video hoặc callback cũ không cấp thưởng.
+Khi lưu tiến trình/thưởng lỗi, màn kết quả có **RETRY REWARD SAVE**; sửa lỗi lưu rồi thử lại, không cộng thưởng hai lần.
+
+Daily Reward dùng ngày **UTC trên thiết bị**, chu kỳ tiếp tục ở lần nhận kế tiếp; bỏ ngày không mất chu kỳ.
+Nhiệm vụ đếm lượt hoàn thành, lượt thắng hoặc tổng điểm, làm mới theo ngày UTC, mỗi nhiệm vụ nhận một lần/ngày.
+Lùi đồng hồ không mở lại phần thưởng đã nhận; đây vẫn là hệ thống offline, không chống chỉnh giờ tiến lên/sửa save.
+
+Wallet, inventory, purchase limits, daily claims, mission progress và thưởng level cùng một hồ sơ JSON.
+Mỗi giao dịch ghi thành công rồi mới cập nhật bộ nhớ/phát `Changed`; lỗi ghi không trừ tiền hay nhận thưởng một nửa.
+Tiến trình mở màn và hồ sơ economy là hai file riêng: lỗi bình thường có thể thử lại, nhưng không có giao dịch
+nguyên tử xuyên hai file khi ứng dụng bị đóng đột ngột. X2 chưa nhận không được khôi phục sau khi đóng game.
+Không đổi ID item/mission, thứ tự level hoặc save slot sau phát hành nếu chưa có kế hoạch migration.
+Tiền ban đầu chỉ áp dụng cho hồ sơ mới; tắt module không xóa save.
+
+```csharp
+var economy = Services.Get<BaseUnity.Features.OfflineService>();
+economy.Buy("energy");                 // Kiểm tra tiền + trừ + cấp item trong một lần lưu.
+economy.ConsumeItem("energy", 1);      // Game quyết định hiệu ứng sau khi trả true.
+economy.AddCurrency(BaseUnity.Features.Currency.Coin, 100);
+var language = Services.Get<BaseUnity.Features.LocalizationService>();
+language.SetLanguage("vi");
+string play = language.Text("Play");
+```
+
+`GameFlowFeatures` tự nối `level_start`, `level_end`, `shop_purchase`, `daily_reward`, `mission_claim`,
+`rewarded_bonus` vào Firebase khi Analytics được bật. Interstitial chỉ hiện nếu đã tải sẵn ở điểm chuyển màn;
+không có quảng cáo vẫn chơi được. Remote Config fetch không tự thay đổi công tắc/tỉ lệ thưởng: gameplay đọc
+`FirebaseService.GetLong/GetBool/GetString` với giá trị dự phòng. Crashlytics dùng adapter đã cài và `RecordException`.
+
+Localization có catalog mẫu Việt/Anh và fallback về chuỗi gốc. Thêm bản dịch tên màn/vật phẩm/nội dung game
+trong `translations`; UI riêng dùng `LocalizationService.Text` và đăng ký `Changed` để cập nhật.
+UI mẫu tự cập nhật Text; thông báo kỹ thuật của SDK và nội dung tùy biến chưa dịch giữ nguyên tiếng Anh.
+
+Bản cài sample cũ: sao lưu chỉnh sửa riêng rồi merge/copy các file thay đổi từ `Samples~/GameFlow/Runtime`.
+Installer chỉ thêm file thiếu, không ghi đè code mà dự án đã sửa.
 
 ## Cài vào dự án khác
 
@@ -311,3 +369,8 @@ không đi lên Git; khi clone thư viện ở máy khác, hãy import vào mộ
 
 Phạm vi v0.1: foundation nhỏ, dùng được và có API mở rộng; chưa gồm Addressables, inventory,
 SDK online, cloud save, IAP, ads, localization hay multiplayer.
+
+V0.7: **49/49 EditMode + 18/18 PlayMode tests pass**. Bổ sung kiểm thử economy/localization và PlayMode cho menu, mua/nhận quà, win/lose/next,
+callback thưởng và thử lưu lại. SDK đã compile trong workspace với Firebase 14.0.0, MAX 8.6.6 và adapter
+Google qua MAX. Chưa kiểm thử quảng cáo/Firebase thật trên thiết bị vì còn thiếu app config và IDs tài khoản.
+Firebase Editor thiếu file app config sẽ trả trạng thái Failed/LastError để game offline tiếp tục chạy.

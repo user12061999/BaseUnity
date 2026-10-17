@@ -97,6 +97,28 @@ namespace BaseUnity.Editor
                         else if (!keys.Add(entry.key)) warn("Remote Config: duplicate default key '" + entry.key + "'; the last value wins.");
                 }
             }
+            var offline = config.offline;
+            if (offline != null && offline.enabled)
+            {
+                if (offline.saveSlot == null || !Regex.IsMatch(offline.saveSlot, @"\A[a-zA-Z0-9_-]{1,64}\z") || (offline.saveSlot == "baseunity_language" || offline.saveSlot == "baseunity_audio")) error("Offline: choose a unique valid save slot (1-64 letters, digits, '-' or '_').");
+                if (offline.startingCoins < 0 || offline.startingGems < 0) error("Offline: starting balances must not be negative.");
+                if (offline.levelRewards && (offline.winCoins < 0 || offline.firstWinBonus < 0 || (long)offline.winCoins + offline.firstWinBonus > int.MaxValue)) error("Offline: level rewards must be non-negative and fit within an integer.");
+                if (offline.dailyReward && (offline.dailyCoins == null || offline.dailyCoins.Length == 0 || offline.dailyCoins.Any(x => x < 0))) error("Daily reward: configure at least one non-negative reward.");
+                var ids = new HashSet<string>(StringComparer.Ordinal);
+                if (offline.shop) foreach (var item in offline.items ?? Array.Empty<ShopItem>())
+                {
+                    if (item == null || string.IsNullOrWhiteSpace(item.id) || !ids.Add(item.id)) { error("Shop: item IDs must be present and unique."); continue; }
+                    if (item.price < 0 || item.quantity < 1 || item.purchaseLimit < 0 || !Enum.IsDefined(typeof(Currency), item.currency)) error("Shop: invalid price, quantity, purchase limit or currency for " + item.id);
+                }
+                ids.Clear();
+                if (offline.missions) foreach (var mission in offline.dailyMissions ?? Array.Empty<DailyMission>())
+                {
+                    if (mission == null || string.IsNullOrWhiteSpace(mission.id) || !ids.Add(mission.id)) { error("Missions: IDs must be present and unique."); continue; }
+                    if (mission.target < 1 || mission.coins < 0 || !Enum.IsDefined(typeof(MissionMetric), mission.metric)) error("Missions: invalid target, reward or metric for " + mission.id);
+                }
+            }
+            if (config.localization != null && config.localization.enabled && config.localization.defaultLanguage != "en" && config.localization.defaultLanguage != "vi") error("Localization: default language must be en or vi.");
+            if (config.gameIntegration != null && config.gameIntegration.interstitialBetweenLevels && config.gameIntegration.interstitialEveryWins < 1) error("Game integration: interstitial cadence must be at least one win.");
             return issues;
         }
 
@@ -118,6 +140,9 @@ namespace BaseUnity.Editor
             if (!flow) { issues.Add(new FeatureValidationIssue(MessageType.Warning, "No GameFlowConfig selected; Home/InGame/level scene references were not checked.", null)); return issues; }
             if (flow.GetType().FullName != "BaseUnity.GameFlow.GameFlowConfig") { error("Choose a GameFlowConfig asset for scene validation."); return issues; }
             var data = new SerializedObject(flow);
+            var feature = data.FindProperty("features").objectReferenceValue as FeatureConfig;
+            if (feature && feature.offline != null && feature.offline.enabled && feature.offline.saveSlot == data.FindProperty("saveSlot").stringValue)
+                error("Offline and GameFlow progress must use different save slots.");
             Action<string, string, bool> check = (path, label, required) => {
                 if (string.IsNullOrWhiteSpace(path)) { if (required) error(label + ": scene is not assigned."); return; }
                 if (!AssetDatabase.LoadAssetAtPath<SceneAsset>(path)) error(label + ": scene asset is missing: " + path);

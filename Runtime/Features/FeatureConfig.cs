@@ -38,5 +38,8 @@ namespace BaseUnity.Features
         public AdsProvider adsProvider;
         public FirebaseSettings firebase = new FirebaseSettings();
         public FirebaseProvider firebaseProvider;
+        public OfflineSettings offline = new OfflineSettings();
+        public LocalizationSettings localization = new LocalizationSettings();
+        public GameIntegrationSettings gameIntegration = new GameIntegrationSettings();
     }
 }

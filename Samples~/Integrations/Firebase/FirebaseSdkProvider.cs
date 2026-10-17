@@ -23,6 +23,12 @@ namespace BaseUnity.Integrations
             public async Task InitializeAsync(FirebaseSettings value, CancellationToken token)
             {
                 settings = value;
+#if UNITY_EDITOR
+                // Avoid native DefaultInstance errors in offline Editor projects without app credentials.
+                if (!System.IO.File.Exists(System.IO.Path.Combine(Application.streamingAssetsPath, "google-services-desktop.json")) &&
+                    !System.IO.File.Exists(System.IO.Path.Combine(Application.streamingAssetsPath, "google-services.json")))
+                    throw new InvalidOperationException("Firebase Editor configuration is missing. Import the official app config through Feature Manager and let Firebase generate StreamingAssets/google-services-desktop.json.");
+#endif
                 var status = await FirebaseApp.CheckAndFixDependenciesAsync();
                 token.ThrowIfCancellationRequested(); if (disposed) throw new ObjectDisposedException("Firebase backend");
                 if (status != DependencyStatus.Available) throw new InvalidOperationException("Firebase dependencies: " + status);

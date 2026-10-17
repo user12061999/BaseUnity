@@ -10,6 +10,9 @@ namespace BaseUnity.Features
         private readonly FeatureConfig runtimeConfig;
         public AdsService Ads { get; }
         public FirebaseService Firebase { get; }
+        public OfflineService Offline { get; private set; }
+        public LocalizationService Localization { get; private set; }
+        public GameIntegrationSettings GameIntegration => UnityEngine.JsonUtility.FromJson<GameIntegrationSettings>(UnityEngine.JsonUtility.ToJson(runtimeConfig.gameIntegration ?? new GameIntegrationSettings()));
         public FeatureServices(FeatureConfig source)
         {
             runtimeConfig = source ? UnityEngine.Object.Instantiate(source) : ScriptableObject.CreateInstance<FeatureConfig>();
@@ -17,7 +20,13 @@ namespace BaseUnity.Features
             Firebase = new FirebaseService(runtimeConfig.firebase, runtimeConfig.firebaseProvider ? (Func<IFirebaseBackend>)runtimeConfig.firebaseProvider.Create : null);
         }
         public void Register(ServiceRegistry services)
-        { services.Register(this); services.Register(Ads); services.Register(Firebase); }
+        {
+            services.Register(this); services.Register(Ads); services.Register(Firebase);
+            var saves = services.Get<BaseUnity.Save.ISaveStore>();
+            Offline = new OfflineService(runtimeConfig.offline, saves);
+            Localization = new LocalizationService(runtimeConfig.localization, saves);
+            services.Register(Offline); services.Register(Localization);
+        }
         public async Task InitializeAsync()
         {
             // Neither SDK initialization nor an unavailable network delays the game's OnReady.

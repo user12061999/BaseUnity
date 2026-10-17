@@ -54,11 +54,13 @@ namespace BaseUnity.GameFlow
         public float LoadingProgress { get; private set; }
         public string ErrorMessage { get; private set; }
         public string SaveWarning { get; private set; }
+        public bool ProgressSavePending { get; private set; }
         public event Action Changed;
         private float resumeScale = 1;
         private float originalScale;
         private bool loading;
         public LevelManager Levels { get; private set; }
+        public GameFlowFeatures Features { get; private set; }
         public bool IsLevelUnlocked(int number) => config && number >= 1 && number <= config.LevelCount && number <= HomeLevel;
         public bool IsLevelCompleted(int number) => IsLevelUnlocked(number) && number <= Progress.highestCompletedLevel;
         public void ShowLevels() { if (!loading && Phase == FlowPhase.Home) SetPhase(FlowPhase.LevelSelect); }
@@ -72,6 +74,8 @@ namespace BaseUnity.GameFlow
             if (config && config.uiPrefab)
                 Instantiate(config.uiPrefab, transform).Initialize(this);
             else gameObject.AddComponent<GameFlowUI>().Initialize(this);
+            Features = gameObject.AddComponent<GameFlowFeatures>();
+            Features.Initialize(this);
             StartCoroutine(BootAfterFirstFrame());
         }
 
@@ -89,7 +93,7 @@ namespace BaseUnity.GameFlow
             GoHome();
         }
 
-        public void GoHome() { if (!loading && config) _ = Transition(config.homeScene, FlowPhase.Home); }
+        public void GoHome() { if (!loading && config && !Features.Busy && Features.SaveResult()) _ = Transition(config.homeScene, FlowPhase.Home); }
         public void Play()
         {
             if (Phase == FlowPhase.Home) StartLevel(HomeLevel);
@@ -98,17 +102,25 @@ namespace BaseUnity.GameFlow
 
         public void StartLevel(int number)
         {
-            if (loading || (Phase != FlowPhase.Home && Phase != FlowPhase.Result && Phase != FlowPhase.LevelSelect) || !config) return;
+            if (Features.Busy || !Features.SaveResult() || loading || (Phase != FlowPhase.Home && Phase != FlowPhase.Result && Phase != FlowPhase.LevelSelect) || !config) return;
             if (number < 1 || number > config.LevelCount || number > HomeLevel) return;
             var definition = config.GetLevel(number);
             if (definition == null) { Fail("Level " + number + " has no configuration."); return; }
             CurrentLevel = number;
             Score = 0;
             Outcome = LevelOutcome.None;
+            Features.BeginSession();
             OutcomeReason = null;
             SaveWarning = null;
             RemainingTime = Math.Max(0, definition.timeLimitSeconds);
-            _ = Transition(string.IsNullOrWhiteSpace(definition.sceneOverride) ? config.inGameScene : definition.sceneOverride, FlowPhase.Playing);
+            _ = StartWithAds(string.IsNullOrWhiteSpace(definition.sceneOverride) ? config.inGameScene : definition.sceneOverride);
+        }
+        private async Task StartWithAds(string scene)
+        {
+            loading = true;
+            await Features.BeforeNextLevel();
+            if (!this || !IsReady) return;
+            await Transition(scene, FlowPhase.Playing);
         }
         public void RetryLevel() { if (Phase == FlowPhase.Result) StartLevel(CurrentLevel); }
         public void NextLevel() { if (CanNextLevel) StartLevel(CurrentLevel + 1); }
@@ -202,11 +214,17 @@ namespace BaseUnity.GameFlow
                 Progress.highestUnlockedLevel = Math.Max(Progress.highestUnlockedLevel, Math.Min(CurrentLevel + 1, config.LevelCount));
             }
             else Progress.losses = (int)Math.Min(int.MaxValue, (long)Progress.losses + 1);
-            SaveWarning = null;
-            try { Services.Get<ISaveStore>().Save(config.saveSlot, Progress); }
-            catch (Exception error) { SaveWarning = "Progress could not be saved: " + error.Message; }
+            ProgressSavePending = true;
+            Features.CompleteSession();
             SetPhase(FlowPhase.Result);
             Services.Get<EventBus>().Publish(new SessionEnded(Score, CurrentLevel, outcome));
+        }
+        public bool SaveProgress()
+        {
+            if (!ProgressSavePending) return true;
+            try { Services.Get<ISaveStore>().Save(config.saveSlot, Progress); ProgressSavePending = false; SaveWarning = null; }
+            catch (Exception error) { SaveWarning = "Progress could not be saved: " + error.Message; }
+            return !ProgressSavePending;
         }
         protected override void Update()
         {

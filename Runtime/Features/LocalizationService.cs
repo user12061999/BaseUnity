@@ -22,6 +22,7 @@ namespace BaseUnity.Features
             Language = settings.defaultLanguage == "vi" ? "vi" : "en";
             if (Enabled && saves.TryLoad<LanguageSave>("baseunity_language", out var saved) && (saved != null && (saved.language == "vi" || saved.language == "en"))) Language = saved.language;
             string[] pairs = {
+                "Saving...|Đang lưu...", "Restored result|Kết quả đã khôi phục",
                 "MENU|MENU", "Reward save failed. Try again.|Không lưu được dữ liệu. Hãy thử lại.", "PERSONAL BEST|KỶ LỤC CÁ NHÂN", "A NEW ADVENTURE AWAITS|CHUYẾN PHIÊU LƯU MỚI ĐANG CHỜ", "READY TO PLAY?|SẴN SÀNG CHƠI?", "Jump in. Collect points.|Vào chơi. Thu thập điểm.", "Beat your personal best.|Vượt qua kỷ lục của bạn.", "Time is up. Try again!|Hết giờ. Hãy thử lại!", "RETURN HOME|VỀ TRANG CHỦ",
 
                 "Play|Chơi", "Settings|Cài đặt", "Choose Level|Chọn màn", "Pause|Tạm dừng", "Resume|Tiếp tục", "Retry|Chơi lại", "Next Level|Màn tiếp theo", "Home|Trang chủ", "Return Home|Về trang chủ", "Cancel|Hủy", "Save & Back|Lưu và trở về",

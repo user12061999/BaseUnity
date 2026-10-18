@@ -140,6 +140,32 @@ namespace BaseUnity.Editor
             if (!flow) { issues.Add(new FeatureValidationIssue(MessageType.Warning, "No GameFlowConfig selected; Home/InGame/level scene references were not checked.", null)); return issues; }
             if (flow.GetType().FullName != "BaseUnity.GameFlow.GameFlowConfig") { error("Choose a GameFlowConfig asset for scene validation."); return issues; }
             var data = new SerializedObject(flow);
+            var menu = data.FindProperty("offlineMenuPrefab")?.objectReferenceValue;
+            if (menu)
+            {
+                var ui = new SerializedObject(menu);
+                foreach (string field in new[] { "balance", "message", "languageLabel", "language", "close", "loading", "animatedContent" })
+                    if (!ui.FindProperty(field).objectReferenceValue) error("Offline UI: missing binding " + field);
+                var tabs = ui.FindProperty("tabs"); var seen = new HashSet<string>();
+                for (int i = 0; i < tabs.arraySize; i++)
+                {
+                    var tab = tabs.GetArrayElementAtIndex(i); string key = tab.FindPropertyRelative("key").stringValue;
+                    if (!seen.Add(key)) error("Offline UI: duplicate tab " + key);
+                    foreach (string field in new[] { "button", "selected", "panel" })
+                        if (!tab.FindPropertyRelative(field).objectReferenceValue) error("Offline UI: " + key + " missing " + field);
+                    var panel = tab.FindPropertyRelative("panel").objectReferenceValue;
+                    if (!panel) continue;
+                    var p = new SerializedObject(panel);
+                    foreach (string field in new[] { "title", "empty", "pageLabel", "rows", "rowPrefab", "previous", "next" })
+                        if (!p.FindProperty(field).objectReferenceValue) error("Offline UI panel " + key + ": missing " + field);
+                    if (p.FindProperty("key").stringValue != key || p.FindProperty("pageSize").intValue < 1) error("Offline UI: invalid panel key/page size for " + key);
+                    var row = p.FindProperty("rowPrefab").objectReferenceValue;
+                    if (row) foreach (string field in new[] { "title", "action", "actionLabel" })
+                        if (!new SerializedObject(row).FindProperty(field).objectReferenceValue) error("Offline UI row: missing " + field);
+                }
+                foreach (string key in new[] { "SHOP", "DAILY REWARD", "MISSIONS", "INVENTORY" })
+                    if (!seen.Contains(key)) error("Offline UI: missing tab " + key);
+            }
             var feature = data.FindProperty("features").objectReferenceValue as FeatureConfig;
             if (feature && feature.offline != null && feature.offline.enabled && feature.offline.saveSlot == data.FindProperty("saveSlot").stringValue)
                 error("Offline and GameFlow progress must use different save slots.");

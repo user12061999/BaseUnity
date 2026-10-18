@@ -28,6 +28,22 @@ namespace BaseUnity.Tests
         private OfflineService NewService() => new OfflineService(config, store, () => today);
         [SetUp] public void Setup()
         { store = new Store(); config = new OfflineSettings { enabled = true, startingCoins = 200 }; today = new DateTime(2026, 10, 17, 23, 59, 0, DateTimeKind.Utc); }
+        [Test] public void FailedUnifiedSaveDoesNotUnlockOrPayAndCanRetryOnce()
+        {
+            var service = NewService(); service.InitializeProgress(new PlayerProgress()); string session = service.BeginSession();
+            store.fail = true; Assert.IsFalse(service.FinishSession(session, 1, true, 20));
+            Assert.AreEqual(1, service.Progress.highestUnlockedLevel); Assert.AreEqual(0, service.Progress.sessions); Assert.AreEqual(200, service.Coins); Assert.IsNull(service.PendingResult);
+            store.fail = false; Assert.IsTrue(service.FinishSession(session, 1, true, 20));
+            service = NewService(); Assert.AreEqual(2, service.Progress.highestUnlockedLevel); Assert.AreEqual(1, service.Progress.sessions); Assert.AreEqual(350, service.Coins);
+        }
+        [Test] public void ReceiptSurvivesFailedPayoutAndResultAcknowledgement()
+        {
+            var service = NewService(); service.InitializeProgress(new PlayerProgress()); string session = service.BeginSession(); service.FinishSession(session, 1, true, 20);
+            Assert.IsTrue(service.RecordRewardedCompletion(session)); store.fail = true; Assert.IsFalse(service.RecoverPendingBonus());
+            store.fail = false; service = NewService(); Assert.IsTrue(service.RecoverPendingBonus()); Assert.AreEqual(500, service.Coins);
+            store.fail = true; Assert.IsFalse(service.AcknowledgeResult()); Assert.IsNotNull(NewService().PendingResult);
+            store.fail = false; Assert.IsTrue(service.AcknowledgeResult()); Assert.IsNull(NewService().PendingResult);
+        }
         [Test] public void ShopIsAtomicAndPersistsInventoryAndLimits()
         {
             config.items[0].purchaseLimit = 1; var service = NewService();

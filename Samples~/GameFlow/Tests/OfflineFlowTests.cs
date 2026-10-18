@@ -106,16 +106,40 @@ namespace BaseUnity.GameFlow.Tests
             var duplicate = flow.Features.RewardDouble(); while (!duplicate.IsCompleted) yield return null;
             Assert.AreEqual(500, economy.Coins);
         }
-        [UnityTest] public IEnumerator FailedProgressSaveStaysOnResultAndRetryDoesNotDuplicateReward()
+        [UnityTest] public IEnumerator UnifiedResultSurvivesRestartAndDoesNotWriteLegacyProgress()
         {
             flow.Play(); yield return WaitFor(FlowPhase.Playing);
-            string original = config.saveSlot; config.saveSlot = "invalid/slot";
+            config.saveSlot = "invalid/legacy_slot"; // Once migrated, the old slot is no longer used.
             flow.WinLevel(); yield return WaitFor(FlowPhase.Result);
-            Assert.IsTrue(flow.Features.PendingSave); Assert.AreEqual(350, flow.Features.Offline.Coins);
-            flow.NextLevel(); Assert.AreEqual(FlowPhase.Result, flow.Phase);
-            config.saveSlot = original; Assert.IsTrue(flow.Features.SaveResult());
-            Assert.AreEqual(350, flow.Features.Offline.Coins);
+            Assert.IsFalse(flow.Features.PendingSave); Assert.AreEqual(350, flow.Features.Offline.Coins);
+            UnityEngine.Object.Destroy(flow.gameObject); yield return null;
+            var root = new GameObject("Restored bootstrap"); root.SetActive(false);
+            flow = root.AddComponent<GameFlowBootstrap>(); flow.Config = config; root.SetActive(true);
+            yield return WaitFor(FlowPhase.Result);
+            Assert.AreEqual(1, flow.CurrentLevel); Assert.AreEqual(LevelOutcome.Win, flow.Outcome);
+            Assert.AreEqual(350, flow.Features.Offline.Coins); Assert.AreEqual(2, flow.HomeLevel);
             flow.NextLevel(); yield return WaitFor(FlowPhase.Playing); Assert.AreEqual(2, flow.CurrentLevel);
+        }
+        [UnityTest] public IEnumerator EditablePrefabMenuKeepsInstanceAcrossTransactions()
+        {
+#if UNITY_EDITOR
+            var ids = UnityEditor.AssetDatabase.FindAssets("t:Prefab", new[] { "Assets/BaseUnityGameFlow/OfflineUI" });
+            var prefab = ids.Select(id => UnityEditor.AssetDatabase.LoadAssetAtPath<OfflineMenuView>(UnityEditor.AssetDatabase.GUIDToAssetPath(id))).FirstOrDefault(x => x);
+            Assert.IsNotNull(prefab, "Generate Missing Offline UI Prefabs before running this sample test.");
+            config.offlineMenuPrefab = prefab;
+            Click("MENU"); yield return new WaitForSecondsRealtime(.25f);
+            var menu = flow.GetComponentInChildren<OfflineMenuView>(); Assert.IsNotNull(menu);
+            Assert.IsTrue(menu.tabs.Single(x => x.key == "SHOP").selected.activeSelf);
+            Click("BUY x1 • 50 Coin"); yield return null; yield return null; yield return null;
+            Assert.AreEqual(150, flow.Features.Offline.Coins); Assert.AreSame(menu, flow.GetComponentInChildren<OfflineMenuView>());
+            Assert.IsFalse(menu.loading.activeSelf); Assert.AreEqual("Saved", menu.message.text);
+            menu.tabs.Single(x => x.key == "INVENTORY").button.onClick.Invoke(); yield return null;
+            Assert.IsTrue(menu.tabs.Single(x => x.key == "INVENTORY").panel.gameObject.activeSelf);
+            UnityEngine.Time.timeScale = 0; menu.close.onClick.Invoke(); yield return new WaitForSecondsRealtime(.25f);
+            Assert.IsNull(flow.GetComponentInChildren<OfflineMenuView>());
+#else
+            yield break;
+#endif
         }
         [UnityTearDown] public IEnumerator Cleanup()
         {

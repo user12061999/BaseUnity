@@ -142,3 +142,16 @@ LevelFlowTests also checks prefab cleanup/recreation, stale callbacks, selection
 win/lose guards, locked levels, next-level loading, timer pause/timeout,
 final-level behavior, progress after restarting the bootstrap, and old-save compatibility.
 Tests clone config and use disposable save slots to preserve project settings and player progress.
+
+
+## Offline save and UI (0.8)
+
+Run **Tools > BaseUnity > Game Flow > Generate Missing Offline UI Prefabs** with your GameFlowConfig selected.
+Edit the generated `OfflineUI/OfflineMenu.prefab`, individual panels and `ItemRow.prefab`; assign a custom
+`offlineMenuPrefab` on each game config. Existing prefabs are preserved. The previous runtime-generated
+menu remains available when no prefab is assigned. Generate these prefabs before running the sample UI tests.
+
+Offline progression migrates once into the wallet profile. Leave the legacy progress file in place;
+a successful migration stops reading it. Restart resumes an unacknowledged result and any durable verified
+reward receipt, without double-granting. Unreadable profiles are never silently reset. See the root README
+for backup recovery and the limits of offline reward recovery.

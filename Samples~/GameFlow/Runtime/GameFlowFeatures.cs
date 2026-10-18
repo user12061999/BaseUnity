@@ -20,7 +20,7 @@ namespace BaseUnity.GameFlow
         private IDisposable started, ended;
         public bool Busy { get; private set; }
         public string Message { get; private set; }
-        public bool PendingSave => pendingResult || pendingDouble || flow.ProgressSavePending;
+        public bool PendingSave => pendingResult || pendingDouble || Offline.PendingBonus || flow.ProgressSavePending;
         public OfflineService Offline => services.Offline;
         public LocalizationService Language => services.Localization;
         public bool RewardAdsEnabled => flow.Config && flow.Config.features && flow.Config.features.ads.enabled && flow.Config.features.ads.rewarded;
@@ -34,10 +34,18 @@ namespace BaseUnity.GameFlow
             gameObject.AddComponent<GameFlowOfflineUI>().Initialize(flow, this);
             if (Language.Enabled) gameObject.AddComponent<GameFlowLocalization>().Initialize(Language);
         }
+        public void RestoreSession()
+        { session = Offline.RestoredSession; SaveResult(); }
+        public bool LeaveResult()
+        {
+            if (!SaveResult()) return false;
+            if (flow.Phase != FlowPhase.Result || Offline.AcknowledgeResult()) return true;
+            Message = Offline.LastError; Changed?.Invoke(); return false;
+        }
         public void BeginSession() { session = Offline.BeginSession(); Message = null; }
         public void CompleteSession()
         {
-            pendingResult = Offline.Enabled;
+            pendingResult = Offline.UsesUnifiedProgress;
             if (flow.Outcome == LevelOutcome.Win && settings.interstitialBetweenLevels)
                 interstitialDue = ++wins % Math.Max(1, settings.interstitialEveryWins) == 0;
             SaveResult();
@@ -45,9 +53,11 @@ namespace BaseUnity.GameFlow
         // A failed save keeps the result screen open and can be retried without granting twice.
         public bool SaveResult()
         {
-            flow.SaveProgress();
-            if (pendingResult && Offline.FinishSession(session, flow.CurrentLevel, flow.Outcome == LevelOutcome.Win, flow.Score)) pendingResult = false;
-            if (pendingDouble && Offline.DoubleReward(session)) pendingDouble = false;
+            if (!Offline.UsesUnifiedProgress) flow.SaveProgress();
+            if (pendingResult && Offline.FinishSession(session, flow.CurrentLevel, flow.Outcome == LevelOutcome.Win, flow.Score, levelCount: flow.Config.LevelCount))
+            { pendingResult = false; flow.ApplyOfflineProgress(); }
+            if (pendingDouble && Offline.RecordRewardedCompletion(session) && Offline.RecoverPendingBonus()) pendingDouble = false;
+            if (Offline.PendingBonus && Offline.RecoverPendingBonus()) pendingDouble = false;
             Message = PendingSave ? "Reward save failed. Try again." : null;
             Changed?.Invoke();
             return !PendingSave;

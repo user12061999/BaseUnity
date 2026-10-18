@@ -24,6 +24,7 @@ namespace BaseUnity.GameFlow
         public string saveSlot = "gameflow_progress";
         public string gameTitle = "YOUR GAME";
         public GameFlowView uiPrefab;
+        public OfflineMenuView offlineMenuPrefab;
         public BaseUnity.Features.FeatureConfig features;
         public bool autoWinAtTarget = true;
         public GameLevel[] levels =

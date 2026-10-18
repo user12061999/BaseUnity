@@ -21,6 +21,7 @@ namespace BaseUnity.GameFlow.Tests
                 if (!flow) continue;
                 originals.Add(flow, flow.features);
                 var config = ScriptableObject.CreateInstance<FeatureConfig>();
+                config.offline.saveSlot = "scene_test_" + System.Guid.NewGuid().ToString("N");
                 temporary.Add(config); flow.features = config;
             }
         }

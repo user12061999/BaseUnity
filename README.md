@@ -2,7 +2,7 @@
 
 Base game Unity tái sử dụng qua **Git submodule trong `Assets/BaseUnity`**.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.7.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.8.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
 
 ## Luồng game có sẵn
 
@@ -92,8 +92,8 @@ Lùi đồng hồ không mở lại phần thưởng đã nhận; đây vẫn l�
 
 Wallet, inventory, purchase limits, daily claims, mission progress và thưởng level cùng một hồ sơ JSON.
 Mỗi giao dịch ghi thành công rồi mới cập nhật bộ nhớ/phát `Changed`; lỗi ghi không trừ tiền hay nhận thưởng một nửa.
-Tiến trình mở màn và hồ sơ economy là hai file riêng: lỗi bình thường có thể thử lại, nhưng không có giao dịch
-nguyên tử xuyên hai file khi ứng dụng bị đóng đột ngột. X2 chưa nhận không được khôi phục sau khi đóng game.
+Từ v0.8, khi dùng module offline, tiến trình mở màn và economy được ghi trong **cùng một hồ sơ**.
+Kết quả màn chưa được đóng sẽ được khôi phục khi khởi động lại. Xem quy tắc migration và thưởng bên dưới.
 Không đổi ID item/mission, thứ tự level hoặc save slot sau phát hành nếu chưa có kế hoạch migration.
 Tiền ban đầu chỉ áp dụng cho hồ sơ mới; tắt module không xóa save.
 
@@ -118,6 +118,59 @@ UI mẫu tự cập nhật Text; thông báo kỹ thuật của SDK và nội du
 
 Bản cài sample cũ: sao lưu chỉnh sửa riêng rồi merge/copy các file thay đổi từ `Samples~/GameFlow/Runtime`.
 Installer chỉ thêm file thiếu, không ghi đè code mà dự án đã sửa.
+
+## Lưu dữ liệu và khôi phục (0.8)
+
+- Hồ sơ offline dùng `schemaVersion = 2` bên trong payload; envelope `ISaveStore` vẫn ở version 1 để giữ tương thích API.
+- Lần đầu chạy Game Flow 0.8, tiến trình v0.7 từ `GameFlowConfig.saveSlot` được nhập vào `offline.saveSlot`,
+  cùng với tiền/vật phẩm đã có. Chỉ đánh dấu `progressMigrated` khi ghi thành công; file tiến trình cũ được giữ nguyên.
+- Sau migration, Game Flow chỉ ghi tiến trình vào hồ sơ chung. Tắt economy vẫn tiếp tục lưu tiến trình trong hồ sơ đó,
+  đồng thời ngừng cộng thưởng/nhiệm vụ và giao dịch. Game chưa từng bật offline tiếp tục dùng slot tiến trình cũ.
+- Giao dịch kết thúc màn ghi điểm, mở khóa màn, nhiệm vụ, tiền thưởng và kết quả cùng một lần. Nếu ghi lỗi,
+  dữ liệu trong bộ nhớ không được cập nhật; ở màn Result có thể thử lưu lại.
+- Nếu app đóng sau khi lưu kết quả nhưng trước khi người chơi chọn Home/Retry/Next, lần mở sau sẽ vào lại Result.
+  Khi rời Result, trạng thái đã đóng được lưu trước khi chuyển màn. Save v0.7 không có đầy đủ thông tin kết quả,
+  nên migration không tự suy đoán màn kết quả cũ.
+- Sau callback rewarded của SDK, lưu xác nhận thưởng trước rồi mới cộng bonus. Nếu app đóng giữa hai bước,
+  xác nhận đã lưu sẽ được xử lý lại đúng một lần lúc khôi phục Result. Không tự cấp thưởng chỉ vì quảng cáo đã mở.
+  Nếu app bị kết thúc **trước khi callback/xác nhận được ghi thành công**, base offline không thể chứng minh thưởng;
+  người chơi có thể thử lại quảng cáo. Không có bảo đảm khôi phục dữ liệu chưa từng ghi xuống đĩa.
+
+`JsonSaveStore.LoadValidated` phân biệt file chưa tồn tại và file đã tồn tại nhưng lỗi. Hồ sơ không đọc được
+hoặc dữ liệu không hợp lệ sẽ thử `.bak`. Nếu dùng backup, lần ghi kế tiếp giữ bản backup tốt và lưu file chính
+bị lỗi thành `.corrupt-<id>` để kiểm tra. Backup có thể là trạng thái trước giao dịch mới nhất.
+Nếu cả hai hỏng, game hiển thị lỗi và chặn vào chơi; không tự reset tiền/tiến trình. Giữ các file, khôi phục
+một bản backup hợp lệ rồi khởi động lại game. Schema mới hơn phiên bản code hiện tại cũng bị chặn, tránh downgrade.
+API `TryLoad` cũ vẫn giữ hành vi tương thích; dữ liệu quan trọng nên dùng `LoadValidated`.
+
+Các game tự viết flow có thể dùng `OfflineService.InitializeProgress`, `FinishSession`, `PendingResult`,
+`RecordRewardedCompletion`, `RecoverPendingBonus`, `AcknowledgeResult`. Callback quảng cáo phải được kiểm chứng
+bởi adapter trước khi gọi `RecordRewardedCompletion`; đây không phải hệ thống xác thực server.
+Save vẫn là JSON cục bộ, không chống sửa dữ liệu hoặc rollback thủ công; kiểm thử hiện trên Windows/Unity Editor.
+
+## Prefab UI offline có thể chỉnh sửa (0.8)
+
+Chọn `GameFlowConfig`, chạy **Tools > BaseUnity > Game Flow > Generate Missing Offline UI Prefabs**.
+Generator tạo thư mục `OfflineUI` cạnh config và gắn `offlineMenuPrefab`:
+
+| Prefab | Chỉnh sửa |
+| --- | --- |
+| `OfflineMenu.prefab` | Khung popup, wallet, tab, dấu tab đang chọn, ngôn ngữ, Close, thông báo và blocker đang lưu |
+| `Shop.prefab` | Bố cục Shop và phân trang |
+| `DailyReward.prefab` | Bố cục nhận quà theo ngày |
+| `Missions.prefab` | Bố cục tiến độ nhiệm vụ và nút nhận |
+| `Inventory.prefab` | Bố cục túi đồ, trạng thái rỗng |
+| `ItemRow.prefab` | Tên/số lượng vật phẩm và nút hành động; có thể thay row prefab riêng cho từng panel |
+
+Mỗi panel có `rowPrefab`, `rows`, `pageSize`, nút phân trang và các Text binding. Mặc định 3 dòng/trang;
+điều chỉnh chiều cao dòng/panel cùng `pageSize` nếu đổi số dòng. Dữ liệu vẫn lấy từ FeatureConfig.
+`OfflineMenuView.animationSeconds` điều khiển fade/scale bằng thời gian không chịu pause; màu thông báo thành công/lỗi
+có thể chỉnh trong Inspector. Giao dịch có blocker và khóa thao tác lặp. Popup giữ nguyên instance khi cập nhật dữ liệu.
+
+Generator **không ghi đè prefab có sẵn** và không thay config đã có `offlineMenuPrefab`. Có thể dùng prefab variant
+và gắn vào config riêng của từng game. Khi chưa gắn prefab, UI dựng bằng code của v0.7 vẫn hoạt động.
+Validate build configuration kiểm tra các binding UI bắt buộc. Sprite Layer Lab được tham chiếu từ dự án,
+không kèm asset thương mại trong repository; máy khác chạy generator để tạo prefab tại dự án của mình.
 
 ## Cài vào dự án khác
 
@@ -374,3 +427,7 @@ V0.7: **49/49 EditMode + 18/18 PlayMode tests pass**. Bổ sung kiểm thử eco
 callback thưởng và thử lưu lại. SDK đã compile trong workspace với Firebase 14.0.0, MAX 8.6.6 và adapter
 Google qua MAX. Chưa kiểm thử quảng cáo/Firebase thật trên thiết bị vì còn thiếu app config và IDs tài khoản.
 Firebase Editor thiếu file app config sẽ trả trạng thái Failed/LastError để game offline tiếp tục chạy.
+
+V0.8: **60/60 EditMode + 19/19 PlayMode tests pass**: migration một lần, giao dịch tiến trình/thưởng,
+backup và save hỏng, chặn schema tương lai, lỗi ghi tiền thưởng, khôi phục Result qua restart,
+prefab menu giữ instance, trạng thái tab và animation đóng khi timeScale = 0.

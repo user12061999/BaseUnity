@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.8.0
+
+- Migrate legacy progress once into the offline profile; save level progress, rewards and missions in one transaction.
+- Persist unacknowledged results and verified rewarded receipts; restore results and finish recorded bonuses once after restart.
+- Validate valuable saves, recover from backup without overwriting the good backup, preserve corrupt files and reject future schemas.
+- Keep unified progression when economy is disabled; block gameplay on unreadable startup data.
+- Generate editable menu, Shop, Daily Reward, Missions, Inventory and item-row prefabs without overwriting existing project assets.
+- Selected tabs, saving blocker, success/error feedback and unscaled popup animations; retain the code-built UI fallback.
+- Validate prefab bindings and expand save fault/restart/UI regression coverage.
+
 ## 0.7.0
 
 - Optional offline wallet, inventory, transactional shop, first-win rewards, daily rewards and daily missions.

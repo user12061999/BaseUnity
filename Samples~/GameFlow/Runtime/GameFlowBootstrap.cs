@@ -28,15 +28,7 @@ namespace BaseUnity.GameFlow
 
     public sealed class GameFlowBootstrap : GameBootstrap
     {
-        [Serializable] public sealed class ProgressData
-        {
-            public int bestScore;
-            public int sessions;
-            public int highestUnlockedLevel = 1;
-            public int highestCompletedLevel;
-            public int wins;
-            public int losses;
-        }
+        [Serializable] public sealed class ProgressData : BaseUnity.Features.PlayerProgress { }
         [SerializeField] private GameFlowConfig config;
         public GameFlowConfig Config { get => config; set => config = value; }
         protected override BaseUnity.Features.FeatureConfig GetFeatureConfig() => config && config.features ? config.features : base.GetFeatureConfig();
@@ -58,7 +50,7 @@ namespace BaseUnity.GameFlow
         public event Action Changed;
         private float resumeScale = 1;
         private float originalScale;
-        private bool loading;
+        private bool loading, dataReady;
         public LevelManager Levels { get; private set; }
         public GameFlowFeatures Features { get; private set; }
         public bool IsLevelUnlocked(int number) => config && number >= 1 && number <= config.LevelCount && number <= HomeLevel;
@@ -85,15 +77,37 @@ namespace BaseUnity.GameFlow
             if (!config) { Fail("Assign a GameFlowConfig to the Bootstrap scene."); yield break; }
             try
             {
-                if (Services.Get<ISaveStore>().TryLoad<ProgressData>(config.saveSlot, out var saved)) Progress = saved;
                 ValidateLevels();
-                NormalizeProgress();
+                if (Features.Offline.LoadError != null) throw new InvalidOperationException(Features.Offline.LoadError);
+                if (!Features.Offline.HasProgress)
+                {
+                    var store = Services.Get<ISaveStore>(); ProgressData saved;
+                    if (store is JsonSaveStore json)
+                    { if (json.LoadValidated(config.saveSlot, out saved, p => p.sessions >= 0 && p.bestScore >= 0) != SaveLoadState.Missing) Progress = saved; }
+                    else if (store.TryLoad(config.saveSlot, out saved)) Progress = saved;
+                    NormalizeProgress();
+                    if (Features.Offline.UsesUnifiedProgress && !Features.Offline.InitializeProgress(Progress)) throw new InvalidOperationException(Features.Offline.LastError);
+                }
+                if (Features.Offline.UsesUnifiedProgress) ApplyOfflineProgress();
+                NormalizeProgress(); dataReady = true;
             }
             catch (Exception error) { Fail(error.Message); yield break; }
-            GoHome();
+            _ = OpenInitialScene();
         }
-
-        public void GoHome() { if (!loading && config && !Features.Busy && Features.SaveResult()) _ = Transition(config.homeScene, FlowPhase.Home); }
+        public void ApplyOfflineProgress()
+        { Progress = JsonUtility.FromJson<ProgressData>(JsonUtility.ToJson(Features.Offline.Progress)); ProgressSavePending = false; }
+        private async Task OpenInitialScene()
+        {
+            await Transition(config.homeScene, FlowPhase.Home);
+            if (!this || Phase != FlowPhase.Home) return;
+            var saved = Features.Offline.PendingResult;
+            if (saved == null) return;
+            if (saved.level > config.LevelCount) { Fail("Saved result references a removed level. Migrate the level catalog before continuing."); return; }
+            CurrentLevel = saved.level; Score = saved.score; Outcome = saved.won ? LevelOutcome.Win : LevelOutcome.Lose;
+            OutcomeReason = "Restored result"; Features.RestoreSession(); UnityEngine.Time.timeScale = 0;
+            SetPhase(FlowPhase.Result);
+        }
+        public void GoHome() { if (dataReady && !loading && config && !Features.Busy && Features.LeaveResult()) _ = Transition(config.homeScene, FlowPhase.Home); }
         public void Play()
         {
             if (Phase == FlowPhase.Home) StartLevel(HomeLevel);
@@ -102,10 +116,11 @@ namespace BaseUnity.GameFlow
 
         public void StartLevel(int number)
         {
-            if (Features.Busy || !Features.SaveResult() || loading || (Phase != FlowPhase.Home && Phase != FlowPhase.Result && Phase != FlowPhase.LevelSelect) || !config) return;
+            if (!dataReady || Features.Busy || loading || (Phase != FlowPhase.Home && Phase != FlowPhase.Result && Phase != FlowPhase.LevelSelect) || !config) return;
             if (number < 1 || number > config.LevelCount || number > HomeLevel) return;
             var definition = config.GetLevel(number);
             if (definition == null) { Fail("Level " + number + " has no configuration."); return; }
+            if (!Features.LeaveResult()) return;
             CurrentLevel = number;
             Score = 0;
             Outcome = LevelOutcome.None;
@@ -205,16 +220,19 @@ namespace BaseUnity.GameFlow
             Outcome = outcome;
             OutcomeReason = reason;
             UnityEngine.Time.timeScale = 0;
-            Progress.bestScore = Math.Max(Progress.bestScore, Score);
-            Progress.sessions = (int)Math.Min(int.MaxValue, (long)Progress.sessions + 1);
-            if (outcome == LevelOutcome.Win)
+            if (!Features.Offline.UsesUnifiedProgress)
             {
-                Progress.wins = (int)Math.Min(int.MaxValue, (long)Progress.wins + 1);
-                Progress.highestCompletedLevel = Math.Max(Progress.highestCompletedLevel, CurrentLevel);
-                Progress.highestUnlockedLevel = Math.Max(Progress.highestUnlockedLevel, Math.Min(CurrentLevel + 1, config.LevelCount));
+                Progress.bestScore = Math.Max(Progress.bestScore, Score);
+                Progress.sessions = (int)Math.Min(int.MaxValue, (long)Progress.sessions + 1);
+                if (outcome == LevelOutcome.Win)
+                {
+                    Progress.wins = (int)Math.Min(int.MaxValue, (long)Progress.wins + 1);
+                    Progress.highestCompletedLevel = Math.Max(Progress.highestCompletedLevel, CurrentLevel);
+                    Progress.highestUnlockedLevel = Math.Max(Progress.highestUnlockedLevel, Math.Min(CurrentLevel + 1, config.LevelCount));
+                }
+                else Progress.losses = (int)Math.Min(int.MaxValue, (long)Progress.losses + 1);
+                ProgressSavePending = true;
             }
-            else Progress.losses = (int)Math.Min(int.MaxValue, (long)Progress.losses + 1);
-            ProgressSavePending = true;
             Features.CompleteSession();
             SetPhase(FlowPhase.Result);
             Services.Get<EventBus>().Publish(new SessionEnded(Score, CurrentLevel, outcome));

@@ -13,6 +13,8 @@ namespace BaseUnity.GameFlow
         private GameFlowFeatures features;
         private RectTransform content;
         private GameObject page;
+        private OfflineMenuView menu;
+        private bool transactionBusy, messageIsError;
         private Font font;
         private Sprite buttonSprite;
         private bool dirty = true, open;
@@ -65,6 +67,8 @@ namespace BaseUnity.GameFlow
         }
         private void Draw()
         {
+            if (menu && open && flow.Phase == FlowPhase.Home && !features.Busy) { RefreshPrefab(); return; }
+            menu = null;
             if (page) { page.SetActive(false); Destroy(page); }
             page = Rect(content, "Offline features", 900, 1600, 0, 0).gameObject;
             var parent = page.transform;
@@ -90,6 +94,7 @@ namespace BaseUnity.GameFlow
         }
         private void DrawMenu(Transform parent)
         {
+            if (flow.Config.offlineMenuPrefab) { OpenPrefab(parent); return; }
             var panel = Rect(parent, "Menu popup", 900, 1600, 0, 0); var bg = panel.gameObject.AddComponent<Image>(); bg.color = new Color(.035f, .07f, .15f, 1f);
             Label(panel, Economy.Enabled ? Economy.Coins + " " + T("Coin") + "    " + Economy.Gems + " " + T("Gem") : "MENU", 700);
             var tabs = new System.Collections.Generic.List<string>();
@@ -135,6 +140,91 @@ namespace BaseUnity.GameFlow
             if (features.Language.Enabled) Button(panel, features.Language.Language == "en" ? "Tiếng Việt" : "English", -570, () => { if (!features.Language.SetLanguage(features.Language.Language == "en" ? "vi" : "en")) message = features.Language.LastError; });
             Button(panel, "CLOSE", -700, () => { open = false; message = null; });
         }
+        private bool TabEnabled(string key) => key == "SHOP" ? Economy.ShopEnabled : key == "DAILY REWARD" ? Economy.DailyEnabled : key == "MISSIONS" ? Economy.MissionsEnabled : key == "INVENTORY" && Economy.Enabled;
+        private void OpenPrefab(Transform parent)
+        {
+            menu = Instantiate(flow.Config.offlineMenuPrefab, parent);
+            menu.close.onClick.AddListener(() => menu.Close(() => { open = false; message = null; dirty = true; }));
+            menu.language.onClick.AddListener(() => {
+                bool ok = features.Language.SetLanguage(features.Language.Language == "en" ? "vi" : "en");
+                message = ok ? null : features.Language.LastError; messageIsError = !ok; dirty = true;
+            });
+            foreach (var entry in menu.tabs)
+            {
+                var selected = entry;
+                entry.button.onClick.AddListener(() => { tab = selected.key; pageIndex = 0; message = null; dirty = true; });
+                entry.panel.previous.onClick.AddListener(() => { pageIndex = Math.Max(0, pageIndex - 1); dirty = true; });
+                entry.panel.next.onClick.AddListener(() => { pageIndex++; dirty = true; });
+            }
+            RefreshPrefab();
+        }
+        private void RefreshPrefab()
+        {
+            var available = menu.tabs.Where(x => TabEnabled(x.key)).ToArray();
+            if (!available.Any(x => x.key == tab)) { tab = available.FirstOrDefault()?.key; pageIndex = 0; }
+            menu.balance.text = Economy.Enabled ? Economy.Coins + " " + T("Coin") + "    " + Economy.Gems + " " + T("Gem") : "MENU";
+            menu.message.text = T(message ?? ""); menu.message.color = messageIsError ? menu.errorColor : menu.successColor;
+            menu.language.gameObject.SetActive(features.Language.Enabled);
+            menu.languageLabel.text = features.Language.Language == "en" ? "Tiếng Việt" : "English";
+            menu.loading.SetActive(transactionBusy);
+            foreach (var entry in menu.tabs)
+            {
+                bool enabled = TabEnabled(entry.key), active = enabled && entry.key == tab;
+                entry.button.gameObject.SetActive(enabled); entry.selected.SetActive(active); entry.panel.gameObject.SetActive(active);
+                if (active) FillPanel(entry.panel);
+            }
+        }
+        private void FillPanel(OfflinePanelView panel)
+        {
+            foreach (Transform child in panel.rows) { child.gameObject.SetActive(false); Destroy(child.gameObject); }
+            panel.title.text = T(panel.key); panel.empty.gameObject.SetActive(false);
+            var rows = new System.Collections.Generic.List<Tuple<string, string, bool, Action>>();
+            var settings = Economy.Settings;
+            if (panel.key == "DAILY REWARD")
+            {
+                int day = Economy.DailyIndex + 1;
+                rows.Add(Tuple.Create(T("DAY " + day) + "  +" + Economy.DailyCoins + " " + T("Coin"), T(Economy.CanClaimDaily ? "CLAIM" : "CLAIMED"), Economy.CanClaimDaily,
+                    (Action)(() => Transact(() => Economy.ClaimDaily(), "daily_reward", "day", day.ToString()))));
+            }
+            else if (panel.key == "MISSIONS")
+                foreach (var mission in settings.dailyMissions ?? Array.Empty<DailyMission>())
+                {
+                    if (mission == null) continue;
+                    var m = mission; bool claimed = Economy.MissionClaimed(m.id);
+                    rows.Add(Tuple.Create(T(m.title) + "  " + Math.Min(Economy.MissionProgress(m), m.target) + "/" + m.target + "  +" + m.coins + " " + T("Coin"), T(claimed ? "CLAIMED" : "CLAIM"), !claimed && Economy.MissionProgress(m) >= m.target,
+                        (Action)(() => Transact(() => Economy.ClaimMission(m.id), "mission_claim", "mission_id", m.id))));
+                }
+            else foreach (var item in settings.items ?? Array.Empty<ShopItem>())
+                {
+                    if (item == null || (panel.key == "INVENTORY" && Economy.ItemCount(item.id) == 0)) continue;
+                    var captured = item;
+                    rows.Add(Tuple.Create(T(item.title) + "  x" + Economy.ItemCount(item.id), panel.key == "SHOP" ? T("BUY") + " x" + item.quantity + " • " + item.price + " " + T(item.currency.ToString()) : "", true,
+                        (Action)(() => Transact(() => Economy.Buy(captured.id), "shop_purchase", "item_id", captured.id))));
+                }
+            int size = Math.Max(1, panel.pageSize), pages = Math.Max(1, (rows.Count + size - 1) / size);
+            pageIndex = Mathf.Clamp(pageIndex, 0, pages - 1);
+            panel.pageLabel.text = (pageIndex + 1) + " / " + pages;
+            panel.previous.gameObject.SetActive(pages > 1); panel.next.gameObject.SetActive(pages > 1); panel.pageLabel.gameObject.SetActive(pages > 1);
+            panel.previous.interactable = pageIndex > 0; panel.next.interactable = pageIndex + 1 < pages;
+            panel.empty.gameObject.SetActive(rows.Count == 0); panel.empty.text = T("No items");
+            foreach (var entry in rows.Skip(pageIndex * size).Take(size))
+            {
+                var row = Instantiate(panel.rowPrefab, panel.rows); row.title.text = entry.Item1;
+                row.actionLabel.text = entry.Item2; row.action.name = entry.Item2;
+                row.action.gameObject.SetActive(!string.IsNullOrEmpty(entry.Item2)); row.action.interactable = entry.Item3 && !transactionBusy;
+                row.action.onClick.AddListener(() => entry.Item4());
+            }
+        }
+        private void Transact(Func<bool> transaction, string name, string key, string value)
+        { if (!transactionBusy) StartCoroutine(RunTransaction(transaction, name, key, value)); }
+        private System.Collections.IEnumerator RunTransaction(Func<bool> transaction, string name, string key, string value)
+        {
+            transactionBusy = true; dirty = true;
+            yield return null; // Display a blocker before writing, and suppress repeated clicks.
+            try { Act(transaction(), name, key, value); }
+            catch (Exception e) { message = e.Message; messageIsError = true; }
+            finally { transactionBusy = false; dirty = true; }
+        }
         private void Pager(Transform panel, int count)
         {
             int pages = Math.Max(1, (count + 2) / 3); pageIndex = Math.Min(pageIndex, pages - 1);
@@ -144,7 +234,7 @@ namespace BaseUnity.GameFlow
             Button(panel, ">", -350, () => pageIndex++, 280, 110, pageIndex + 1 < pages);
         }
         private void Act(bool success, string name, string key, string value)
-        { message = success ? "Saved" : Economy.LastError; if (success) features.Track(name, key, value); }
+        { messageIsError = !success; message = success ? "Saved" : Economy.LastError; if (success) features.Track(name, key, value); }
         private void OnDestroy()
         {
             if (flow) flow.Changed -= MarkDirty;

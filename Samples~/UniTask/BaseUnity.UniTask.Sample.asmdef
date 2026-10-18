@@ -1,0 +1,6 @@
+{
+  "name": "BaseUnity.UniTask.Sample",
+  "references": ["BaseUnity.Runtime", "BaseUnity.UniTask", "UniTask"],
+  "defineConstraints": ["BASEUNITY_UNITASK"],
+  "versionDefines": [{ "name": "com.cysharp.unitask", "expression": "2.5.0", "define": "BASEUNITY_UNITASK" }]
+}

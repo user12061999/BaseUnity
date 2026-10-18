@@ -1,0 +1,8 @@
+{
+  "name": "BaseUnity.UniTask.Tests",
+  "references": ["BaseUnity.Runtime", "BaseUnity.UniTask", "UniTask"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "defineConstraints": ["UNITY_INCLUDE_TESTS", "BASEUNITY_UNITASK"],
+  "versionDefines": [{ "name": "com.cysharp.unitask", "expression": "2.5.0", "define": "BASEUNITY_UNITASK" }],
+  "autoReferenced": false
+}

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.10.0
+
+- Add an optional UniTask assembly with scene, Ads/Firebase and feature initialization adapters.
+- Install pinned UniTask 2.5.11 from an Editor menu without vendoring SDK files into the library.
+- Add UniTask timed pool returns, per-rental IDs to reject stale timers, pool counters and a disposal cancellation token.
+- Preserve existing PrefabPool and Task-based service APIs.
+- Add a cancelable pooling sample and PlayMode regression coverage for reuse, pause, cancellation and verified ad results.
+- Include actual phase/focus details when sample flow tests time out.
+
 ## 0.9.0
 
 - Run automatic validation before player builds using the actual BuildPlayerOptions scene list.

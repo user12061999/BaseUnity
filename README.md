@@ -2,7 +2,7 @@
 
 Base game Unity tái sử dụng qua **Git submodule trong `Assets/BaseUnity`**.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.9.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.10.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
 
 ## Luồng game có sẵn
 
@@ -375,6 +375,72 @@ WebGL cần adapter lưu trữ/sync riêng, chưa được hỗ trợ bởi `Jso
   Gọi `SaveSettings()` khi người chơi xác nhận thay đổi. Bản đầu hỗ trợ âm thanh 2D,
   volume/mute; mixer routing, crossfade và giới hạn voice chưa có.
 
+## UniTask tùy chọn (0.10)
+
+Object Pooling đã có trong core qua `PrefabPool`. Adapter UniTask mới nằm ở `Runtime/UniTask`, assembly
+`BaseUnity.UniTask`, namespace `BaseUnity.Async`. Trong project BaseUnity đã cài **UniTask 2.5.11** qua UPM.
+
+Với dự án khác dùng submodule, chọn **Tools > BaseUnity > Integrations > Install UniTask 2.5.11**, hoặc thêm
+Git URL sau vào Package Manager > Install package from git URL:
+
+```text
+https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2.5.11
+```
+
+Theo [hướng dẫn UPM của Cysharp](https://github.com/Cysharp/UniTask#upm-package), dependency Git được khai báo
+ở manifest của **dự án game**; thư viện không kèm source/binary UniTask. Adapter và test UniTask tự bật khi
+UPM package `com.cysharp.unitask` phiên bản 2.5.0 trở lên tồn tại. Phiên bản đã kiểm thử là 2.5.11.
+Core giữ API `Task` đang dùng; các API `...UniTaskAsync` chuyển đổi Task sang UniTask để giữ tương thích,
+không phải viết lại toàn bộ core hoặc cam kết không cấp phát bộ nhớ.
+
+Game có asmdef riêng thêm references: **BaseUnity.Runtime**, **BaseUnity.UniTask**, **UniTask**.
+Mọi thao tác pool/scene/SDK adapter đều gọi từ Unity main thread.
+
+```csharp
+using System;
+using BaseUnity.Async;
+using BaseUnity.Pooling;
+using Cysharp.Threading.Tasks;
+using UnityEngine;
+
+// Trong một MonoBehaviour đã tạo pool và sở hữu vòng đời các object:
+async UniTask SpawnAsync(PrefabPool pool)
+{
+    var instance = pool.Rent(transform.position, transform.rotation);
+    pool.TryGetRentalId(instance, out var rental);
+    try
+    {
+        await pool.ReturnAfterAsync(instance, TimeSpan.FromSeconds(2),
+            ignoreTimeScale: false, cancellationToken: destroyCancellationToken);
+    }
+    finally { pool.TryReturn(instance, rental); }
+}
+```
+
+`ReturnAfterAsync` dùng `UniTask.Delay`: mặc định chịu `timeScale`, đặt `ignoreTimeScale: true` để tiếp tục khi pause.
+Kết quả `true` khi timer trả object thành công, `false` nếu lượt thuê đã kết thúc hoặc pool bị dispose.
+Rental ID đổi mỗi lần Rent, nên timer của lượt trước không trả nhầm object đã được thuê lại.
+Caller hủy bằng token sẽ nhận `OperationCanceledException` và vẫn sở hữu object; `finally` trong ví dụ trả
+đúng lượt thuê nếu còn tồn tại. Dispose pool hủy các timer và dọn cả object đang thuê.
+Mỗi timer tạo linked cancellation source; đây không phải thao tác zero-allocation.
+
+Adapter có sẵn:
+
+- `SceneService.LoadUniTaskAsync` / `UnloadUniTaskAsync`.
+- `AdsService.InitializeUniTaskAsync` / `LoadUniTaskAsync` / `ShowUniTaskAsync`.
+- `FirebaseService.InitializeUniTaskAsync` / `FetchRemoteConfigUniTaskAsync`.
+- `FeatureServices.InitializeUniTaskAsync`.
+
+Cancellation của scene giữ nguyên: native load đã bắt đầu phải hoàn tất rồi mới báo hủy, giữ cờ busy trong thời gian đó.
+Ads chỉ thưởng khi kết quả là `AdResult.Rewarded`; đóng/hủy hoặc tắt dịch vụ không được xem là nhận thưởng.
+Wrapper không thêm cơ chế hủy sớm cho quảng cáo đang hiển thị.
+Chỉ await một UniTask một lần; dùng API `.Preserve()`/`.AsTask()` của UniTask khi thực sự cần nhiều consumer.
+
+Có sample **UniTask Pooling** trong Package Manager; dùng submodule thì copy `Samples~/UniTask` vào Assets.
+Gắn `UniTaskPoolExample`, gán prefab rồi gọi `Spawn` từ gameplay hoặc UI button. Sample dispose pool khi owner bị hủy.
+`PrefabPool` cũng có `CountAll`, `CountActive`, `CountInactive`, `TryGetRentalId`, `TryReturn` và `DisposalToken`.
+Các hàm Rent/Return cũ vẫn sử dụng được như trước.
+
 ## Input
 
 Mặc định dùng `ManualInputSource`: UI button/joystick gọi `SetButton`, `SetAxis`, `SetVector2`.
@@ -472,3 +538,9 @@ prefab menu giữ instance, trạng thái tab và animation đóng khi timeScale
 V0.9: **69/69 EditMode tests pass**, bổ sung kiểm tra scene list theo build, config không dùng,
 Release/Development, warning policy, report và bảo toàn scene đang mở. Không thay đổi runtime;
 bộ PlayMode 19 bài đã đạt ở v0.8. Chưa chạy xuất APK cho bản 0.9.
+
+V0.10: **69/69 EditMode + 28/28 PlayMode tests pass** với UniTask 2.5.11 trên Unity 6000.3.26f1.
+Assembly `BaseUnity.UniTask.Tests` chạy ở PlayMode, kiểm tra timer theo timeScale, cancellation, pool disposal,
+callback Ads và lỗi scene qua adapter. Sample UniTask Pooling đã import và compile trong workspace.
+Chưa kiểm thử tích hợp UniTask trong Android/iOS player; adapter tùy chọn khi không có package được cấu hình
+bằng asmdef define constraints, chưa thực hiện lượt compile gỡ package trong lần cập nhật này.

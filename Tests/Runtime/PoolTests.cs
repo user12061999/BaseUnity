@@ -42,6 +42,18 @@ namespace BaseUnity.Tests
             yield return null;
             Assert.IsTrue(first); Assert.IsFalse(second);
         }
+        [UnityTest] public IEnumerator RentalIdsRejectStaleAndForeignReturns()
+        {
+            var item = pool.Rent(Vector3.zero, Quaternion.identity);
+            Assert.IsTrue(pool.TryGetRentalId(item, out var previous)); pool.Return(item);
+            Assert.AreSame(item, pool.Rent(Vector3.zero, Quaternion.identity));
+            Assert.IsTrue(pool.TryGetRentalId(item, out var current)); Assert.AreNotEqual(previous, current);
+            Assert.IsFalse(pool.TryReturn(item, previous)); Assert.IsFalse(pool.TryReturn(prefab, current));
+            Assert.IsTrue(pool.TryReturn(item, current)); Assert.IsFalse(pool.TryReturn(item, current));
+            Assert.AreEqual(0, pool.CountActive); Assert.AreEqual(1, pool.CountInactive); Assert.AreEqual(1, pool.CountAll);
+            pool.Dispose(); Assert.IsTrue(pool.DisposalToken.IsCancellationRequested);
+            Assert.IsFalse(pool.TryReturn(item, current)); yield return null;
+        }
         [UnityTest] public IEnumerator DisposeDestroysActiveInstancesAndPreventsReuse()
         {
             var instance = pool.Rent(Vector3.zero, Quaternion.identity);

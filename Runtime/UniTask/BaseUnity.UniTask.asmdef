@@ -1,0 +1,7 @@
+{
+  "name": "BaseUnity.UniTask",
+  "rootNamespace": "BaseUnity.Async",
+  "references": ["BaseUnity.Runtime", "UniTask"],
+  "defineConstraints": ["BASEUNITY_UNITASK"],
+  "versionDefines": [{ "name": "com.cysharp.unitask", "expression": "2.5.0", "define": "BASEUNITY_UNITASK" }]
+}

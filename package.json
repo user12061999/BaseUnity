@@ -1,6 +1,6 @@
 {
   "name": "com.baseunity.foundation",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "displayName": "BaseUnity Foundation",
   "description": "Reusable game foundation for Git submodules and Unity packages.",
   "unity": "6000.0",
@@ -9,7 +9,20 @@
     "com.unity.modules.jsonserialize": "1.0.0"
   },
   "samples": [
-    { "displayName": "Quick Start", "description": "Bootstrap and core service usage.", "path": "Samples~/QuickStart" },
-    { "displayName": "Game Flow", "description": "Bootstrap, Home, InGame, loading, settings, pause and result. Requires Unity UI.", "path": "Samples~/GameFlow" }
+    {
+      "displayName": "Quick Start",
+      "description": "Bootstrap and core service usage.",
+      "path": "Samples~/QuickStart"
+    },
+    {
+      "displayName": "Game Flow",
+      "description": "Bootstrap, Home, InGame, loading, settings, pause and result. Requires Unity UI.",
+      "path": "Samples~/GameFlow"
+    },
+    {
+      "displayName": "UniTask Pooling",
+      "description": "Cancelable timed pool returns with UniTask. Install UniTask before using.",
+      "path": "Samples~/UniTask"
+    }
   ]
 }

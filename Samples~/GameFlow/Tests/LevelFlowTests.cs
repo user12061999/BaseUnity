@@ -30,7 +30,7 @@ namespace BaseUnity.GameFlow.Tests
                 if (flow && flow.Phase == phase) yield break;
                 yield return null;
             }
-            Assert.Fail("Timed out waiting for " + phase);
+            Assert.Fail("Timed out waiting for " + phase + "; actual=" + (flow ? flow.Phase.ToString() : "destroyed") + "; focused=" + Application.isFocused);
         }
         private static void Click(string name)
         {

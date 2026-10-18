@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 
 namespace BaseUnity.Pooling
@@ -11,14 +12,21 @@ namespace BaseUnity.Pooling
         private readonly GameObject storage;
         private readonly Stack<GameObject> available = new Stack<GameObject>();
         private readonly HashSet<GameObject> all = new HashSet<GameObject>();
-        private readonly HashSet<GameObject> rented = new HashSet<GameObject>();
+        private readonly Dictionary<GameObject, long> rented = new Dictionary<GameObject, long>();
+        private readonly CancellationTokenSource lifetime;
+        private long rentalId;
         private readonly int maxRetained;
         private bool disposed;
+        public int CountAll => all.Count;
+        public int CountActive => rented.Count;
+        public int CountInactive => available.Count;
+        public CancellationToken DisposalToken { get; }
 
         public PrefabPool(GameObject prefab, Transform parent, int prewarm = 0, int maxRetained = 32)
         {
             if (!prefab) throw new ArgumentNullException(nameof(prefab));
             if (maxRetained < 0 || prewarm < 0 || prewarm > maxRetained) throw new ArgumentOutOfRangeException(nameof(prewarm));
+            lifetime = new CancellationTokenSource(); DisposalToken = lifetime.Token;
             this.prefab = prefab;
             this.maxRetained = maxRetained;
             storage = new GameObject($"Pool: {prefab.name}");
@@ -45,12 +53,24 @@ namespace BaseUnity.Pooling
                 if (!instance) all.Remove(instance);
             }
             if (!instance) instance = Create();
-            rented.Add(instance);
+            rented.Add(instance, checked(++rentalId));
             instance.transform.SetParent(parent, false);
             instance.transform.SetPositionAndRotation(position, rotation);
             instance.transform.localScale = prefab.transform.localScale;
             instance.SetActive(true);
             return instance;
+        }
+
+        /// <summary>A rental ID identifies one use of an object, including across asynchronous waits.</summary>
+        public bool TryGetRentalId(GameObject instance, out long id)
+        {
+            id = 0;
+            return !disposed && instance && rented.TryGetValue(instance, out id);
+        }
+        public bool TryReturn(GameObject instance, long id)
+        {
+            if (!TryGetRentalId(instance, out var current) || id != current) return false;
+            Return(instance); return true;
         }
 
         public void Return(GameObject instance)
@@ -68,9 +88,14 @@ namespace BaseUnity.Pooling
         {
             if (disposed) return;
             disposed = true;
-            foreach (var instance in all) if (instance) UnityEngine.Object.Destroy(instance);
-            all.Clear(); rented.Clear(); available.Clear();
-            if (storage) UnityEngine.Object.Destroy(storage);
+            try { lifetime.Cancel(); }
+            finally
+            {
+                lifetime.Dispose();
+                foreach (var instance in all) if (instance) UnityEngine.Object.Destroy(instance);
+                all.Clear(); rented.Clear(); available.Clear();
+                if (storage) UnityEngine.Object.Destroy(storage);
+            }
         }
     }
 }

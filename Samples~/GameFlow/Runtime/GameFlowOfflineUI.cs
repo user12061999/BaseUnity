@@ -21,6 +21,7 @@ namespace BaseUnity.GameFlow
         private string tab = "SHOP", message;
         private int pageIndex;
         private float refreshAt;
+        public bool IsOpen => open;
         private OfflineService Economy => features.Offline;
         private string T(string value) => features.Language.Text(value);
         public void Initialize(GameFlowBootstrap owner, GameFlowFeatures integration)

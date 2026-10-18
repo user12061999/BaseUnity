@@ -68,6 +68,7 @@ namespace BaseUnity.GameFlow
             else gameObject.AddComponent<GameFlowUI>().Initialize(this);
             Features = gameObject.AddComponent<GameFlowFeatures>();
             Features.Initialize(this);
+            gameObject.AddComponent<GameFlowMobileModules>().Initialize(this);
             StartCoroutine(BootAfterFirstFrame());
         }
 
@@ -172,7 +173,8 @@ namespace BaseUnity.GameFlow
                     throw new InvalidOperationException($"Scene is missing or disabled in the active Build Profile: {scene}");
                 await Services.Get<SceneService>().LoadAsync(scene, LoadSceneMode.Single, new LoadProgress(this), destroyCancellationToken);
                 if (!this || !IsReady) return;
-                if (destination == FlowPhase.Playing) Levels.LoadGameplay();
+                if (destination == FlowPhase.Playing) await Levels.LoadGameplayAsync();
+                if (!this || !IsReady) return;
                 SetPhase(destination);
                 if (destination == FlowPhase.Playing) Services.Get<EventBus>().Publish(new SessionStarted(CurrentLevel));
             }

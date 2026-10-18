@@ -11,11 +11,13 @@ namespace BaseUnity.GameFlow
         [Tooltip("Leave empty to use the shared InGame scene.")]
         public string sceneOverride;
         public GameObject gameplayPrefab;
+        [Tooltip("Optional Addressables prefab address. Takes precedence over the direct prefab.")]
+        public string addressablePrefab;
 
         public GameLevel CreateDefinition() => new GameLevel
         {
             title = title, targetScore = targetScore, timeLimitSeconds = timeLimitSeconds,
-            sceneOverride = sceneOverride, gameplayPrefab = gameplayPrefab
+            sceneOverride = sceneOverride, gameplayPrefab = gameplayPrefab, addressablePrefab = addressablePrefab
         };
     }
 }

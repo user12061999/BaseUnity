@@ -53,6 +53,11 @@ namespace BaseUnity.Editor
             options.localization = EditorGUILayout.Toggle("English / Vietnamese", options.localization);
             options.ads = EditorGUILayout.Toggle("Enable Ads", options.ads); options.firebase = EditorGUILayout.Toggle("Enable Firebase", options.firebase);
             if (options.ads || options.firebase) EditorGUILayout.HelpBox("Enable selects startup switches. Configure SDK providers, credentials and ad IDs in Feature Manager before building.", MessageType.Info);
+            options.popups = EditorGUILayout.Toggle("Popup queue", options.popups); options.feedback = EditorGUILayout.Toggle("Toast / loading / confirmation", options.feedback);
+            options.assets = EditorGUILayout.Toggle("Addressables assets", options.assets); options.tutorial = EditorGUILayout.Toggle("Tutorial", options.tutorial);
+            options.haptics = EditorGUILayout.Toggle("Haptics", options.haptics); options.notifications = EditorGUILayout.Toggle("Local notifications", options.notifications);
+            options.purchasing = EditorGUILayout.Toggle("In-app purchases", options.purchasing);
+            if (options.assets || options.notifications || options.purchasing || options.haptics) EditorGUILayout.HelpBox("Configure module packages/providers and store verification in Feature Manager > Modules. Enabling a switch does not install an SDK or activate real purchases.", MessageType.Info);
             options.generateLevels = EditorGUILayout.Toggle("Generate missing LevelData", options.generateLevels);
             options.generateOfflineUI = EditorGUILayout.Toggle("Generate missing offline UI", options.generateOfflineUI);
             options.installUniTask = EditorGUILayout.Toggle("Install UniTask if missing", options.installUniTask);

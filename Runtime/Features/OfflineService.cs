@@ -22,6 +22,7 @@ namespace BaseUnity.Features
     /// <summary>Local, main-thread economy. Save succeeds before any transaction becomes visible.</summary>
     public sealed class OfflineService
     {
+        [Serializable] public sealed class StoreReceipt { public string transactionId, productId; }
         [Serializable] public sealed class Count { public string id; public long value; }
         [Serializable] public sealed class Profile
         {
@@ -37,6 +38,8 @@ namespace BaseUnity.Features
             public bool doubled;
             public long gamesPlayed, gamesWon, score;
             public List<string> claimedMissions = new List<string>();
+            public List<StoreReceipt> storeReceipts = new List<StoreReceipt>();
+            public List<string> storeProducts = new List<string>(), entitlements = new List<string>();
         }
         private readonly OfflineSettings settings;
         private readonly ISaveStore saves;
@@ -91,18 +94,23 @@ namespace BaseUnity.Features
             p.inventory = p.inventory ?? new List<Count>(); p.purchases = p.purchases ?? new List<Count>();
             p.completedLevels = p.completedLevels ?? new List<int>(); p.claimedMissions = p.claimedMissions ?? new List<string>();
             p.progress = p.progress ?? new PlayerProgress();
+            p.storeReceipts = p.storeReceipts ?? new List<StoreReceipt>(); p.storeProducts = p.storeProducts ?? new List<string>(); p.entitlements = p.entitlements ?? new List<string>();
             // JsonUtility represents null nested serializable objects as zero-valued objects.
             if (p.result != null && string.IsNullOrEmpty(p.result.session) && p.result.level == 0 && p.result.score == 0 && !p.result.won && !p.result.acknowledged && !p.result.bonusVerified) p.result = null;
         }
         private static bool ValidateProfile(Profile p)
         {
-            if (p.schemaVersion > 2) throw new NotSupportedException("Offline profile needs a newer BaseUnity version.");
+            if (p.schemaVersion > 3) throw new NotSupportedException("Offline profile needs a newer BaseUnity version.");
             Normalize(p);
             return p.schemaVersion >= 0 && p.coins >= 0 && p.gems >= 0 && p.dailyClaims >= 0 && p.lastReward >= 0 &&
                 p.inventory.All(x => x != null && !string.IsNullOrWhiteSpace(x.id) && x.value >= 0) &&
                 p.purchases.All(x => x != null && !string.IsNullOrWhiteSpace(x.id) && x.value >= 0) &&
                 p.inventory.Select(x => x.id).Distinct().Count() == p.inventory.Count &&
                 p.purchases.Select(x => x.id).Distinct().Count() == p.purchases.Count &&
+                p.storeReceipts.All(x => x != null && !string.IsNullOrWhiteSpace(x.transactionId) && !string.IsNullOrWhiteSpace(x.productId)) &&
+                p.storeReceipts.Select(x => x.transactionId).Distinct().Count() == p.storeReceipts.Count &&
+                p.storeProducts.All(x => !string.IsNullOrWhiteSpace(x)) && p.entitlements.All(x => !string.IsNullOrWhiteSpace(x)) &&
+                p.storeProducts.Distinct().Count() == p.storeProducts.Count && p.entitlements.Distinct().Count() == p.entitlements.Count &&
                 p.gamesPlayed >= 0 && p.gamesWon >= 0 && p.score >= 0 && p.progress.sessions >= 0 && p.progress.bestScore >= 0 &&
                 (p.result == null || (!string.IsNullOrEmpty(p.result.session) && p.result.level > 0 && p.result.score >= 0));
         }
@@ -137,7 +145,7 @@ namespace BaseUnity.Features
             try
             {
                 var next = JsonUtility.FromJson<Profile>(JsonUtility.ToJson(profile));
-                Normalize(next); change(next); next.schemaVersion = 2;
+                Normalize(next); change(next); next.schemaVersion = 3;
                 saves.Save(settings.saveSlot, next); profile = next; LastError = null;
             }
             catch (Exception e) { LastError = e.Message; return false; }
@@ -155,6 +163,22 @@ namespace BaseUnity.Features
         }
         private static void Credit(Profile data, Currency currency, long amount)
         { if (currency == Currency.Coin) data.coins = checked(data.coins + amount); else data.gems = checked(data.gems + amount); }
+        public bool HasEntitlement(string id) => !string.IsNullOrWhiteSpace(id) && profile.entitlements.Contains(id);
+        public bool HasStoreProduct(string id) => profile.storeProducts.Contains(id);
+        public bool HasStoreTransaction(string transactionId, string productId) => profile.storeReceipts.Any(x => x.transactionId == transactionId && x.productId == productId);
+        public bool ApplyStorePurchase(string transactionId, StoreProduct product)
+        {
+            if (string.IsNullOrWhiteSpace(transactionId) || product == null || string.IsNullOrWhiteSpace(product.id) || product.coins < 0 || product.gems < 0 || !Enum.IsDefined(typeof(StoreProductKind), product.kind)) return Reject("Invalid verified store purchase");
+            var existing = profile.storeReceipts.FirstOrDefault(x => x.transactionId == transactionId);
+            if (existing != null) return existing.productId == product.id || Reject("Store transaction/product mismatch");
+            return Commit(next => {
+                if (product.kind == StoreProductKind.Consumable || !next.storeProducts.Contains(product.id))
+                { Credit(next, Currency.Coin, product.coins); Credit(next, Currency.Gem, product.gems); }
+                if (product.kind == StoreProductKind.NonConsumable && !next.storeProducts.Contains(product.id)) next.storeProducts.Add(product.id);
+                if (!string.IsNullOrWhiteSpace(product.entitlement) && !next.entitlements.Contains(product.entitlement)) next.entitlements.Add(product.entitlement);
+                next.storeReceipts.Add(new StoreReceipt { transactionId = transactionId, productId = product.id });
+            });
+        }
         public long Balance(Currency currency) => currency == Currency.Coin ? Coins : Gems;
         public long ItemCount(string id) => CountOf(profile.inventory, id);
         public bool AddCurrency(Currency currency, long amount) => amount > 0 && Enum.IsDefined(typeof(Currency), currency) ? Commit(p => Credit(p, currency, amount)) : Reject("Amount must be positive");

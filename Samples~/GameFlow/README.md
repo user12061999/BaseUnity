@@ -174,3 +174,13 @@ when required by UMP, or RETRY PRIVACY if gathering failed. Existing Layer Lab p
 extra button at runtime; no prefab/art is regenerated. Update `GameFlowUI.cs`, `GameFlowView.cs` and
 `GameFlowPrivacyButton.cs` via the Wizard. Native forms require a configured Android/iOS player;
 Editor does not simulate consent. See the root README for App ID/message/MAX configuration.
+
+### Mobile modules and Addressable gameplay
+
+Update Bootstrap, GameFlowConfig, LevelData, LevelManager, GameFlowOfflineUI and the new
+GameFlowMobileModules/TutorialTarget scripts through the Wizard. Feature Manager > Modules controls
+the services. MORE exposes optional haptics, notifications, tutorials and store settings. The bundled
+adapters do not simulate native permission or purchases in Editor. Tutorial keys include home.play and
+gameplay.collect; custom UI can bind TutorialTarget. LevelData.addressablePrefab loads via AssetService
+and releases on leaving the level; leave it empty to preserve direct prefab behavior. See
+[Mobile Modules](../MobileModules/README.md) for setup, ownership, receipts and device testing.

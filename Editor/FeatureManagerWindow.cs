@@ -58,13 +58,13 @@ namespace BaseUnity.Editor
             if (!config) { EditorGUILayout.HelpBox("Choose a FeatureConfig asset or create a new one. No SDK is needed to configure features.", MessageType.Info); return; }
             if (serialized == null || serialized.targetObject != config) serialized = new SerializedObject(config);
             if (EditorApplication.isPlayingOrWillChangePlaymode) EditorGUILayout.HelpBox("Stop Play Mode to edit startup configuration.", MessageType.Info);
-            int chosenTab = GUILayout.Toolbar(tab, new[] { "Offline", "Language", "Ads", "Firebase", "Game", "Setup" });
+            int chosenTab = GUILayout.Toolbar(tab, new[] { "Offline", "Language", "Ads", "Firebase", "Game", "Modules", "Setup" });
             if (chosenTab != tab) { tab = chosenTab; notice = null; scroll = Vector2.zero; }
             scroll = EditorGUILayout.BeginScrollView(scroll);
             using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
             {
                 serialized.Update();
-                if (tab == 0) DrawOffline(); else if (tab == 1) DrawLanguage(); else if (tab == 2) DrawAds(); else if (tab == 3) DrawFirebase(); else if (tab == 4) DrawGame(); else DrawSetup();
+                if (tab == 0) DrawOffline(); else if (tab == 1) DrawLanguage(); else if (tab == 2) DrawAds(); else if (tab == 3) DrawFirebase(); else if (tab == 4) DrawGame(); else if (tab == 5) DrawModules(); else DrawSetup();
                 serialized.ApplyModifiedProperties();
             }
             EditorGUILayout.EndScrollView();
@@ -193,6 +193,43 @@ namespace BaseUnity.Editor
                 EditorGUILayout.HelpBox("UMP hashed IDs differ from MAX advertising IDs. Debug settings are ignored in release players. Never infer personalized consent from CanRequestAds.", MessageType.Info);
             }
             if (GUILayout.Button("Google UMP setup / publish privacy message")) Application.OpenURL("https://developers.google.com/admob/unity/privacy");
+        }
+        private void DrawModules()
+        {
+            Header("Asset management");
+            if (Field("assets.enabled", "Enable Addressables assets").boolValue)
+            { Field("assetProvider", "Asset provider"); DrawProvider("BaseUnity.Integrations.AddressablesProvider", "assetProvider", FeatureSetupMenu.InstallAddressables); if (GUILayout.Button("Install Addressables package")) MobileModuleSetupMenu.InstallAssets(); }
+            Header("Popup queue and feedback");
+            if (Field("popups.enabled", "Enable popup queue").boolValue) Field("popups.capacity", "Queue capacity");
+            if (Field("feedback.enabled", "Enable toast / loading / confirm").boolValue) Field("feedback.toastSeconds", "Toast duration");
+            Header("Tutorials");
+            if (Field("tutorial.enabled", "Enable Tutorials").boolValue)
+            { Field("tutorial.autoStartAtHome", "Auto start at Home"); Field("tutorial.saveSlot", "Progress save slot"); Field("tutorial.tutorials", "Tutorial definitions", true); }
+            Header("Haptics");
+            if (Field("haptics.enabled", "Enable Haptics").boolValue)
+            { Field("hapticProvider", "Haptic provider"); DrawProvider("BaseUnity.Integrations.MobileHapticProvider", "hapticProvider", FeatureSetupMenu.InstallHaptics); Field("haptics.minimumInterval", "Minimum interval"); }
+            Header("Local notifications");
+            if (Field("notifications.enabled", "Enable Notifications").boolValue)
+            {
+                Field("notificationProvider", "Notification provider"); DrawProvider("BaseUnity.Integrations.MobileNotificationProvider", "notificationProvider", FeatureSetupMenu.InstallNotifications);
+                if (GUILayout.Button("Install Mobile Notifications package")) MobileModuleSetupMenu.InstallNotifications();
+                if (GUILayout.Button("Use explicit notification permission (iOS)")) Run(() => { MobileModuleSetupMenu.ConfigureNotificationPermission(); return "Automatic iOS permission requests disabled."; });
+                foreach (string name in new[] { "channelId", "channelName", "smallIcon", "dailyTitle", "dailyMessage", "dailyReminderId" }) Field("notifications." + name, ObjectNames.NicifyVariableName(name));
+                EditorGUILayout.HelpBox("Permission is requested only from an explicit player action. Opting out cancels only BaseUnity-owned notification IDs.", MessageType.Info);
+            }
+            Header("In-app purchases");
+            if (Field("purchasing.enabled", "Enable IAP").boolValue)
+            {
+                Field("purchaseProvider", "Store provider"); DrawProvider("BaseUnity.Integrations.UnityPurchaseProvider", "purchaseProvider", FeatureSetupMenu.InstallPurchasing);
+                Field("purchaseVerifier", "Receipt verifier"); DrawProvider("BaseUnity.Integrations.ServerPurchaseVerifier", "purchaseVerifier", FeatureSetupMenu.InstallPurchaseVerifier);
+                if (GUILayout.Button("Install Unity IAP package")) MobileModuleSetupMenu.InstallPurchasing();
+                Field("purchasing.removeAdsEntitlement", "Remove Ads entitlement"); Field("purchasing.products", "Store catalog", true);
+                EditorGUILayout.HelpBox("Requires Offline wallet and a trusted receipt verifier. Configure store product IDs, then the verifier's HTTPS endpoint on its asset. No receipt is confirmed before the atomic wallet/transaction save succeeds. No real-money purchase is simulated by this base in Editor.", MessageType.Info);
+                var verifier = serialized.FindProperty("purchaseVerifier").objectReferenceValue;
+                if (verifier && GUILayout.Button("Select receipt verifier settings")) Selection.activeObject = verifier;
+            }
+            Header("Optional packages");
+            if (GUILayout.Button("Install all three Unity module packages")) MobileModuleSetupMenu.InstallAll();
         }
         private void DrawFirebase()
         {

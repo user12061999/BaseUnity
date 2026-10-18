@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.13.0
+
+- Add scoped asset leases, an optional Addressables provider and addressable level prefabs.
+- Add durable tutorial steps, matching UI action targets, highlighting, skip/reset and optional Home startup.
+- Add bounded priority/FIFO popup scheduling, deduplication, scope cancellation and presenter lifetimes.
+- Add toast, nested loading scopes and shared confirmation UI.
+- Add native Android/iOS haptics, throttling and saved player preferences.
+- Add explicit notification permission, UTC/daily scheduling and owned-ID-only cancellation.
+- Add Unity IAP 5 purchase/restore, metadata, pending retries and trusted HTTPS verification adapter.
+- Save verified purchases atomically with wallet rewards/entitlements before store confirmation; upgrade Offline schema to 3.
+- Honor Remove Ads for banners/interstitials while preserving optional rewarded ads.
+- Add module controls to Feature Manager/Wizard, package installers and pre-build checks.
+- Add portable Game Flow UI, usage sample and lifecycle/transaction regression coverage.
+
 ## 0.12.0
 
 - Add Google UMP consent gathering, privacy options and retry/reset APIs with an optional SDK adapter.

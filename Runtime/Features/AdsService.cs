@@ -14,7 +14,7 @@ namespace BaseUnity.Features
         private IAdsBackend backend;
         private CancellationTokenSource lifetime = new CancellationTokenSource();
         private Task<bool> initialization;
-        private bool busy, disposed;
+        private bool busy, disposed, noAds;
         private double lastInterstitial = double.NegativeInfinity;
         public bool Enabled { get; private set; }
         public FeatureStatus Status { get; private set; }
@@ -26,7 +26,9 @@ namespace BaseUnity.Features
             Enabled = this.settings.enabled;
             Status = Enabled ? (factory == null ? FeatureStatus.MissingProvider : FeatureStatus.Initializing) : FeatureStatus.Disabled;
         }
-        private bool Allowed(AdFormat format) => Enabled && !disposed &&
+        public bool NoAds => noAds;
+        public void SetNoAds(bool value) { noAds = value; if (value) HideBanner(); }
+        private bool Allowed(AdFormat format) => Enabled && !disposed && (!noAds || format == AdFormat.Rewarded) &&
             (format == AdFormat.Banner ? settings.banner : format == AdFormat.Interstitial ? settings.interstitial : settings.rewarded);
         public bool IsReady(AdFormat format) => Allowed(format) && (consent == null || consent.CanRequestAds) && Status == FeatureStatus.Ready && backend != null && backend.IsReady(format);
         public Task<bool> InitializeAsync()

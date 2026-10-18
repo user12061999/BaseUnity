@@ -2,7 +2,7 @@
 
 Base game Unity tái sử dụng qua **Git submodule trong `Assets/BaseUnity`**.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.12.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.13.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
 
 ## Luồng game có sẵn
 
@@ -122,7 +122,7 @@ Installer chỉ thêm file thiếu, không ghi đè code mà dự án đã sửa
 
 ## Lưu dữ liệu và khôi phục (0.8)
 
-- Hồ sơ offline dùng `schemaVersion = 2` bên trong payload; envelope `ISaveStore` vẫn ở version 1 để giữ tương thích API.
+- Hồ sơ offline dùng `schemaVersion = 3` bên trong payload; envelope `ISaveStore` vẫn ở version 1 để giữ tương thích API.
 - Lần đầu chạy Game Flow 0.8, tiến trình v0.7 từ `GameFlowConfig.saveSlot` được nhập vào `offline.saveSlot`,
   cùng với tiền/vật phẩm đã có. Chỉ đánh dấu `progressMigrated` khi ghi thành công; file tiến trình cũ được giữ nguyên.
 - Sau migration, Game Flow chỉ ghi tiến trình vào hồ sơ chung. Tắt economy vẫn tiếp tục lưu tiến trình trong hồ sơ đó,
@@ -668,3 +668,42 @@ Theo [Google UMP](https://developers.google.com/admob/unity/privacy) và
 Kiểm tra v0.12: **98/98 EditMode, 31/31 PlayMode đạt**, Unity Console không có lỗi.
 Có mock cho consent/reward và kiểm tra button ở cả UI dựng bằng code lẫn prefab; chưa xác minh
 form/native Ads trên thiết bị vì project còn thiếu AdMob App ID và message tài khoản đã publish.
+
+## Mobile modules (0.13)
+
+Cấu hình tại **Feature Manager > Modules** hoặc chọn module trong Setup Wizard:
+
+| Module | Chức năng |
+| --- | --- |
+| Assets / Addressables | Lease load/release, cancellation, giải phóng handle trả về muộn, prefab theo màn |
+| Tutorial | Lưu từng bước, highlight UI, chặn ngoài mục tiêu, đúng action mới tiến bước, Skip/Reset |
+| Popup | Một popup đang mở, ưu tiên/FIFO, chống trùng ID, giới hạn số lượng, scope/cancellation |
+| Feedback | Toast, loading nhiều chủ sở hữu và hộp xác nhận dùng chung |
+| Haptics | Android/iOS, nhiều kiểu rung, giới hạn tần suất, lưu tùy chọn |
+| Local notifications | Xin quyền chủ động, hẹn giờ UTC, Daily Reward, chỉ hủy ID do base sở hữu |
+| IAP | Consumable/non-consumable, giá từ store, restore, retry pending, chống cấp trùng và Remove Ads |
+
+Popup/Feedback mặc định bật; module SDK cần bật và gán provider. Tắt module sẽ ẩn thông tin của nó.
+Core không phụ thuộc SDK. Cài package bằng **Tools > BaseUnity > Integrations > Install Mobile Module
+Packages**, sau đó Install adapter / Create provider ở từng mục. Đã kiểm tra biên dịch với Addressables
+4.1.1, Mobile Notifications 2.5.0, Unity IAP 5.4.4. SDK/asset cấu hình chỉ nằm ở host project.
+
+Game Flow có nút **MORE** cho rung/thông báo/tutorial/store; giữ prefab và art hiện có.
+`LevelData.addressablePrefab` ưu tiên hơn prefab trực tiếp, giữ lease đến khi rời màn.
+Tutorial có key `home.play`, `gameplay.collect`; target riêng dùng TutorialTarget. Popup xác nhận tạm
+pause gameplay, chờ Ads/Consent hoặc menu Offline để tránh chồng UI.
+
+IAP chỉ cấp sau xác minh receipt và lưu ví + mã giao dịch thành công, rồi mới confirm với store.
+Restore chờ xác minh/ghi entitlement xong mới báo hoàn tất. Remove Ads tắt banner/interstitial, giữ
+rewarded tùy chọn. Cần sản phẩm/store IDs trên Play Console/App Store Connect và endpoint HTTPS tin cậy
+của bạn: base cung cấp client adapter/protocol, không có backend được host sẵn. Editor không cấp từ giao
+dịch giả lập. Không hỗ trợ subscription hoặc giỏ nhiều sản phẩm/số lượng lớn hơn 1.
+
+Offline save nâng thêm trường lên schema 3 khi ghi thành công, giữ tiền/tiến trình cũ; bản base cũ chặn
+schema mới. Rung, thông báo và giao dịch sandbox vẫn cần thử trên thiết bị Android/iOS.
+Xem [hướng dẫn đầy đủ và API](Samples~/MobileModules/README.md).
+
+Kiểm tra v0.13: **127/127 EditMode của BaseUnity và 35/35 PlayMode đạt**, gồm retry receipt, lỗi lưu,
+chống cấp trùng, giữ/release asset theo màn, Tutorial thao tác nút và popup pause/resume. Đã gán provider
+mới ở project BaseUnity; IAP đang tắt, chờ store IDs và endpoint xác minh. Chưa chạy giao dịch sandbox,
+thông báo/rung trên thiết bị thật. Switch runtime không tự loại SDK đã cài khỏi bản build.

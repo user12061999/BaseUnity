@@ -13,6 +13,8 @@ namespace BaseUnity.Editor
     {
         public string destination = GameFlowInstaller.Destination;
         public bool offline = true, shop = true, daily = true, missions = true, rewards = true, localization = true;
+        public bool assets, tutorial, haptics, notifications, purchasing;
+        public bool popups = true, feedback = true;
         public bool ads, firebase, generateLevels = true, generateOfflineUI = true, installUniTask;
     }
     [Serializable] internal sealed class PendingBaseUnitySetup { public BaseUnitySetupOptions options; public string status, error, backup; }
@@ -92,6 +94,8 @@ namespace BaseUnity.Editor
                 result.offline = config.offline.enabled; result.shop = config.offline.shop; result.daily = config.offline.dailyReward;
                 result.missions = config.offline.missions; result.rewards = config.offline.levelRewards;
                 result.localization = config.localization.enabled; result.ads = config.ads.enabled; result.firebase = config.firebase.enabled;
+                result.assets = config.assets.enabled; result.tutorial = config.tutorial.enabled; result.haptics = config.haptics.enabled;
+                result.notifications = config.notifications.enabled; result.purchasing = config.purchasing.enabled; result.popups = config.popups.enabled; result.feedback = config.feedback.enabled;
             }
             return result;
         }
@@ -180,6 +184,8 @@ namespace BaseUnity.Editor
             config.offline.enabled = options.offline; config.offline.shop = options.shop; config.offline.dailyReward = options.daily;
             config.offline.missions = options.missions; config.offline.levelRewards = options.rewards;
             config.localization.enabled = options.localization; config.ads.enabled = options.ads; config.firebase.enabled = options.firebase;
+            config.assets.enabled = options.assets; config.tutorial.enabled = options.tutorial; config.haptics.enabled = options.haptics;
+            config.notifications.enabled = options.notifications; config.purchasing.enabled = options.purchasing; config.popups.enabled = options.popups; config.feedback.enabled = options.feedback;
             EditorUtility.SetDirty(config);
         }
         private static void InvokeBuilder(string name, UnityEngine.Object config)

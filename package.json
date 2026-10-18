@@ -1,6 +1,6 @@
 {
   "name": "com.baseunity.foundation",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "displayName": "BaseUnity Foundation",
   "description": "Reusable game foundation for Git submodules and Unity packages.",
   "unity": "6000.0",
@@ -23,6 +23,11 @@
       "displayName": "UniTask Pooling",
       "description": "Cancelable timed pool returns with UniTask. Install UniTask before using.",
       "path": "Samples~/UniTask"
+    },
+    {
+      "displayName": "Mobile Modules",
+      "description": "Asset leases, tutorial, popup/feedback, haptics, local notifications and verified purchases. SDK adapters installed separately.",
+      "path": "Samples~/MobileModules"
     }
   ]
 }

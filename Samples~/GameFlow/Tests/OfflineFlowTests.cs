@@ -38,6 +38,23 @@ namespace BaseUnity.GameFlow.Tests
             public void ResetForTesting() { allowed = false; }
             public void Dispose() { }
         }
+        public sealed class TestAssets : AssetProvider
+        {
+            public readonly AssetBackend backend = new AssetBackend();
+            public override IAssetBackend Create() => backend;
+        }
+        public sealed class AssetHandle : IAssetHandle
+        {
+            public GameObject prefab; public int releases;
+            public UnityEngine.Object Asset => prefab;
+            public void Dispose() { releases++; }
+        }
+        public sealed class AssetBackend : IAssetBackend
+        {
+            public int loads; public TaskCompletionSource<IAssetHandle> pending;
+            public Task<IAssetHandle> LoadAsync(string address, CancellationToken cancellation) { loads++; return pending.Task; }
+            public void Dispose() { }
+        }
         public sealed class Backend : IAdsBackend
         {
             public AdResult result = AdResult.Closed;
@@ -54,6 +71,8 @@ namespace BaseUnity.GameFlow.Tests
         private FeatureConfig features;
         private TestAds provider;
         private TestConsent consentProvider;
+        private TestAssets assetProvider;
+        private GameObject assetTemplate;
         private string slot;
         private bool hadLanguage;
         private LocalizationService.LanguageSave savedLanguage;
@@ -72,6 +91,11 @@ namespace BaseUnity.GameFlow.Tests
             features.offline.startingCoins = 200; features.localization.enabled = true;
             provider = ScriptableObject.CreateInstance<TestAds>(); features.adsProvider = provider; features.ads.enabled = true;
             consentProvider = ScriptableObject.CreateInstance<TestConsent>(); features.consentProvider = consentProvider;
+            assetProvider = ScriptableObject.CreateInstance<TestAssets>(); features.assets.enabled = true; features.assetProvider = assetProvider;
+            features.tutorial.enabled = true; features.tutorial.saveSlot = slot + "_tutorial";
+            features.tutorial.tutorials = new[] { new TutorialDefinition { id = "intro", steps = new[] {
+                new TutorialStep { id = "play", target = "home.play", message = "Play", waitForTargetAction = true },
+                new TutorialStep { id = "collect", target = "gameplay.collect", message = "Collect", waitForTargetAction = true } } } };
             config = ScriptableObject.CreateInstance<GameFlowConfig>(); config.features = features; config.saveSlot = slot + "_flow";
             config.levels = new[] { new GameLevel { targetScore = 10, timeLimitSeconds = 0 }, new GameLevel { targetScore = 10, timeLimitSeconds = 0 } };
             for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
@@ -162,6 +186,40 @@ namespace BaseUnity.GameFlow.Tests
             consentProvider.backend.required = false; consentProvider.backend.pending.SetResult(true); yield return null; yield return null;
             Assert.IsFalse(privacy.gameObject.activeSelf);
         }
+        [UnityTest] public IEnumerator SharedConfirmationPausesAndResumesGameplay()
+        {
+            flow.Play(); yield return WaitFor(FlowPhase.Playing);
+            var service = flow.Services.Get<FeedbackService>(); var confirm = service.ConfirmAsync("Continue?", "Confirm once", "test_confirm");
+            yield return null; yield return null; Assert.AreEqual(FlowPhase.Paused, flow.Phase);
+            Click("OK"); yield return null; yield return null; Assert.IsTrue(confirm.IsCompleted); Assert.IsTrue(confirm.Result); Assert.AreEqual(FlowPhase.Playing, flow.Phase);
+            var a = service.Loading("one"); var b = service.Loading("two"); a.Dispose(); Assert.IsTrue(service.IsLoading); b.Dispose(); Assert.IsFalse(service.IsLoading);
+        }
+        [UnityTest] public IEnumerator TutorialAdvancesThroughRealGameButtons()
+        {
+            var tutorial = flow.Services.Get<TutorialService>(); Assert.IsTrue(tutorial.StartNext()); yield return null;
+            Click("Play"); yield return WaitFor(FlowPhase.Playing); Assert.AreEqual("collect", tutorial.Current.id);
+            Click("Collect +10"); yield return WaitFor(FlowPhase.Result); Assert.IsTrue(tutorial.IsCompleted("intro")); Assert.IsNull(tutorial.Current);
+        }
+        [UnityTest] public IEnumerator AddressableGameplayHoldsAndReleasesItsAssetLease()
+        {
+            assetTemplate = new GameObject("Addressable gameplay template"); assetTemplate.SetActive(false); UnityEngine.Object.DontDestroyOnLoad(assetTemplate);
+            var handle = new AssetHandle { prefab = assetTemplate }; assetProvider.backend.pending = new TaskCompletionSource<IAssetHandle>();
+            config.levels[0].addressablePrefab = "gameplay"; flow.Play();
+            float until = UnityEngine.Time.realtimeSinceStartup + 10;
+            while (assetProvider.backend.loads == 0 && UnityEngine.Time.realtimeSinceStartup < until) yield return null;
+            Assert.AreEqual(1, assetProvider.backend.loads); Assert.AreEqual(FlowPhase.Loading, flow.Phase);
+            assetProvider.backend.pending.SetResult(handle); yield return WaitFor(FlowPhase.Playing);
+            Assert.IsNotNull(flow.Levels.Instance); Assert.AreEqual(1, flow.Services.Get<AssetService>().ActiveLeases);
+            flow.WinLevel(); yield return WaitFor(FlowPhase.Result); flow.GoHome(); yield return WaitFor(FlowPhase.Home);
+            Assert.AreEqual(0, flow.Services.Get<AssetService>().ActiveLeases); Assert.AreEqual(1, handle.releases);
+        }
+        [UnityTest] public IEnumerator PurchasedRemoveAdsEntitlementUpdatesAdsPolicyImmediately()
+        {
+            var ads = flow.Services.Get<AdsService>(); Assert.IsFalse(ads.NoAds);
+            Assert.IsTrue(flow.Features.Offline.ApplyStorePurchase("verified_test_remove_ads", new StoreProduct { id = "remove_ads", kind = StoreProductKind.NonConsumable, entitlement = "remove_ads" }));
+            Assert.IsTrue(ads.NoAds); Assert.IsFalse(ads.IsReady(AdFormat.Interstitial));
+            var load = ads.LoadAsync(AdFormat.Rewarded); while (!load.IsCompleted) yield return null; Assert.IsTrue(load.Result);
+        }
         [UnityTest] public IEnumerator UnifiedResultSurvivesRestartAndDoesNotWriteLegacyProgress()
         {
             flow.Play(); yield return WaitFor(FlowPhase.Playing);
@@ -203,11 +261,11 @@ namespace BaseUnity.GameFlow.Tests
             {
                 var saves = flow.Services.Get<ISaveStore>();
                 if (hadLanguage) saves.Save("baseunity_language", savedLanguage); else saves.Delete("baseunity_language");
-                saves.Delete(slot); saves.Delete(slot + "_flow");
+                saves.Delete(slot); saves.Delete(slot + "_flow"); saves.Delete(slot + "_tutorial");
                 UnityEngine.Object.Destroy(flow.gameObject);
             }
             UnityEngine.Time.timeScale = 1; yield return null;
-            UnityEngine.Object.Destroy(config); UnityEngine.Object.Destroy(features); UnityEngine.Object.Destroy(provider); UnityEngine.Object.Destroy(consentProvider);
+            UnityEngine.Object.Destroy(config); UnityEngine.Object.Destroy(features); UnityEngine.Object.Destroy(provider); UnityEngine.Object.Destroy(consentProvider); UnityEngine.Object.Destroy(assetProvider); if (assetTemplate) UnityEngine.Object.Destroy(assetTemplate);
         }
     }
 }

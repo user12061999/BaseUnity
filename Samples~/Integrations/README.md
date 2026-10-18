@@ -219,3 +219,12 @@ need the new `AdFormat` alias and TFUA request forwarding when upgrading from ol
 
 References: [Google UMP](https://developers.google.com/admob/unity/privacy),
 [MAX external consent flow](https://support.applovin.com/en/max/unity/overview/terms-and-privacy-policy-flow).
+
+## Optional mobile modules (0.13)
+
+Addressables, Mobile Notifications and Unity IAP have separate installers/providers in Feature Manager >
+Modules. MobileModuleSetupMenu installs their pinned Unity packages; native Haptics only needs its
+adapter. The HTTPS receipt verifier needs your trusted server endpoint. Core never references these
+SDKs. See [Mobile Modules](../MobileModules/README.md) for installation, APIs and receipt protocol.
+Configure real store IDs/server before enabling IAP. No SDK binaries or account credentials belong in
+the submodule repository.

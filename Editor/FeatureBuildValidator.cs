@@ -123,6 +123,7 @@ namespace BaseUnity.Editor
                         else if (!keys.Add(entry.key)) warn("Remote Config: duplicate default key '" + entry.key + "'; the last value wins.");
                 }
             }
+            issues.AddRange(MobileModuleValidator.Validate(config, target));
             var offline = config.offline;
             if (offline != null && offline.enabled)
             {
@@ -203,7 +204,7 @@ namespace BaseUnity.Editor
             check(data.FindProperty("homeScene").stringValue, "Home", true);
             check(data.FindProperty("inGameScene").stringValue, "InGame", true);
             string saveSlot = data.FindProperty("saveSlot").stringValue;
-            if (saveSlot == null || !Regex.IsMatch(saveSlot, @"\A[a-zA-Z0-9_-]{1,64}\z") || saveSlot == "baseunity_audio" || saveSlot == "baseunity_language") error("GameFlow: invalid or reserved save slot.");
+            if (saveSlot == null || !Regex.IsMatch(saveSlot, @"\A[a-zA-Z0-9_-]{1,64}\z") || saveSlot == "baseunity_audio" || saveSlot == "baseunity_language" || saveSlot == "baseunity_haptics" || saveSlot == "baseunity_notifications" || (feature && feature.tutorial?.enabled == true && saveSlot == feature.tutorial.saveSlot)) error("GameFlow: invalid, reserved or shared tutorial save slot.");
             var levels = data.FindProperty("levels");
             if (levels.arraySize == 0) error("GameFlow: configure at least one level.");
             for (int i = 0; i < levels.arraySize; i++)
@@ -214,6 +215,8 @@ namespace BaseUnity.Editor
                 int target = asset ? source.FindProperty("targetScore").intValue : level.FindPropertyRelative("targetScore").intValue;
                 float time = asset ? source.FindProperty("timeLimitSeconds").floatValue : level.FindPropertyRelative("timeLimitSeconds").floatValue;
                 if (target < 1 || time < 0 || float.IsNaN(time) || float.IsInfinity(time)) error("Level " + (i + 1) + ": target must be positive and time must be finite and non-negative.");
+                string address = asset ? source.FindProperty("addressablePrefab")?.stringValue : level.FindPropertyRelative("addressablePrefab")?.stringValue;
+                if (!string.IsNullOrWhiteSpace(address) && (!feature || feature.assets?.enabled != true || !feature.assetProvider)) error("Level " + (i + 1) + ": addressable gameplay requires Assets and an asset provider.");
                 string path = asset ? source.FindProperty("sceneOverride").stringValue : level.FindPropertyRelative("sceneOverride").stringValue;
                 check(path, "Level " + (i + 1), false);
             }

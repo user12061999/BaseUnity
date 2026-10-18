@@ -30,6 +30,16 @@ namespace BaseUnity.Editor
         [MenuItem("Tools/BaseUnity/Features/Install Google Consent Adapter")]
         public static void InstallGoogleConsent() => Install("GoogleConsent", "GoogleMobileAds.Ump.Api.ConsentInformation");
 
+        [MenuItem("Tools/BaseUnity/Features/Install Addressables Adapter")]
+        public static void InstallAddressables() => Install("Addressables", "UnityEngine.AddressableAssets.Addressables");
+        [MenuItem("Tools/BaseUnity/Features/Install Mobile Notifications Adapter")]
+        public static void InstallNotifications() => Install("MobileNotifications", "Unity.Notifications.NotificationCenter");
+        [MenuItem("Tools/BaseUnity/Features/Install Mobile Haptics Adapter")]
+        public static void InstallHaptics() => Install("MobileHaptics");
+        [MenuItem("Tools/BaseUnity/Features/Install Unity IAP Adapter")]
+        public static void InstallPurchasing() => Install("UnityPurchasing", "UnityEngine.Purchasing.StoreController");
+        [MenuItem("Tools/BaseUnity/Features/Install Server Receipt Verifier")]
+        public static void InstallPurchaseVerifier() => Install("PurchaseVerification");
         private static void Install(string provider, params string[] requiredTypes)
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Stop Play Mode first.");

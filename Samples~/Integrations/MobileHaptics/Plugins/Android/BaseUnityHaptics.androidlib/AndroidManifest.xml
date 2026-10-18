@@ -1,0 +1,1 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.baseunity.haptics"><uses-permission android:name="android.permission.VIBRATE" /><application /></manifest>

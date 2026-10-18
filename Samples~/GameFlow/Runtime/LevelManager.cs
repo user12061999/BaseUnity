@@ -1,4 +1,7 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
+using BaseUnity.Features;
 using UnityEngine;
 
 namespace BaseUnity.GameFlow
@@ -28,21 +31,34 @@ namespace BaseUnity.GameFlow
         public Transform GameplayRoot { get; private set; }
         public LevelContext Context { get; private set; }
         private GameFlowBootstrap flow;
+        private CancellationTokenSource assetLoad;
+        private AssetLease<GameObject> assetLease;
         internal void Initialize(GameFlowBootstrap owner) { flow = owner; }
         public void StartLevel(int number) => flow.StartLevel(number);
         public void RetryLevel() => flow.RetryLevel();
         public void NextLevel() => flow.NextLevel();
 
-        internal void LoadGameplay()
+        internal async Task LoadGameplayAsync()
         {
             Clear();
+            assetLoad = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
+            var token = assetLoad.Token;
+            var definition = flow.CurrentDefinition;
+            GameObject prefab = definition?.gameplayPrefab;
+            if (!string.IsNullOrWhiteSpace(definition?.addressablePrefab))
+            {
+                var assets = flow.Services.Get<AssetService>();
+                var loaded = await assets.LoadAsync<GameObject>(definition.addressablePrefab, token);
+                if (token.IsCancellationRequested) { loaded?.Dispose(); token.ThrowIfCancellationRequested(); }
+                if (loaded == null) throw new InvalidOperationException(assets.LastError ?? "Enable Assets and configure an Addressables provider for this level.");
+                assetLease = loaded; prefab = loaded.Asset;
+            }
             var root = new GameObject("Level Gameplay Root");
             root.SetActive(false);
             GameplayRoot = root.transform; // In the loaded scene, not the persistent bootstrap hierarchy.
             Context = new LevelContext(this, flow);
             try
             {
-                var prefab = flow.CurrentDefinition?.gameplayPrefab;
                 if (prefab)
                 {
                     Instance = Instantiate(prefab, GameplayRoot);
@@ -55,6 +71,7 @@ namespace BaseUnity.GameFlow
         }
         internal void Clear()
         {
+            assetLoad?.Cancel(); assetLoad?.Dispose(); assetLoad = null;
             Context = null;
             Instance = null;
             if (GameplayRoot)
@@ -62,7 +79,7 @@ namespace BaseUnity.GameFlow
                 GameplayRoot.gameObject.SetActive(false);
                 Destroy(GameplayRoot.gameObject);
             }
-            GameplayRoot = null;
+            GameplayRoot = null; assetLease?.Dispose(); assetLease = null;
         }
         private void OnDestroy() => Clear();
     }

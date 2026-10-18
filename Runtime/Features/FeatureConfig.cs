@@ -41,6 +41,18 @@ namespace BaseUnity.Features
         public ConsentProvider consentProvider;
         public FirebaseSettings firebase = new FirebaseSettings();
         public FirebaseProvider firebaseProvider;
+        public AssetSettings assets = new AssetSettings();
+        public AssetProvider assetProvider;
+        public PopupSettings popups = new PopupSettings();
+        public FeedbackSettings feedback = new FeedbackSettings();
+        public TutorialSettings tutorial = new TutorialSettings();
+        public HapticSettings haptics = new HapticSettings();
+        public HapticProvider hapticProvider;
+        public LocalNotificationSettings notifications = new LocalNotificationSettings();
+        public LocalNotificationProvider notificationProvider;
+        public PurchaseSettings purchasing = new PurchaseSettings();
+        public PurchaseProvider purchaseProvider;
+        public PurchaseVerifier purchaseVerifier;
         public OfflineSettings offline = new OfflineSettings();
         public LocalizationSettings localization = new LocalizationSettings();
         public GameIntegrationSettings gameIntegration = new GameIntegrationSettings();

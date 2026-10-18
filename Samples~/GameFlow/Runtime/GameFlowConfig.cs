@@ -9,6 +9,8 @@ namespace BaseUnity.GameFlow
         [Tooltip("Optional asset; when assigned its values replace the inline definition below.")]
         public LevelData data;
         public GameObject gameplayPrefab;
+        [Tooltip("Optional Addressables prefab address. Takes precedence over the direct prefab.")]
+        public string addressablePrefab;
         public string title = "Level";
         [Min(1)] public int targetScore = 30;
         [Min(0)] public float timeLimitSeconds = 60;

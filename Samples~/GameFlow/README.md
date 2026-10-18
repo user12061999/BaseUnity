@@ -155,3 +155,14 @@ Offline progression migrates once into the wallet profile. Leave the legacy prog
 a successful migration stops reading it. Restart resumes an unacknowledged result and any durable verified
 reward receipt, without double-granting. Unreadable profiles are never silently reset. See the root README
 for backup recovery and the limits of offline reward recovery.
+
+
+## Setup and managed updates (0.11)
+
+Use **Tools > BaseUnity > Setup and Update Wizard** to install/configure the Game Flow sample.
+Scan and review source file differences before Apply. Existing local changes are preserved by default;
+files from older untracked installations are only adopted automatically when identical to source.
+Generated Scenes/configs/prefabs are outside source update tracking. Backups and baselines stay in the host
+project's ProjectSettings/BaseUnity folder. See the root README for conflict and restore rules.
+`GameFlowSceneBuilder.GenerateAt(root)` generates missing scenes in a specified Assets folder;
+LevelData and offline UI generation are separate Wizard options.

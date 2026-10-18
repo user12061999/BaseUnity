@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.11.0
+
+- Setup Wizard for module switches, missing scenes/LevelData/UI, optional UniTask installation and post-setup validation.
+- Persist pending setup work across script compilation and reload; redirect the original sample installer to the Wizard.
+- Track installed Game Flow source baselines, show file states and line diffs, and preserve local/untracked changes by default.
+- Apply reviewed updates with stale-preview/path checks, backups and rollback on write failure.
+- Restore backups only when newer changes are preserved; keep existing GUIDs and protect generated game assets from code updates.
+- Use portable project-relative manifests, capture setup/build-scene changes and expose backup review in the Editor.
+- Add scoped scene generation and save only owned config assets.
+- Add updater regression coverage including conflicts, deletions, failures, restoration, traversal and project relocation.
+
 ## 0.10.0
 
 - Add an optional UniTask assembly with scene, Ads/Firebase and feature initialization adapters.

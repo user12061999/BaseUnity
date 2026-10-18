@@ -245,6 +245,8 @@ namespace BaseUnity.Editor
         }
         private void DrawSetup()
         {
+            Header("Game Flow setup / updates");
+            if (GUILayout.Button("Setup and Update Wizard")) BaseUnitySetupWindow.Open();
             Header("Pre-build validation");
             if (GUILayout.Button("Automatic build validation settings")) SettingsService.OpenProjectSettings("Project/BaseUnity/Build Validation");
             if (GUILayout.Button("Validate build configuration"))

@@ -2,12 +2,13 @@
 
 Base game Unity tái sử dụng qua **Git submodule trong `Assets/BaseUnity`**.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.10.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.11.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
 
 ## Luồng game có sẵn
 
-Chọn **Tools > BaseUnity > Install Game Flow Sample**, chờ compile và mở
-`Assets/BaseUnityGameFlow/Scenes/Bootstrap.unity`, sau đó nhấn Play.
+Chọn **Tools > BaseUnity > Setup and Update Wizard**, chọn module, scan/review file rồi bấm
+**Apply selected files and continue Setup**. Chờ compile/Setup hoàn tất, mở
+`Assets/BaseUnityGameFlow/Scenes/Bootstrap.unity` và nhấn Play. Menu **Install Game Flow Sample** cũ cũng mở Wizard.
 Yêu cầu Unity UI (`com.unity.ugui`); phần core không yêu cầu package này.
 
 Mẫu cung cấp **Bootstrap → Loading → Home → InGame → Result**, có Settings,
@@ -208,6 +209,74 @@ Nếu game override `GetFeatureConfig` để tạo config động hoặc dùng h
 phần cấu hình đó cần kiểm tra riêng. Cửa sổ **Validate Build Configuration** cũ vẫn là kiểm tra thủ công theo
 Editor scene list; báo cáo tự động mới dùng scene list của đúng lần build.
 Không thay thế việc kiểm thử APK/device, vendor dashboard hoặc xác nhận cấu hình đã áp dụng vào SDK.
+
+## Setup Wizard và cập nhật sample (0.11)
+
+Mở **Tools > BaseUnity > Setup and Update Wizard**, hoặc từ **Feature Manager > Setup**.
+Thư mục mặc định là `Assets/BaseUnityGameFlow`. Mỗi project có một bản cài code Game Flow để tránh trùng assembly;
+khi đã cài ở thư mục khác, Wizard tự chọn thư mục đó. Đích phải nằm trong Assets, không dùng junction/symlink.
+
+### Cài mới / cấu hình
+
+1. Ở tab **Setup**, chọn Wallet/Shop/Daily/Missions/Rewards, localization, Ads/Firebase, tạo LevelData/UI và UniTask tùy chọn.
+2. Bấm **Scan source files / review update** để xem các file sẽ thêm hoặc cập nhật.
+3. Kiểm tra diff/lựa chọn, bấm **Apply selected files and continue Setup**. Tác vụ được lưu và tự tiếp tục sau compile/reload.
+4. Xem **Setup state**. Wizard tạo các scene/config/prefab còn thiếu và kiểm tra cấu hình sau khi tạo.
+
+Với bản cài đã có, lựa chọn module được đọc từ config hiện tại. Chỉ đổi công tắc đã chọn; IDs, provider, giá shop,
+tiền thưởng, bản dịch và prefab/scene đã chỉnh sửa được giữ. Config dùng chung ngoài thư mục sample phải cấu hình
+qua Feature Manager thay vì để Wizard sửa. Scene/config/prefab có sẵn không bị generator ghi đè.
+Các builder chỉ lưu asset do bước Setup sở hữu; không gọi SaveAssets cho toàn project.
+UniTask được cài qua UPM nếu chọn; SDK Ads/Firebase và thông tin tài khoản vẫn cần cấu hình trong Feature Manager.
+Tắt công tắc không gỡ SDK hoặc loại binary SDK khỏi player.
+
+Cần save/đóng scene chưa có tên nếu phải tạo scene mới, và save các chỉnh sửa trong thư mục sample trước khi chạy.
+Wizard đăng ký Bootstrap/Home/InGame vào Editor build scene list. Build Profile ghi đè scene list vẫn cần thêm
+ba scene tương ứng trong profile. Không tự thay đổi orientation hoặc áp dụng art Layer Lab; các menu cũ vẫn dùng được.
+
+Báo cáo sau Setup: `Library/BaseUnity/LastSetupValidation.json`. **CompletedWithIssues** nghĩa là asset đã tạo xong
+nhưng cấu hình còn lỗi, chẳng hạn thiếu ad IDs/Firebase config; dùng **Validate generated setup** hoặc Feature Manager.
+Nếu compile lỗi, sửa Console/conflict rồi chọn **Retry pending setup**. Có thể clear pending status để giữ file/backup
+và bắt đầu lại. Tác vụ bị ngắt khi đang tạo asset giữ các snapshot gốc; nếu chưa kịp hoàn tất journal,
+có thể cần kiểm tra/khôi phục thủ công từ backup, không tự ghi đè trạng thái mới.
+
+### Preview và xử lý conflict
+
+Tab **Update preview** so sánh source trong submodule/package, file hiện tại và baseline lần cài trước.
+Bản cài trước khi có Wizard có thể được đăng ký bằng **Apply selected operations / track identical files**:
+file giống nguồn được theo dõi, file khác được giữ mặc định và hiện conflict; không suy đoán rằng đó là bản gốc.
+
+| Trạng thái | Mặc định |
+| --- | --- |
+| Identical | Giữ file/GUID, ghi nhận baseline |
+| Add / Update | Chọn thêm mới hoặc cập nhật file chưa chỉnh riêng |
+| LocalModified | Giữ chỉnh sửa riêng khi nguồn chưa thay đổi |
+| Conflict / LocalDeleted | Giữ nội dung hoặc quyết định xóa cục bộ; chọn checkbox chỉ khi muốn dùng nguồn |
+| SourceRemoved | Giữ file cũ; chọn DELETE chỉ khi muốn xóa cả file và metadata |
+
+**Diff** có dấu `+`/`-`, cùng tab Current/Source/Tracked baseline để xem toàn bộ nội dung. Không tự merge code.
+Với file lớn/binary, xem các bản nội dung/thông tin được hiển thị; resolve bằng công cụ riêng nếu cần.
+File thay đổi sau preview sẽ làm bước Apply dừng và yêu cầu scan lại. Kiểm tra cả file bị bỏ khỏi nguồn,
+nhất là khi class đổi tên/vị trí, để tránh giữ hai bản class gây lỗi compile.
+
+Công cụ chỉ quản lý file phân phối trong `Samples~/GameFlow`, bỏ qua `.meta`. Scene/config/prefab do generator tạo
+không thuộc danh sách cập nhật code. GUID hiện có được giữ. Có thể chỉ Apply code mà không chạy bước Setup.
+Nếu còn conflict chưa chọn dùng nguồn, installed version giữ phiên bản cũ/chưa fully tracked; baseline từng file vẫn được lưu.
+Không cập nhật core submodule, UniTask sample hay SDK adapter bằng tab này; pull Git/import package tương ứng rồi review Game Flow.
+
+### Backup và khôi phục
+
+Manifest/baseline: `ProjectSettings/BaseUnity/Samples/*.json`, dùng khóa theo đường dẫn tương đối để di chuyển project
+sang máy/thư mục khác vẫn giữ theo dõi. Backup/journal: `ProjectSettings/BaseUnity/SampleBackups/*.json`.
+Lưu các dữ liệu theo dõi cùng project game nếu muốn chia sẻ workflow cho team; chúng không nằm trong Git của thư viện.
+
+Mỗi lần Apply ghi backup trước khi thay file. Lỗi ghi sẽ thử rollback; nếu bị chặn do quyền/khóa file,
+journal được giữ để phục hồi. Backup Setup chỉ giữ những file thực sự đổi/thêm và scene list nếu có thay đổi.
+Chọn tab **Backups**, đọc danh sách file rồi **Validate and restore this backup**. Restore dừng trước khi ghi
+nếu phát hiện chỉnh sửa mới hơn. Khôi phục mới nhất trước; bản cũ có thể bị chặn vì đã có thay đổi sau nó.
+Rollback file mới sẽ xóa cả metadata được Unity tạo cho file đó; thư mục rỗng có thể còn lại.
+Không force-overwrite các sửa đổi mới; cất/merge các chỉnh sửa đó trước hoặc phục hồi thủ công từ snapshot.
+Backups chứa nội dung file của project, cần giữ nguyên journal để khôi phục.
 
 ## Cài vào dự án khác
 
@@ -544,3 +613,8 @@ Assembly `BaseUnity.UniTask.Tests` chạy ở PlayMode, kiểm tra timer theo ti
 callback Ads và lỗi scene qua adapter. Sample UniTask Pooling đã import và compile trong workspace.
 Chưa kiểm thử tích hợp UniTask trong Android/iOS player; adapter tùy chọn khi không có package được cấu hình
 bằng asmdef define constraints, chưa thực hiện lượt compile gỡ package trong lần cập nhật này.
+
+V0.11: **85/85 EditMode + 28/28 PlayMode tests pass**. Đã dùng updater trên bản sample của BaseUnity,
+giữ file không xác định là bản gốc, tiếp tục Setup qua compile/reload, tạo mới 3 scene + 6 prefab UI trong
+thư mục kiểm tra rồi rollback và khôi phục scene list. Kiểm tra scene/UI của lần tạo mới không có lỗi.
+Kiểm thử trên Windows/Unity 6000.3.26f1; chưa kiểm thử UPM import trên project/máy mới riêng biệt.

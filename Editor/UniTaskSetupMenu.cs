@@ -10,6 +10,7 @@ namespace BaseUnity.Editor
     {
         public const string PackageUrl = "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2.5.11";
         private static AddRequest request;
+        public static bool IsInstalling => request != null && !request.IsCompleted;
         [MenuItem("Tools/BaseUnity/Integrations/Install UniTask 2.5.11")]
         public static void Install()
         {

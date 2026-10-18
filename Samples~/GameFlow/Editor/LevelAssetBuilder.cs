@@ -40,7 +40,7 @@ namespace BaseUnity.GameFlow.Editor
                 AssetDatabase.CreateAsset(data, AssetDatabase.GenerateUniqueAssetPath(folder + "/Level" + (i + 1).ToString("D3") + ".asset"));
                 entry.data = data;
             }
-            EditorUtility.SetDirty(config); AssetDatabase.SaveAssets();
+            EditorUtility.SetDirty(config); AssetDatabase.SaveAssetIfDirty(config);
             Debug.Log("Level assets ready in " + folder + ". Existing LevelData and prefabs were preserved.");
         }
         private static GameObject BuildDemo(string path, GameFlowConfig config)

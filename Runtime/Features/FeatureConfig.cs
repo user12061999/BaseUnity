@@ -13,6 +13,7 @@ namespace BaseUnity.Features
         public bool banner = true, interstitial = true, rewarded = true;
         [Tooltip("Use Google test ad units. Keep enabled during development.")]
         public bool testMode = true;
+        [HideInInspector] public bool tagForUnderAgeOfConsent;
         [Min(1)] public int requestTimeoutSeconds = 20;
         [Min(0)] public float interstitialCooldownSeconds = 60;
         public string androidBanner, androidInterstitial, androidRewarded;
@@ -36,6 +37,8 @@ namespace BaseUnity.Features
     {
         public AdsSettings ads = new AdsSettings();
         public AdsProvider adsProvider;
+        public ConsentSettings consent = new ConsentSettings();
+        public ConsentProvider consentProvider;
         public FirebaseSettings firebase = new FirebaseSettings();
         public FirebaseProvider firebaseProvider;
         public OfflineSettings offline = new OfflineSettings();

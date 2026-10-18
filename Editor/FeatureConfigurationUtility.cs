@@ -83,6 +83,13 @@ namespace BaseUnity.Editor
             if (!config) throw new ArgumentNullException(nameof(config));
             ValidateAppId(config.ads.androidAppId); ValidateAppId(config.ads.iosAppId);
             bool max = config.ads.network == AdsNetwork.AppLovinMax;
+            ApplySdkAdsSettings(config, max);
+            if (max && config.consent != null && config.consent.enabled && FindType("GoogleMobileAds.Editor.GoogleMobileAdsSettings") != null)
+                ApplySdkAdsSettings(config, false);
+            return "Non-empty app IDs / SDK key applied to SDK settings. Empty fields left existing SDK values unchanged.";
+        }
+        private static void ApplySdkAdsSettings(FeatureConfig config, bool max)
+        {
             var type = FindType(max ? "AppLovinSettings" : "GoogleMobileAds.Editor.GoogleMobileAdsSettings");
             if (type == null) throw new InvalidOperationException("SDK settings are unavailable. Install the selected SDK first. Your BaseUnity IDs can still be saved.");
             const BindingFlags flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
@@ -98,7 +105,6 @@ namespace BaseUnity.Editor
             if (!string.IsNullOrWhiteSpace(config.ads.iosAppId)) ios.stringValue = config.ads.iosAppId.Trim();
             if (max && !string.IsNullOrWhiteSpace(config.ads.maxSdkKey)) sdkKey.stringValue = config.ads.maxSdkKey.Trim();
             properties.ApplyModifiedProperties(); AssetDatabase.SaveAssetIfDirty(target); AssetDatabase.SaveAssetIfDirty(config);
-            return "Non-empty app IDs / SDK key applied to SDK settings. Empty fields left existing SDK values unchanged.";
         }
         public static void ValidateAppId(string id)
         {

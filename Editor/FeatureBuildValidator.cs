@@ -33,6 +33,32 @@ namespace BaseUnity.Editor
             if (ads != null && ads.enabled)
             {
                 bool max = ads.network == AdsNetwork.AppLovinMax;
+                var consent = config.consent;
+                if (consent != null && consent.enabled)
+                {
+                    if (!config.consentProvider) error("Consent: assign a Google UMP provider in Feature Manager > Ads.");
+                    if ((!config.consentProvider || config.consentProvider.GetType().FullName == "BaseUnity.Integrations.GoogleUmpProvider") &&
+                        FeatureConfigurationUtility.FindType("GoogleMobileAds.Ump.Api.ConsentInformation") == null)
+                        error("Consent: Google UMP SDK is missing. Import the official Google Mobile Ads Unity plugin, then install the consent adapter.");
+                    if (mobile && string.IsNullOrWhiteSpace(ios ? ads.iosAppId : ads.androidAppId))
+                        error("Consent: a real AdMob App ID is required for the privacy message, including MAX mediation.");
+                    if (consent.debugMode)
+                    {
+                        warn("Consent testing is enabled; debug geography and IDs are used only in development builds.");
+                        if (consent.testDeviceHashedIds == null || consent.testDeviceHashedIds.Length == 0 || consent.testDeviceHashedIds.Any(string.IsNullOrWhiteSpace))
+                            error("Consent testing: add valid UMP test-device hashed IDs.");
+                    }
+                    if (max)
+                    {
+                        var type = FeatureConfigurationUtility.FindType("AppLovinMax.Scripts.IntegrationManager.Editor.AppLovinInternalSettings");
+                        var instance = type?.GetProperty("Instance")?.GetValue(null);
+                        if (instance != null && (bool)(type.GetProperty("ConsentFlowEnabled")?.GetValue(instance) ?? false))
+                            error("Consent: disable MAX Terms and Privacy Policy Flow in AppLovin Integration Manager when using BaseUnity's external UMP flow.");
+                        if (consent.tagForUnderAgeOfConsent) error("Consent: MAX must not initialize for children. Select an appropriate ad provider and audience flow.");
+                    }
+                    warn("Consent: publish the privacy message for this AdMob app and include every mediated ad partner. Verify the native flow on a device.");
+                }
+                else warn("Google consent is disabled. Supply your own CMP before requesting ads where required.");
                 string expected = max ? "BaseUnity.Integrations.AppLovinMaxProvider" : "BaseUnity.Integrations.AdMobProvider";
                 if (!config.adsProvider) error("Ads: assign a provider in Feature Manager > Ads.");
                 else if (config.adsProvider.GetType().FullName != expected)

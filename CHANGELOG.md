@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.12.0
+
+- Add Google UMP consent gathering, privacy options and retry/reset APIs with an optional SDK adapter.
+- Gate AdMob/MAX initialization, loads and shows on UMP permission without delaying gameplay.
+- Invalidate cached ads and suppress late rewards when privacy choices change; prevent overlapping native forms.
+- Add hidden-when-disabled consent configuration, development-only testing and build validation.
+- Add privacy options/retry buttons to fallback and Layer Lab sample Settings without rebuilding prefabs.
+- Forward TFUA to AdMob requests and conservatively block MAX for the configured under-age audience.
+- Verify AdMob adapter compilation against Google Mobile Ads Unity 11.6.0, including its new AdFormat type.
+- Add consent lifecycle and validation regression tests.
+
 ## 0.11.0
 
 - Setup Wizard for module switches, missing scenes/LevelData/UI, optional UniTask installation and post-setup validation.

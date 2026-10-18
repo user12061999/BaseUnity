@@ -166,3 +166,11 @@ Generated Scenes/configs/prefabs are outside source update tracking. Backups and
 project's ProjectSettings/BaseUnity folder. See the root README for conflict and restore rules.
 `GameFlowSceneBuilder.GenerateAt(root)` generates missing scenes in a specified Assets folder;
 LevelData and offline UI generation are separate Wizard options.
+
+### Google consent settings entry
+
+After configuring a Google UMP provider in Feature Manager > Ads, Settings shows PRIVACY OPTIONS
+when required by UMP, or RETRY PRIVACY if gathering failed. Existing Layer Lab prefabs receive an
+extra button at runtime; no prefab/art is regenerated. Update `GameFlowUI.cs`, `GameFlowView.cs` and
+`GameFlowPrivacyButton.cs` via the Wizard. Native forms require a configured Android/iOS player;
+Editor does not simulate consent. See the root README for App ID/message/MAX configuration.

@@ -2,7 +2,7 @@
 
 Base game Unity tái sử dụng qua **Git submodule trong `Assets/BaseUnity`**.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.11.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.12.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
 
 ## Luồng game có sẵn
 
@@ -618,3 +618,53 @@ V0.11: **85/85 EditMode + 28/28 PlayMode tests pass**. Đã dùng updater trên 
 giữ file không xác định là bản gốc, tiếp tục Setup qua compile/reload, tạo mới 3 scene + 6 prefab UI trong
 thư mục kiểm tra rồi rollback và khôi phục scene list. Kiểm tra scene/UI của lần tạo mới không có lỗi.
 Kiểm thử trên Windows/Unity 6000.3.26f1; chưa kiểm thử UPM import trên project/máy mới riêng biệt.
+
+## Google Consent / UMP (0.12)
+
+Mở **Tools > BaseUnity > Feature Manager > Ads**, bật Ads và **Enable Google consent**.
+Thông tin consent chỉ hiện khi bật tính năng. Consent mặc định bật trong FeatureConfig;
+Ads đang bật mà thiếu consent provider sẽ bị chặn an toàn, game vẫn tiếp tục chạy.
+
+1. Import [Google Mobile Ads Unity plugin](https://developers.google.com/admob/unity/quick-start) (đã kiểm tra SDK 11.6.0).
+2. Bấm **Install adapter** trong phần Google consent, rồi **Create and assign provider asset**.
+3. Điền **AdMob App ID** Android/iOS (có dấu `~`) và bấm **Apply app IDs / SDK key to installed SDK**.
+   ID này cần cả khi dùng MAX mediation; Apply cập nhật cả Google và MAX settings khi cả hai có mặt.
+4. Tạo và **publish** privacy message cho đúng app trong AdMob > Privacy & messaging, khai báo đủ ad partners.
+5. Nếu dùng MAX, tắt **Enable MAX Terms and Privacy Policy Flow** trong AppLovin Integration Manager
+   để dùng một luồng UMP bên ngoài trước MAX. MAX đọc TCF/Additional Consent; không gán `SetHasUserConsent(true)` từ `CanRequestAds`.
+6. Chạy Validate Build Configuration và kiểm tra form trên máy Android/iOS thật.
+
+UMP cập nhật một lần mỗi phiên chạy, hiển thị form khi SDK yêu cầu. Chỉ khi `CanRequestAds()`
+cho phép mới tạo Ads backend. Không có thời hạn tự đóng form khi người chơi đang đọc;
+Home/gameplay vẫn hoạt động. Lỗi mạng chỉ cho phép Ads nếu chính UMP cho phép dùng quyết định từ phiên trước.
+Khi đổi lựa chọn, mọi ad đã cache bị hủy, reward đang chờ bị chặn; lần tải tiếp theo tạo ad mới.
+Nếu chưa có quyền, game không bị khóa và không tự cấp reward.
+
+Settings của UI mẫu có **PRIVACY OPTIONS** khi UMP yêu cầu điểm mở lại; nếu khởi tạo lỗi,
+hiện **RETRY PRIVACY**. Dự án đã cài sample cần review/update `GameFlowUI.cs`, `GameFlowView.cs`
+và thêm `GameFlowPrivacyButton.cs` bằng Setup and Update Wizard; giữ nguyên prefab/art hiện có.
+Có thể gắn `GameFlowPrivacyButton` vào button riêng qua `Initialize(consentService, errorText)`.
+
+API cho game khác:
+```csharp
+var consent = bootstrap.Services.Get<BaseUnity.Features.ConsentService>();
+if (consent.PrivacyOptionsRequired)
+    await consent.ShowPrivacyOptionsAsync();
+// Nút thử lại sau lỗi mạng:
+await consent.RetryAsync();
+```
+
+`Consent testing` giả lập EEA/ngoài EEA bằng **UMP hashed device IDs** trong development build;
+đây không phải MAX advertising IDs. Release player bỏ qua debug settings. `ResetForTesting()` chỉ chạy
+trong Editor/development build và không tự gọi lúc mở app. Editor không giả lập việc đồng ý hoặc cấp thưởng.
+TFUA được chuyển sang request của adapter AdMob mới; MAX bị chặn khi chọn đối tượng dưới tuổi consent.
+Cờ này không thay thế hệ thống xác định tuổi/COPPA của game.
+
+Đây là consent dành cho Ads; không tự đổi lựa chọn thu thập Firebase Analytics/Crashlytics,
+không thay thế ATT trên iOS. SDK, App ID, provider asset và cấu hình tài khoản của project nằm ngoài Git thư viện.
+Theo [Google UMP](https://developers.google.com/admob/unity/privacy) và
+[MAX external CMP flow](https://support.applovin.com/en/max/unity/overview/terms-and-privacy-policy-flow).
+
+Kiểm tra v0.12: **98/98 EditMode, 31/31 PlayMode đạt**, Unity Console không có lỗi.
+Có mock cho consent/reward và kiểm tra button ở cả UI dựng bằng code lẫn prefab; chưa xác minh
+form/native Ads trên thiết bị vì project còn thiếu AdMob App ID và message tài khoản đã publish.

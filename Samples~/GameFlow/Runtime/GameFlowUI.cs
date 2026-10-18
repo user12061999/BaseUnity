@@ -19,6 +19,7 @@ namespace BaseUnity.GameFlow
         private float volume;
         private bool muted;
         private string settingsError;
+        private BaseUnity.Features.ConsentService consent;
         private readonly Color ink = new Color(0.055f, 0.08f, 0.14f);
         private readonly Color accent = new Color(0.34f, 0.91f, 0.75f);
 
@@ -49,6 +50,8 @@ namespace BaseUnity.GameFlow
 #else
             input.AddComponent<StandaloneInputModule>();
 #endif
+            consent = flow.Services.Get<BaseUnity.Features.ConsentService>();
+            consent.Changed += ConsentChanged;
             flow.Changed += Rebuild;
             Rebuild();
             LevelSelectionView.Create(flow, canvas, font);
@@ -72,7 +75,7 @@ namespace BaseUnity.GameFlow
             label.raycastTarget = false;
             return label;
         }
-        private void Button(string name, float y, Action click, bool primary = false)
+        private Button Button(string name, float y, Action click, bool primary = false)
         {
             var rect = Rect(name, page.transform, new Vector2(340, 52), new Vector2(0, y));
             var image = rect.gameObject.AddComponent<Image>();
@@ -84,6 +87,7 @@ namespace BaseUnity.GameFlow
             text.font = font; text.fontSize = 21; text.text = name;
             text.color = primary ? ink : Color.white; text.alignment = TextAnchor.MiddleCenter; text.raycastTarget = false;
             if (EventSystem.current && !EventSystem.current.currentSelectedGameObject) EventSystem.current.SetSelectedGameObject(button.gameObject);
+            return button;
         }
 
         private void Rebuild()
@@ -182,7 +186,20 @@ namespace BaseUnity.GameFlow
                 Rebuild();
             }, true);
             Button("Cancel", -205, () => { settings = false; Rebuild(); });
-            if (!string.IsNullOrEmpty(settingsError)) Label(settingsError, -265, 16);
+            var consent = flow.Services.Get<BaseUnity.Features.ConsentService>();
+            if (consent.PrivacyOptionsRequired || (consent.Enabled && consent.Status == BaseUnity.Features.FeatureStatus.Failed))
+                Button(consent.PrivacyOptionsRequired ? "Privacy options" : "Retry privacy", -280, () => { _ = OpenPrivacy(); }).interactable = !consent.IsBusy;
+            if (!string.IsNullOrEmpty(settingsError)) Label(settingsError, -365, 16);
+        }
+        private void ConsentChanged() { if (settings && flow && flow.IsReady && flow.Services.TryGet<BaseUnity.Features.ConsentService>(out _)) Rebuild(); }
+        private async System.Threading.Tasks.Task OpenPrivacy()
+        {
+            var consent = flow.Services.Get<BaseUnity.Features.ConsentService>();
+            bool success = consent.PrivacyOptionsRequired ? await consent.ShowPrivacyOptionsAsync() : await consent.RetryAsync();
+            if (!this) return;
+            if (!flow || !flow.IsReady) return;
+            settingsError = success ? null : consent.LastError ?? "Privacy options are unavailable.";
+            Rebuild();
         }
         private void Update()
         {
@@ -190,6 +207,6 @@ namespace BaseUnity.GameFlow
             if (timerLabel) timerLabel.text = "TARGET " + (flow.CurrentDefinition?.targetScore ?? 0) +
                 (flow.HasTimeLimit ? "  /  TIME " + Mathf.CeilToInt(flow.RemainingTime) + "s" : "");
         }
-        private void OnDestroy() { if (flow) flow.Changed -= Rebuild; }
+        private void OnDestroy() { if (flow) { flow.Changed -= Rebuild; if (consent != null) consent.Changed -= ConsentChanged; } }
     }
 }

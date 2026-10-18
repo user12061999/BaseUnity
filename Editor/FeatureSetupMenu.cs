@@ -27,6 +27,9 @@ namespace BaseUnity.Editor
         [MenuItem("Tools/BaseUnity/Features/Install Firebase Adapter")]
         public static void InstallFirebase() => Install("Firebase", "Firebase.FirebaseApp", "Firebase.Analytics.FirebaseAnalytics", "Firebase.Crashlytics.Crashlytics", "Firebase.RemoteConfig.FirebaseRemoteConfig");
 
+        [MenuItem("Tools/BaseUnity/Features/Install Google Consent Adapter")]
+        public static void InstallGoogleConsent() => Install("GoogleConsent", "GoogleMobileAds.Ump.Api.ConsentInformation");
+
         private static void Install(string provider, params string[] requiredTypes)
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Stop Play Mode first.");

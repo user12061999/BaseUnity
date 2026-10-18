@@ -22,6 +22,8 @@ namespace BaseUnity.Features
             Language = settings.defaultLanguage == "vi" ? "vi" : "en";
             if (Enabled && saves.TryLoad<LanguageSave>("baseunity_language", out var saved) && (saved != null && (saved.language == "vi" || saved.language == "en"))) Language = saved.language;
             string[] pairs = {
+                "PRIVACY OPTIONS|QUYỀN RIÊNG TƯ", "Privacy options|Quyền riêng tư", "RETRY PRIVACY|THỬ LẠI QUYỀN RIÊNG TƯ", "Retry privacy|Thử lại quyền riêng tư",
+                "Privacy options are unavailable.|Chưa thể mở tùy chọn quyền riêng tư.", "Privacy options are unavailable. Please try again.|Chưa thể mở tùy chọn quyền riêng tư. Hãy thử lại.",
                 "Saving...|Đang lưu...", "Restored result|Kết quả đã khôi phục",
                 "MENU|MENU", "Reward save failed. Try again.|Không lưu được dữ liệu. Hãy thử lại.", "PERSONAL BEST|KỶ LỤC CÁ NHÂN", "A NEW ADVENTURE AWAITS|CHUYẾN PHIÊU LƯU MỚI ĐANG CHỜ", "READY TO PLAY?|SẴN SÀNG CHƠI?", "Jump in. Collect points.|Vào chơi. Thu thập điểm.", "Beat your personal best.|Vượt qua kỷ lục của bạn.", "Time is up. Try again!|Hết giờ. Hãy thử lại!", "RETURN HOME|VỀ TRANG CHỦ",
 

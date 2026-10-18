@@ -1,4 +1,4 @@
-# Optional Ads and Firebase integrations
+# Optional Ads, Google Consent and Firebase integrations
 
 The core library compiles without any advertising or Firebase SDK. SDK-specific source stays in
 `Samples~/Integrations` and is copied into the game project only through the installer menus.
@@ -185,3 +185,37 @@ retried with **Tools > BaseUnity > Features > Configure Java for Android Resolve
 
 After installing SDKs and account files, build to a test device and verify test ads, Firebase DebugView,
 Remote Config and Crashlytics delivery before switching to production ad units.
+
+## Google UMP consent (AdMob or MAX)
+
+Import the official Google Mobile Ads Unity plugin, including UMP assemblies/dependencies.
+Run **Tools > BaseUnity > Features > Install Google Consent Adapter**, create a
+**BaseUnity > Providers > Google UMP Consent** asset and assign `FeatureConfig.consentProvider`.
+Configure it in **Feature Manager > Ads > Google consent**. Enabled by default; missing provider/SDK
+blocks ads, never gameplay. With Ads disabled no consent SDK is initialized.
+
+Set/apply a real AdMob App ID for each target even with MAX, then publish the privacy message and all
+mediated partners in AdMob Privacy & messaging. With this external flow, disable MAX automatic Terms
+and Privacy Policy Flow. MAX consumes UMP TCF/AC strings; do not equate UMP CanRequestAds with a
+personalized-consent flag or overwrite MAX consent with that boolean.
+
+`FeatureServices` registers `ConsentService` and passes it to `AdsService`. Standalone callers constructing
+`AdsService` directly must pass their consent service as its third constructor argument. UMP updates once
+per service/app lifetime, gathers the required form, and allows SDK initialization only when CanRequestAds
+is true. Update errors may use an SDK-authorized prior-session decision. There is no timeout while the
+user reads a form. Callbacks return to Unity's main thread; unfinished native forms keep a global barrier
+even after disposal, preventing an overlapping form after retry/replacement.
+
+Expose `PrivacyOptionsRequired` and `ShowPrivacyOptionsAsync()` in Settings. Sample settings do this
+and offer `RetryAsync()` on failure. Reopening privacy options disposes cached ads and suppresses late
+rewards; load fresh ads afterward. Debug geography/device IDs are honored only in development builds.
+`ResetForTesting()` is explicitly development-only and never automatic. TFUA is forwarded to AdMob
+requests; MAX is conservatively blocked for this setting. Age screening/COPPA and iOS ATT require
+separate game integration. This flow does not control Firebase collection.
+
+Test on Android/iOS using your own App IDs/messages; the Editor fails safely without simulating
+consent. SDK compilation verified: Google Mobile Ads Unity **11.6.0**. Existing copied AdMob adapters
+need the new `AdFormat` alias and TFUA request forwarding when upgrading from older BaseUnity.
+
+References: [Google UMP](https://developers.google.com/admob/unity/privacy),
+[MAX external consent flow](https://support.applovin.com/en/max/unity/overview/terms-and-privacy-policy-flow).

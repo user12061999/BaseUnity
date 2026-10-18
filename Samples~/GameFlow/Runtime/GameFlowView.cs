@@ -78,6 +78,7 @@ namespace BaseUnity.GameFlow
             masterSlider.onValueChanged.AddListener(_ => UpdateSettingsLabels());
             musicSlider.onValueChanged.AddListener(_ => UpdateSettingsLabels());
             effectsSlider.onValueChanged.AddListener(_ => UpdateSettingsLabels());
+            GameFlowPrivacyButton.AddToSettings(cancelButton, flow.Services.Get<BaseUnity.Features.ConsentService>(), settingsError);
             if (flow.Config) title.text = flow.Config.gameTitle;
             flow.Changed += Refresh;
             Refresh();

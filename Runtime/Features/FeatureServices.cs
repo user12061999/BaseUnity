@@ -9,6 +9,7 @@ namespace BaseUnity.Features
     {
         private readonly FeatureConfig runtimeConfig;
         public AdsService Ads { get; }
+        public ConsentService Consent { get; }
         public FirebaseService Firebase { get; }
         public OfflineService Offline { get; private set; }
         public LocalizationService Localization { get; private set; }
@@ -16,12 +17,14 @@ namespace BaseUnity.Features
         public FeatureServices(FeatureConfig source)
         {
             runtimeConfig = source ? UnityEngine.Object.Instantiate(source) : ScriptableObject.CreateInstance<FeatureConfig>();
-            Ads = new AdsService(runtimeConfig.ads, runtimeConfig.adsProvider ? (Func<IAdsBackend>)runtimeConfig.adsProvider.Create : null);
+            Consent = new ConsentService(runtimeConfig.consent, runtimeConfig.consentProvider ? (Func<IConsentBackend>)runtimeConfig.consentProvider.Create : null);
+            if (runtimeConfig.ads != null) runtimeConfig.ads.tagForUnderAgeOfConsent = runtimeConfig.consent != null && runtimeConfig.consent.tagForUnderAgeOfConsent;
+            Ads = new AdsService(runtimeConfig.ads, runtimeConfig.adsProvider ? (Func<IAdsBackend>)runtimeConfig.adsProvider.Create : null, Consent);
             Firebase = new FirebaseService(runtimeConfig.firebase, runtimeConfig.firebaseProvider ? (Func<IFirebaseBackend>)runtimeConfig.firebaseProvider.Create : null);
         }
         public void Register(ServiceRegistry services)
         {
-            services.Register(this); services.Register(Ads); services.Register(Firebase);
+            services.Register(this); services.Register(Consent); services.Register(Ads); services.Register(Firebase);
             var saves = services.Get<BaseUnity.Save.ISaveStore>();
             Offline = new OfflineService(runtimeConfig.offline, saves);
             Localization = new LocalizationService(runtimeConfig.localization, saves);
@@ -34,7 +37,7 @@ namespace BaseUnity.Features
         }
         public void Dispose()
         {
-            Ads.Dispose(); Firebase.Dispose();
+            Ads.Dispose(); Consent.Dispose(); Firebase.Dispose();
             if (runtimeConfig) UnityEngine.Object.Destroy(runtimeConfig);
         }
     }

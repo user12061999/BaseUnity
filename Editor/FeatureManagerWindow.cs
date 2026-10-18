@@ -141,6 +141,7 @@ namespace BaseUnity.Editor
             DrawProvider(typeName, "adsProvider", max ? (Action)FeatureSetupMenu.InstallMax : FeatureSetupMenu.InstallAdMob);
             var provider = serialized.FindProperty("adsProvider").objectReferenceValue;
             if (provider && provider.GetType().FullName != typeName) EditorGUILayout.HelpBox("Provider does not match the selected network.", MessageType.Warning);
+            DrawConsent();
             Field("ads.testMode", "Use test ads");
             Header("App configuration");
             if (max) Field("ads.maxSdkKey", "MAX SDK key");
@@ -176,6 +177,22 @@ namespace BaseUnity.Editor
                 if (devices != null) EditorGUILayout.PropertyField(devices, new GUIContent("Advertising IDs"), true);
                 if (providerSettings.ApplyModifiedProperties()) AssetDatabase.SaveAssetIfDirty(provider);
             }
+        }
+        private void DrawConsent()
+        {
+            Header("Google consent (UMP)");
+            if (!Field("consent.enabled", "Enable Google consent").boolValue) return;
+            Field("consentProvider", "Consent provider");
+            DrawProvider("BaseUnity.Integrations.GoogleUmpProvider", "consentProvider", FeatureSetupMenu.InstallGoogleConsent);
+            EditorGUILayout.HelpBox("UMP updates once per launch and shows the published AdMob privacy message when required. Ads wait for CanRequestAds. Missing consent SDK/provider blocks ads; gameplay continues. Use this single flow for AdMob or MAX mediation and disable MAX's automatic consent flow.", MessageType.Info);
+            Field("consent.tagForUnderAgeOfConsent", "Under age of consent (TFUA)");
+            if (Field("consent.debugMode", "Consent testing (development only)").boolValue)
+            {
+                Field("consent.debugRegion", "Simulated region");
+                Field("consent.testDeviceHashedIds", "UMP test-device hashed IDs", true);
+                EditorGUILayout.HelpBox("UMP hashed IDs differ from MAX advertising IDs. Debug settings are ignored in release players. Never infer personalized consent from CanRequestAds.", MessageType.Info);
+            }
+            if (GUILayout.Button("Google UMP setup / publish privacy message")) Application.OpenURL("https://developers.google.com/admob/unity/privacy");
         }
         private void DrawFirebase()
         {

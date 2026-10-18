@@ -21,6 +21,23 @@ namespace BaseUnity.GameFlow.Tests
             public readonly Backend backend = new Backend();
             public override IAdsBackend Create() => backend;
         }
+        public sealed class TestConsent : ConsentProvider
+        {
+            public readonly ConsentBackend backend = new ConsentBackend();
+            public override IConsentBackend Create() => backend;
+        }
+        public sealed class ConsentBackend : IConsentBackend
+        {
+            public bool allowed = true, required;
+            public int forms;
+            public TaskCompletionSource<bool> pending;
+            public bool CanRequestAds => allowed;
+            public bool PrivacyOptionsRequired => required;
+            public Task GatherAsync(ConsentSettings settings, CancellationToken token) => Task.CompletedTask;
+            public Task ShowPrivacyOptionsAsync(CancellationToken token) { forms++; return pending?.Task ?? Task.CompletedTask; }
+            public void ResetForTesting() { allowed = false; }
+            public void Dispose() { }
+        }
         public sealed class Backend : IAdsBackend
         {
             public AdResult result = AdResult.Closed;
@@ -36,6 +53,7 @@ namespace BaseUnity.GameFlow.Tests
         private GameFlowConfig config;
         private FeatureConfig features;
         private TestAds provider;
+        private TestConsent consentProvider;
         private string slot;
         private bool hadLanguage;
         private LocalizationService.LanguageSave savedLanguage;
@@ -53,6 +71,7 @@ namespace BaseUnity.GameFlow.Tests
             features = ScriptableObject.CreateInstance<FeatureConfig>(); features.offline.enabled = true; features.offline.saveSlot = slot;
             features.offline.startingCoins = 200; features.localization.enabled = true;
             provider = ScriptableObject.CreateInstance<TestAds>(); features.adsProvider = provider; features.ads.enabled = true;
+            consentProvider = ScriptableObject.CreateInstance<TestConsent>(); features.consentProvider = consentProvider;
             config = ScriptableObject.CreateInstance<GameFlowConfig>(); config.features = features; config.saveSlot = slot + "_flow";
             config.levels = new[] { new GameLevel { targetScore = 10, timeLimitSeconds = 0 }, new GameLevel { targetScore = 10, timeLimitSeconds = 0 } };
             for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
@@ -106,6 +125,43 @@ namespace BaseUnity.GameFlow.Tests
             var duplicate = flow.Features.RewardDouble(); while (!duplicate.IsCompleted) yield return null;
             Assert.AreEqual(500, economy.Coins);
         }
+        [UnityTest] public IEnumerator ConsentDenialBlocksBonusAndStillAllowsGameplay()
+        {
+            consentProvider.backend.allowed = false;
+            var consent = flow.Services.Get<ConsentService>(); var retry = consent.RetryAsync(); while (!retry.IsCompleted) yield return null;
+            flow.Play(); yield return WaitFor(FlowPhase.Playing); flow.WinLevel(); yield return WaitFor(FlowPhase.Result);
+            var reward = flow.Features.RewardDouble(); while (!reward.IsCompleted) yield return null;
+            Assert.AreEqual(350, flow.Features.Offline.Coins); Assert.IsTrue(flow.Features.Offline.CanDouble);
+            Assert.IsFalse(consent.CanRequestAds); flow.NextLevel(); yield return WaitFor(FlowPhase.Playing);
+        }
+        [UnityTest] public IEnumerator FallbackSettingsShowsPrivacyAndPreventsDuplicateForm()
+        {
+            var consent = flow.Services.Get<ConsentService>(); consentProvider.backend.required = true;
+            var retry = consent.RetryAsync(); while (!retry.IsCompleted) yield return null;
+            Click("Settings"); yield return null;
+            consentProvider.backend.pending = new TaskCompletionSource<bool>(); Click("Privacy options"); yield return null;
+            Assert.IsTrue(consent.IsBusy); Assert.AreEqual(1, consentProvider.backend.forms);
+            var button = flow.GetComponentsInChildren<Button>().Single(x => x.name == "Privacy options");
+            Assert.IsFalse(button.interactable);
+            consentProvider.backend.pending.SetResult(true); yield return null; yield return null;
+            Assert.IsFalse(consent.IsBusy);
+            // Leave Settings open to cover disposal while its consent listener is subscribed.
+        }
+        [UnityTest] public IEnumerator PrefabPrivacyButtonHidesWhenNotRequired()
+        {
+            var parent = new GameObject("Privacy bindings test"); parent.transform.SetParent(flow.transform);
+            var template = new GameObject("Template", typeof(RectTransform), typeof(Image), typeof(Button)); template.transform.SetParent(parent.transform);
+            var text = new GameObject("Text", typeof(RectTransform), typeof(Text)); text.transform.SetParent(template.transform);
+            var consent = flow.Services.Get<ConsentService>();
+            GameFlowPrivacyButton.AddToSettings(template.GetComponent<Button>(), consent, null);
+            var privacy = parent.GetComponentInChildren<GameFlowPrivacyButton>(true); Assert.IsFalse(privacy.gameObject.activeSelf);
+            consentProvider.backend.required = true; var retry = consent.RetryAsync(); while (!retry.IsCompleted) yield return null;
+            Assert.IsTrue(privacy.gameObject.activeSelf);
+            consentProvider.backend.pending = new TaskCompletionSource<bool>(); privacy.GetComponent<Button>().onClick.Invoke();
+            Assert.IsFalse(privacy.GetComponent<Button>().interactable);
+            consentProvider.backend.required = false; consentProvider.backend.pending.SetResult(true); yield return null; yield return null;
+            Assert.IsFalse(privacy.gameObject.activeSelf);
+        }
         [UnityTest] public IEnumerator UnifiedResultSurvivesRestartAndDoesNotWriteLegacyProgress()
         {
             flow.Play(); yield return WaitFor(FlowPhase.Playing);
@@ -151,7 +207,7 @@ namespace BaseUnity.GameFlow.Tests
                 UnityEngine.Object.Destroy(flow.gameObject);
             }
             UnityEngine.Time.timeScale = 1; yield return null;
-            UnityEngine.Object.Destroy(config); UnityEngine.Object.Destroy(features); UnityEngine.Object.Destroy(provider);
+            UnityEngine.Object.Destroy(config); UnityEngine.Object.Destroy(features); UnityEngine.Object.Destroy(provider); UnityEngine.Object.Destroy(consentProvider);
         }
     }
 }

@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using BaseUnity.Features;
 using GoogleMobileAds.Api;
+using AdFormat = BaseUnity.Features.AdFormat;
 using UnityEngine;
 
 namespace BaseUnity.Integrations
@@ -25,6 +26,9 @@ namespace BaseUnity.Integrations
                 settings = value;
                 if (Application.isEditor || (Application.platform != RuntimePlatform.Android && Application.platform != RuntimePlatform.IPhonePlayer))
                     throw new PlatformNotSupportedException("AdMob provider requires an Android/iOS player. No simulated reward is granted in Editor.");
+                var requestConfiguration = MobileAds.GetRequestConfiguration();
+                requestConfiguration.TagForUnderAgeOfConsent = settings.tagForUnderAgeOfConsent ? TagForUnderAgeOfConsent.True : TagForUnderAgeOfConsent.Unspecified;
+                MobileAds.SetRequestConfiguration(requestConfiguration);
                 var completion = new TaskCompletionSource<bool>();
                 using (token.Register(() => completion.TrySetCanceled()))
                 {

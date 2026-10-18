@@ -2,7 +2,7 @@
 
 Base game Unity tái sử dụng qua **Git submodule trong `Assets/BaseUnity`**.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.8.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.9.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
 
 ## Luồng game có sẵn
 
@@ -171,6 +171,43 @@ Generator **không ghi đè prefab có sẵn** và không thay config đã có `
 và gắn vào config riêng của từng game. Khi chưa gắn prefab, UI dựng bằng code của v0.7 vẫn hoạt động.
 Validate build configuration kiểm tra các binding UI bắt buộc. Sprite Layer Lab được tham chiếu từ dự án,
 không kèm asset thương mại trong repository; máy khác chạy generator để tạo prefab tại dự án của mình.
+
+## Kiểm tra tự động trước build (0.9)
+
+Mặc định bật **Validate before build** tại **Project Settings > BaseUnity > Build Validation**.
+Có thể mở nhanh bằng **Feature Manager > Setup > Automatic build validation settings**.
+
+| Thiết lập | Hành vi |
+| --- | --- |
+| Validate before build | Đọc scene/config và chặn build nếu có error |
+| Block test ads in Release | Chặn Ads test mode trong build không có cờ Development; chỉ áp dụng khi Ads và ít nhất một định dạng được bật |
+| Treat warnings as errors | Khi bật, warning cũng chặn build; mặc định tắt |
+
+Bộ kiểm tra lấy **scene list của yêu cầu build**, hỗ trợ danh sách scene riêng của Build Profile hoặc
+`BuildPipeline.BuildPlayer`. Chỉ kiểm tra FeatureConfig được tham chiếu bởi Bootstrap trong các scene đó;
+config demo hoặc config cũ không dùng sẽ không cản build. Với Game Flow, `GameFlowConfig.features` có ưu tiên
+so với field FeatureConfig trên Bootstrap, giống hành vi runtime. Scene Bootstrap phải đứng đầu danh sách.
+
+Các lỗi được kiểm tra gồm scene thiếu, missing script, Bootstrap không nằm ở root, config Game Flow chưa gắn,
+level/slot lưu không hợp lệ, binding UI thiếu và các kiểm tra Ads/Firebase/offline/localization hiện có.
+Nhiều Bootstrap được đưa vào cùng build tạo warning. Module tắt bỏ qua thông tin SDK/ID không còn dùng.
+Quảng cáo test vẫn dùng được trong Development Build khi các điều kiện cấu hình khác hợp lệ.
+
+Nếu có lỗi, build dừng với `BuildFailedException` và hướng dẫn trên Console. Báo cáo đầy đủ ở
+`Library/BaseUnity/LastBuildValidation.json`, gồm platform, Development/Release, scene list, mức lỗi và asset liên quan;
+không chép SDK key hay nội dung file Firebase vào báo cáo. Có nút **Show last automatic report** trong thiết lập.
+Thiết lập được lưu riêng theo game tại `ProjectSettings/BaseUnityBuildValidation.asset`; không nằm trong submodule.
+
+Callback dùng [BuildPlayerProcessor.PrepareForBuild](https://docs.unity.cn/6000.0/Documentation/ScriptReference/Build.BuildPlayerProcessor.PrepareForBuild.html)
+và [BuildPlayerContext.BuildPlayerOptions](https://docs.unity.cn/6000.0/Documentation/ScriptReference/Build.BuildPlayerContext.html).
+Các scene được đọc trong preview rồi đóng, không save hoặc thay scene đang mở, không khởi tạo SDK.
+Build từ command line qua `BuildPipeline.BuildPlayer` cũng nhận kiểm tra này.
+
+Công cụ kiểm tra các tham chiếu được serialize trên `GameBootstrap` và sample `GameFlowBootstrap`.
+Nếu game override `GetFeatureConfig` để tạo config động hoặc dùng hệ thống scene/addressable riêng,
+phần cấu hình đó cần kiểm tra riêng. Cửa sổ **Validate Build Configuration** cũ vẫn là kiểm tra thủ công theo
+Editor scene list; báo cáo tự động mới dùng scene list của đúng lần build.
+Không thay thế việc kiểm thử APK/device, vendor dashboard hoặc xác nhận cấu hình đã áp dụng vào SDK.
 
 ## Cài vào dự án khác
 
@@ -431,3 +468,7 @@ Firebase Editor thiếu file app config sẽ trả trạng thái Failed/LastErro
 V0.8: **60/60 EditMode + 19/19 PlayMode tests pass**: migration một lần, giao dịch tiến trình/thưởng,
 backup và save hỏng, chặn schema tương lai, lỗi ghi tiền thưởng, khôi phục Result qua restart,
 prefab menu giữ instance, trạng thái tab và animation đóng khi timeScale = 0.
+
+V0.9: **69/69 EditMode tests pass**, bổ sung kiểm tra scene list theo build, config không dùng,
+Release/Development, warning policy, report và bảo toàn scene đang mở. Không thay đổi runtime;
+bộ PlayMode 19 bài đã đạt ở v0.8. Chưa chạy xuất APK cho bản 0.9.

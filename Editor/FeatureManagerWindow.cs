@@ -246,6 +246,7 @@ namespace BaseUnity.Editor
         private void DrawSetup()
         {
             Header("Pre-build validation");
+            if (GUILayout.Button("Automatic build validation settings")) SettingsService.OpenProjectSettings("Project/BaseUnity/Build Validation");
             if (GUILayout.Button("Validate build configuration"))
             { serialized.ApplyModifiedProperties(); FeatureValidationWindow.Open(config); }
             Header("Application identifiers");

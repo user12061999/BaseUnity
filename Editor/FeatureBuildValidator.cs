@@ -176,12 +176,19 @@ namespace BaseUnity.Editor
             };
             check(data.FindProperty("homeScene").stringValue, "Home", true);
             check(data.FindProperty("inGameScene").stringValue, "InGame", true);
+            string saveSlot = data.FindProperty("saveSlot").stringValue;
+            if (saveSlot == null || !Regex.IsMatch(saveSlot, @"\A[a-zA-Z0-9_-]{1,64}\z") || saveSlot == "baseunity_audio" || saveSlot == "baseunity_language") error("GameFlow: invalid or reserved save slot.");
             var levels = data.FindProperty("levels");
+            if (levels.arraySize == 0) error("GameFlow: configure at least one level.");
             for (int i = 0; i < levels.arraySize; i++)
             {
                 var level = levels.GetArrayElementAtIndex(i);
                 var asset = level.FindPropertyRelative("data").objectReferenceValue;
-                string path = asset ? new SerializedObject(asset).FindProperty("sceneOverride").stringValue : level.FindPropertyRelative("sceneOverride").stringValue;
+                var source = asset ? new SerializedObject(asset) : null;
+                int target = asset ? source.FindProperty("targetScore").intValue : level.FindPropertyRelative("targetScore").intValue;
+                float time = asset ? source.FindProperty("timeLimitSeconds").floatValue : level.FindPropertyRelative("timeLimitSeconds").floatValue;
+                if (target < 1 || time < 0 || float.IsNaN(time) || float.IsInfinity(time)) error("Level " + (i + 1) + ": target must be positive and time must be finite and non-negative.");
+                string path = asset ? source.FindProperty("sceneOverride").stringValue : level.FindPropertyRelative("sceneOverride").stringValue;
                 check(path, "Level " + (i + 1), false);
             }
             return issues;

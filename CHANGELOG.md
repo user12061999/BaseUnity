@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.9.0
+
+- Run automatic validation before player builds using the actual BuildPlayerOptions scene list.
+- Inspect saved scenes in temporary preview scenes and validate only referenced Bootstrap/GameFlow configs.
+- Block errors, optionally treat warnings as errors, and reject test ads in Release by default.
+- Project settings UI, Feature Manager shortcut and JSON report under Library/BaseUnity.
+- Check Bootstrap order/root placement, missing scene scripts, invalid GameFlow levels/save slots and existing feature/UI rules.
+- Add nine EditMode regression tests for build scope, policy, reports and preserving open scenes.
+
 ## 0.8.0
 
 - Migrate legacy progress once into the offline profile; save level progress, rewards and missions in one transaction.

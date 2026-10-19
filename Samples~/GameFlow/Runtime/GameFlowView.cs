@@ -24,6 +24,7 @@ namespace BaseUnity.GameFlow
         public Button pauseHomeButton, retryButton, resultHomeButton, errorHomeButton;
         public Button loseButton, nextLevelButton;
         public Button levelsButton;
+        public Button privacyButton;
         [Header("Settings")]
         public Slider masterSlider, musicSlider, effectsSlider;
         public Text masterValue, musicValue, effectsValue, soundLabel, settingsError;
@@ -79,7 +80,8 @@ namespace BaseUnity.GameFlow
             masterSlider.onValueChanged.AddListener(_ => UpdateSettingsLabels());
             musicSlider.onValueChanged.AddListener(_ => UpdateSettingsLabels());
             effectsSlider.onValueChanged.AddListener(_ => UpdateSettingsLabels());
-            GameFlowPrivacyButton.AddToSettings(cancelButton, flow.Services.Get<BaseUnity.Features.ConsentService>(), settingsError);
+            if (privacyButton) (privacyButton.GetComponent<GameFlowPrivacyButton>() ?? privacyButton.gameObject.AddComponent<GameFlowPrivacyButton>()).Initialize(flow.Services.Get<BaseUnity.Features.ConsentService>(), settingsError);
+            else GameFlowPrivacyButton.AddToSettings(cancelButton, flow.Services.Get<BaseUnity.Features.ConsentService>(), settingsError);
             if (flow.Config) title.text = flow.Config.gameTitle;
             flow.Changed += Refresh;
             Refresh();
@@ -150,23 +152,14 @@ namespace BaseUnity.GameFlow
             if (homeLevel) homeLevel.text = "PLAY LEVEL " + flow.HomeLevel;
             if (levelLabel) levelLabel.text = "LEVEL " + flow.CurrentLevel;
             if (targetLabel) targetLabel.text = "TARGET  " + (flow.CurrentDefinition?.targetScore ?? 0);
-            if (flow.Config && flow.Config.inGameHUDPrefab)
-            {
-                if (levelLabel) levelLabel.gameObject.SetActive(false);
-                if (targetLabel) targetLabel.gameObject.SetActive(false);
-                if (timerLabel) timerLabel.gameObject.SetActive(false);
-            }
             bool won = flow.Outcome == LevelOutcome.Win;
             if (resultTitle) resultTitle.text = won ? (flow.CanNextLevel ? "LEVEL COMPLETE!" : "ALL LEVELS COMPLETE!") : "LEVEL FAILED";
             if (resultSubtitle) resultSubtitle.text = flow.OutcomeReason ?? "";
             if (resultStars) resultStars.SetActive(won);
             if (resultFailure) resultFailure.SetActive(!won);
-            if (resultTitle) resultTitle.color = won ? Color.white : new Color(1, 0.65f, 0.65f);
             if (nextLevelButton)
             {
                 nextLevelButton.gameObject.SetActive(flow.CanNextLevel);
-                ((RectTransform)retryButton.transform).anchoredPosition = new Vector2(0, flow.CanNextLevel ? -325 : -200);
-                ((RectTransform)resultHomeButton.transform).anchoredPosition = new Vector2(0, flow.CanNextLevel ? -450 : -330);
             }
             resultScore.text = flow.Score.ToString("N0");
             resultBest.text = flow.Progress.bestScore.ToString("N0");

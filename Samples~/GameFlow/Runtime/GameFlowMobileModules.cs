@@ -13,6 +13,8 @@ namespace BaseUnity.GameFlow
     public sealed class GameFlowMobileModules : MonoBehaviour
     {
         private GameFlowBootstrap flow;
+        private MobileModulesView prefab;
+        private readonly List<GameObject> menuItems = new List<GameObject>();
         private FeatureServices services;
         private RectTransform root, modal, tutorialRoot, toastRoot, loadingRoot;
         private GameObject menu;
@@ -35,18 +37,29 @@ namespace BaseUnity.GameFlow
         {
             flow = owner; services = flow.Services.Get<FeatureServices>(); font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             var view = GetComponentInChildren<GameFlowView>(); if (view && view.playButton) art = view.playButton.image.sprite;
+            if (flow.Config.mobileModulesPrefab)
+            {
+                prefab = Instantiate(flow.Config.mobileModulesPrefab, transform); root = prefab.content;
+                menu = prefab.menu.gameObject; modal = prefab.popup;
+                toastRoot = prefab.toast; toastText = prefab.toastMessage;
+                loadingRoot = prefab.loading; loadingText = prefab.loadingMessage;
+            }
+            else
+            {
             var canvasObject = new GameObject("Mobile Modules Canvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             canvasObject.transform.SetParent(transform, false);
             var canvas = canvasObject.GetComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.sortingOrder = 180;
             var scaler = canvasObject.GetComponent<CanvasScaler>(); scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution = new Vector2(900, 1600); scaler.matchWidthOrHeight = .5f;
             root = Rect(canvasObject.transform, "Safe Area", 900, 1600, 0, 0);
             var safe = canvasObject.AddComponent<GameFlowSafeArea>(); safe.canvas = canvas; safe.content = root;
+            }
             presenter = services.Popups.AttachPresenter();
             services.Popups.Changed += Dirty; services.Feedback.Changed += Dirty; services.Feedback.ToastRequested += Toast;
             services.Tutorial.Changed += Dirty; services.Purchases.Changed += Dirty; services.Localization.Changed += Dirty;
             flow.Changed += FlowChanged;
-            toastRoot = Box(root, "Toast", 800, 90, 0, 600, false); toastText = Label(toastRoot, "", 0, 0, 760, 80, 26); toastRoot.gameObject.SetActive(false);
+            if (!prefab) { toastRoot = Box(root, "Toast", 800, 90, 0, 600, false); toastText = Label(toastRoot, "", 0, 0, 760, 80, 26); toastRoot.gameObject.SetActive(false);
             loadingRoot = Box(root, "Loading indicator", 700, 100, 0, -500, false); loadingText = Label(loadingRoot, "", 0, 0, 660, 90, 28); loadingRoot.gameObject.SetActive(false);
+            }
             BuildTutorial(); WireTargets();
         }
         private string T(string text) => services.Localization.Text(text ?? "");
@@ -60,15 +73,18 @@ namespace BaseUnity.GameFlow
         }
         private RectTransform Box(Transform parent, string name, float w, float h, float x, float y, bool raycast = true)
         {
+            if (prefab) { var panel = Instantiate(prefab.panelTemplate, parent); panel.gameObject.SetActive(true); panel.name = name; panel.sizeDelta = new Vector2(w, h); panel.anchoredPosition = new Vector2(x, y); panel.GetComponent<Image>().raycastTarget = raycast; return panel; }
             var rect = Rect(parent, name, w, h, x, y); var image = rect.gameObject.AddComponent<Image>(); image.color = new Color(.04f, .07f, .13f, .96f); image.raycastTarget = raycast; return rect;
         }
         private Text Label(Transform parent, string text, float x, float y, float w = 740, float h = 80, int size = 30)
         {
+            if (prefab) { var textView = Instantiate(prefab.labelTemplate, parent); textView.gameObject.SetActive(true); textView.text = T(text); textView.rectTransform.anchoredPosition = new Vector2(x, y); textView.rectTransform.sizeDelta = new Vector2(w, h); menuItems.Add(textView.gameObject); return textView; }
             var label = Rect(parent, "Text", w, h, x, y).gameObject.AddComponent<Text>(); label.font = font; label.text = T(text); label.fontSize = size; label.color = Color.white;
             label.alignment = TextAnchor.MiddleCenter; label.raycastTarget = false; return label;
         }
         private Button Button(Transform parent, string text, float x, float y, Action action, float width = 660)
         {
+            if (prefab) { var control = Instantiate(prefab.buttonTemplate, parent); control.gameObject.SetActive(true); control.name = text; ((RectTransform)control.transform).anchoredPosition = new Vector2(x, y); ((RectTransform)control.transform).sizeDelta = new Vector2(width, ((RectTransform)prefab.buttonTemplate.transform).sizeDelta.y); control.GetComponentInChildren<Text>().text = T(text); control.onClick.AddListener(() => { services.Haptics.Play(); action(); }); menuItems.Add(control.gameObject); return control; }
             var rect = Rect(parent, text, width, 80, x, y); var image = rect.gameObject.AddComponent<Image>(); image.sprite = art; image.type = Image.Type.Sliced; image.color = art ? Color.white : new Color(.15f, .38f, .55f);
             var button = rect.gameObject.AddComponent<Button>(); button.onClick.AddListener(() => { services.Haptics.Play(); action(); }); Label(rect, text, 0, 0, width - 24, 70, 26); return button;
         }
@@ -104,18 +120,19 @@ namespace BaseUnity.GameFlow
             if (!toastRoot.gameObject.activeSelf || UnityEngine.Time.unscaledTime >= toastUntil)
             {
                 toastRoot.gameObject.SetActive(false);
-                if (toasts.Count > 0) { var toast = toasts.Dequeue(); toastText.text = T(toast.text); toastText.color = toast.error ? new Color(1, .5f, .45f) : Color.white; toastUntil = UnityEngine.Time.unscaledTime + toast.seconds; toastRoot.gameObject.SetActive(true); }
+                if (toasts.Count > 0) { var toast = toasts.Dequeue(); toastText.text = T(toast.text); if (!prefab) toastText.color = toast.error ? new Color(1, .5f, .45f) : Color.white; toastUntil = UnityEngine.Time.unscaledTime + toast.seconds; toastRoot.gameObject.SetActive(true); }
             }
             UpdateTutorial(!dialog && !menuOpen && !blocked && !offlineOpen);
             toastRoot.SetAsLastSibling(); loadingRoot.SetAsLastSibling();
         }
         private void BuildMenu()
         {
-            if (menu) { menu.SetActive(false); Destroy(menu); }
-            menu = Rect(root, "Mobile settings and store", 900, 1600, 0, 0).gameObject;
+            foreach (var item in menuItems) { if (item) { item.SetActive(false); Destroy(item); } } menuItems.Clear();
+            if (!prefab) { if (menu) { menu.SetActive(false); Destroy(menu); } menu = Rect(root, "Mobile settings and store", 900, 1600, 0, 0).gameObject; }
+            else prefab.menuPanel.gameObject.SetActive(menuOpen);
             if (!menuOpen) { if (!flow.Config.homeHubPrefab) Button(menu.transform, "MORE", -300, -730, OpenMenu, 240); return; }
-            Box(menu.transform, "Blocker", 4000, 4000, 0, 0);
-            var panel = Box(menu.transform, "Settings", 820, 1400, 0, 0); Label(panel, "SETTINGS & STORE", 0, 600, 740, 80, 38);
+            if (!prefab) Box(menu.transform, "Blocker", 4000, 4000, 0, 0);
+            var panel = prefab ? prefab.menuPanel : Box(menu.transform, "Settings", 820, 1400, 0, 0); Label(panel, "SETTINGS & STORE", 0, 600, 740, 80, 38);
             float y = 470;
             if (services.Haptics.ModuleEnabled) { Button(panel, services.Haptics.Enabled ? "HAPTICS ON" : "HAPTICS OFF", 0, y, () => { services.Haptics.SetUserEnabled(!services.Haptics.Enabled); Dirty(); }); y -= 100; }
             if (services.Notifications.Enabled) { Button(panel, services.Notifications.OptedIn ? "NOTIFICATIONS ON" : "ENABLE NOTIFICATIONS", 0, y, () => { _ = ToggleNotifications(); }).interactable = !services.Notifications.IsBusy; y -= 100; }
@@ -137,6 +154,18 @@ namespace BaseUnity.GameFlow
         }
         private void BuildPopup()
         {
+            if (prefab)
+            {
+                activePopup = services.Popups.Active?.Id; if (activePopup == null) { modal.gameObject.SetActive(false); return; }
+                var value = services.Popups.Active.Content; string popupId = activePopup;
+                prefab.popupTitle.text = T(value.title); prefab.popupMessage.text = T(value.message);
+                prefab.popupAccept.GetComponentInChildren<Text>().text = T(value.accept ?? "OK");
+                prefab.popupCancel.GetComponentInChildren<Text>().text = T(value.cancel);
+                prefab.popupCancel.gameObject.SetActive(!string.IsNullOrEmpty(value.cancel));
+                prefab.popupAccept.onClick.RemoveAllListeners(); prefab.popupCancel.onClick.RemoveAllListeners();
+                prefab.popupAccept.onClick.AddListener(() => services.Popups.Resolve(popupId, true));
+                prefab.popupCancel.onClick.AddListener(() => services.Popups.Resolve(popupId, false)); return;
+            }
             if (modal) { modal.gameObject.SetActive(false); Destroy(modal.gameObject); }
             activePopup = services.Popups.Active?.Id; if (activePopup == null) { modal = null; return; }
             modal = Rect(root, "Queued popup", 900, 1600, 0, 0); Box(modal, "Blocker", 4000, 4000, 0, 0);
@@ -178,6 +207,14 @@ namespace BaseUnity.GameFlow
         { if (button && !button.GetComponent<TutorialTarget>()) button.gameObject.AddComponent<TutorialTarget>().Initialize(key, services.Tutorial); }
         private void BuildTutorial()
         {
+            if (prefab)
+            {
+                tutorialRoot = prefab.tutorial; masks = prefab.masks; borders = prefab.borders;
+                tutorialText = prefab.tutorialMessage; tutorialNext = prefab.tutorialNext; tutorialSkip = prefab.tutorialSkip;
+                tutorialNext.onClick.AddListener(() => { if (!services.Tutorial.Advance()) services.Feedback.Toast("Could not save. Try again.", true); });
+                tutorialSkip.onClick.AddListener(() => { if (!services.Tutorial.Skip()) services.Feedback.Toast("Could not save. Try again.", true); });
+                tutorialRoot.gameObject.SetActive(false); return;
+            }
             tutorialRoot = Rect(root, "Tutorial overlay", 900, 1600, 0, 0); masks = new RectTransform[4]; borders = new RectTransform[4];
             for (int i = 0; i < 4; i++) { masks[i] = Box(tutorialRoot, "Outside target", 0, 0, 0, 0); masks[i].GetComponent<Image>().color = new Color(0, 0, 0, .65f); borders[i] = Box(tutorialRoot, "Highlight", 0, 0, 0, 0, false); borders[i].GetComponent<Image>().color = new Color(.3f, 1, .7f); }
             var panel = Box(tutorialRoot, "Instructions", 820, 270, 0, 530);

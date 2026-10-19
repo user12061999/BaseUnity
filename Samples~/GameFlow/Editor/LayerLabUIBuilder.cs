@@ -27,8 +27,12 @@ namespace BaseUnity.GameFlow.Editor
                 if (configs.Length != 1) throw new InvalidOperationException("Select the destination GameFlowConfig asset first.");
                 config = AssetDatabase.LoadAssetAtPath<GameFlowConfig>(AssetDatabase.GUIDToAssetPath(configs[0]));
             }
+            Generate(config);
+        }
+        public static void Generate(GameFlowConfig config)
+        {
             font = AssetDatabase.LoadAssetAtPath<Font>(Pack + "Fonts/LilitaOne-Regular.ttf");
-            if (!font) throw new InvalidOperationException("Import Layer Lab GUI Pro-CasualGame into Assets/Layer Lab first.");
+            if (!font) font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             yellow = Sprite("Components/Button/Button01_Yellow.Png");
             blue = Sprite("Components/Button/Button01_Blue.Png");
             grey = Sprite("Components/Button/Button01_Gray.Png");
@@ -92,7 +96,6 @@ namespace BaseUnity.GameFlow.Editor
         private static Sprite Sprite(string relative)
         {
             var asset = AssetDatabase.LoadAssetAtPath<Sprite>(Pack + "Sprite/" + relative);
-            if (!asset) throw new FileNotFoundException("Missing Layer Lab sprite: " + relative);
             return asset;
         }
         private static RectTransform Rect(string name, Transform parent, float w, float h, float x, float y)
@@ -110,7 +113,7 @@ namespace BaseUnity.GameFlow.Editor
         private static Image Picture(string name, Transform parent, Sprite sprite, float w, float h, float x, float y, bool sliced = false, Color? color = null)
         {
             var image = Rect(name, parent, w, h, x, y).gameObject.AddComponent<Image>();
-            image.sprite = sprite; image.color = color ?? Color.white;
+            image.sprite = sprite; image.color = color ?? (sprite ? Color.white : new Color(.045f, .12f, .23f));
             image.type = sliced ? Image.Type.Sliced : Image.Type.Simple;
             image.preserveAspect = !sliced && sprite;
             image.raycastTarget = false; return image;

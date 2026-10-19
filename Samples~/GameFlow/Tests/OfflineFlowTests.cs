@@ -73,7 +73,6 @@ namespace BaseUnity.GameFlow.Tests
         private TestConsent consentProvider;
         private TestAssets assetProvider;
         private GameObject assetTemplate;
-        private BoosterCatalog boosterCatalog;
         private string slot;
         private bool hadLanguage;
         private LocalizationService.LanguageSave savedLanguage;
@@ -105,6 +104,16 @@ namespace BaseUnity.GameFlow.Tests
                 if (path.EndsWith("/Home.unity")) config.homeScene = path;
                 if (path.EndsWith("/InGame.unity")) config.inGameScene = path;
             }
+#if UNITY_EDITOR
+            if (TestContext.CurrentContext.Test.Name.StartsWith("ThemePrefab"))
+            {
+                var installed = UnityEditor.AssetDatabase.LoadAssetAtPath<GameFlowConfig>("Assets/BaseUnityGameFlow/GameFlowConfig.asset");
+                Assert.IsNotNull(installed.uiPrefab); Assert.IsNotNull(installed.levelSelectionPrefab); Assert.IsNotNull(installed.mobileModulesPrefab); Assert.IsNotNull(installed.offlineOverlayPrefab);
+                config.uiPrefab = installed.uiPrefab; config.levelSelectionPrefab = installed.levelSelectionPrefab;
+                config.mobileModulesPrefab = installed.mobileModulesPrefab; config.offlineOverlayPrefab = installed.offlineOverlayPrefab;
+                config.offlineMenuPrefab = installed.offlineMenuPrefab;
+            }
+#endif
             var root = new GameObject("Offline test bootstrap"); root.SetActive(false);
             flow = root.AddComponent<GameFlowBootstrap>(); flow.Config = config; root.SetActive(true);
             yield return WaitFor(FlowPhase.Home);
@@ -112,6 +121,55 @@ namespace BaseUnity.GameFlow.Tests
             flow.Features.Language.SetLanguage("en");
             yield return null;
         }
+#if UNITY_EDITOR
+        [UnityTest] public IEnumerator ThemePrefabScreensKeepBindingsAndAuthoredResultLayout()
+        {
+            var view = flow.GetComponentInChildren<GameFlowView>(); Assert.IsNotNull(view);
+            foreach (var screen in new[] { view.home, view.gameplay, view.loading, view.settings, view.pause, view.result, view.error }) Assert.IsTrue(screen.transform.IsChildOf(view.transform));
+            Assert.IsNotNull(view.privacyButton); Assert.AreEqual(0, flow.GetComponentsInChildren<MonoBehaviour>(true).Count(x => x && x.GetType().Name.Contains("Booster")));
+            var retryRect = (RectTransform)view.retryButton.transform; retryRect.anchoredPosition = new Vector2(17, -319);
+            view.resultTitle.color = Color.cyan;
+            view.settingsButton.onClick.Invoke(); yield return null; Assert.IsTrue(view.settings.activeSelf);
+            view.cancelButton.onClick.Invoke(); yield return null; Assert.IsFalse(view.settings.activeSelf);
+            flow.Play(); yield return WaitFor(FlowPhase.Playing);
+            view.pauseButton.onClick.Invoke(); yield return null; Assert.IsTrue(view.pause.activeSelf);
+            view.resumeButton.onClick.Invoke(); yield return null; Assert.AreEqual(FlowPhase.Playing, flow.Phase);
+            flow.WinLevel(); yield return WaitFor(FlowPhase.Result); Assert.IsTrue(view.result.activeSelf); Assert.IsTrue(view.nextLevelButton.gameObject.activeSelf);
+            Assert.AreEqual(new Vector2(17, -319), retryRect.anchoredPosition); Assert.AreEqual(Color.cyan, view.resultTitle.color);
+            view.nextLevelButton.onClick.Invoke(); yield return WaitFor(FlowPhase.Playing);
+            flow.LoseLevel(); yield return WaitFor(FlowPhase.Result); Assert.IsFalse(view.nextLevelButton.gameObject.activeSelf);
+            Assert.AreEqual(new Vector2(17, -319), retryRect.anchoredPosition); Assert.AreEqual(Color.cyan, view.resultTitle.color);
+            var reward = flow.GetComponentInChildren<OfflineOverlayView>(); Assert.IsTrue(reward.result.activeSelf);
+            view.resultHomeButton.onClick.Invoke(); yield return WaitFor(FlowPhase.Home);
+        }
+        [UnityTest] public IEnumerator ThemePrefabLevelGridUsesPrefabAndLocksUnavailableLevels()
+        {
+            config.levels = Enumerable.Range(1, 8).Select(i => new GameLevel { title = "Sample " + i, targetScore = 10 }).ToArray();
+            flow.ShowLevels(); yield return null;
+            var view = flow.GetComponentInChildren<LevelSelectionPrefabView>(); Assert.IsNotNull(view);
+            var cells = view.cells.GetComponentsInChildren<Button>(); Assert.AreEqual(6, cells.Length); Assert.IsTrue(cells[0].interactable); Assert.IsFalse(cells[1].interactable);
+            Assert.AreEqual(config.levelSelectionPrefab.cellPrefab.image.color, cells[0].image.color);
+            Assert.AreEqual(config.levelSelectionPrefab.cellPrefab.GetComponentInChildren<Text>().font, cells[0].GetComponentInChildren<Text>().font);
+            view.next.onClick.Invoke(); yield return null; Assert.AreEqual(2, view.cells.GetComponentsInChildren<Button>().Length);
+            Assert.AreEqual("2 / 2", view.pageNumber.text); view.back.onClick.Invoke(); yield return WaitFor(FlowPhase.Home);
+        }
+        [UnityTest] public IEnumerator ThemePrefabPopupMenuAndRewardsUsePrefabPresenters()
+        {
+            var modules = flow.GetComponent<GameFlowMobileModules>(); modules.OpenMenu(); yield return null;
+            var view = flow.GetComponentInChildren<MobileModulesView>(); Assert.IsTrue(view.menuPanel.gameObject.activeInHierarchy);
+            var close = view.menuPanel.GetComponentsInChildren<Button>().Single(x => x.name == "CLOSE");
+            Assert.AreEqual(config.mobileModulesPrefab.buttonTemplate.image.color, close.image.color);
+            close.onClick.Invoke(); yield return null; Assert.IsFalse(view.menuPanel.gameObject.activeSelf);
+            flow.Play(); yield return WaitFor(FlowPhase.Playing);
+            var services = flow.Services.Get<FeatureServices>();
+            var operation = services.Feedback.ConfirmAsync("Theme test", "Message", "editable_test");
+            yield return null; yield return null; Assert.IsTrue(modules.IsPopupVisible); Assert.AreEqual(FlowPhase.Paused, flow.Phase);
+            Assert.AreEqual("Theme test", view.popupTitle.text); view.popupAccept.onClick.Invoke(); yield return null; yield return null;
+            Assert.IsTrue(operation.IsCompleted); Assert.IsTrue(operation.Result); Assert.AreEqual(FlowPhase.Playing, flow.Phase);
+            services.Feedback.Toast("Theme toast"); yield return null; Assert.IsTrue(view.toast.gameObject.activeSelf); Assert.AreEqual("Theme toast", view.toastMessage.text);
+            flow.WinLevel(); yield return WaitFor(FlowPhase.Result); Assert.IsTrue(flow.GetComponentInChildren<OfflineOverlayView>().result.activeSelf);
+        }
+#endif
         private void Click(string name)
         {
             var button = flow.GetComponentsInChildren<Button>().Single(x => x.name == name);
@@ -157,82 +215,6 @@ namespace BaseUnity.GameFlow.Tests
             service.Played -= listener; UnityEngine.Object.Destroy(node);
         }
 #if UNITY_EDITOR
-        private GameFlowInGameHUD AddInGameHUD()
-        {
-            config.inGameHUDPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<InGameHUDView>("Assets/BaseUnityGameFlow/InGameHUD/InGameHUD.prefab");
-            var asset = UnityEditor.AssetDatabase.LoadAssetAtPath<BoosterCatalog>("Assets/BaseUnityGameFlow/InGameHUD/Boosters.asset");
-            Assert.IsNotNull(config.inGameHUDPrefab); Assert.IsNotNull(asset);
-            boosterCatalog = UnityEngine.Object.Instantiate(asset); config.boosters = boosterCatalog;
-            var hud = flow.gameObject.AddComponent<GameFlowInGameHUD>(); hud.Initialize(flow); return hud;
-        }
-        private sealed class BoosterInventory : IBoosterInventory
-        {
-            public long count = 1; public bool fail;
-            public long Count(string id) => count;
-            public string LastError => fail ? "Disk full" : null;
-            public bool Consume(string id) { if (fail || count <= 0) return false; count--; return true; }
-        }
-        [UnityTest] public IEnumerator BoosterConfirmConsumesOnceAndCancelPreservesTimeAndItem()
-        {
-            var hud = AddInGameHUD(); config.levels[0].timeLimitSeconds = 60;
-            var definition = boosterCatalog.boosters[0]; definition.cooldownSeconds = 0; definition.maxUsesPerLevel = 1;
-            Assert.IsTrue(flow.Features.Offline.Buy("energy"));
-            flow.Play(); yield return WaitFor(FlowPhase.Playing);
-            hud.Open(definition); Assert.AreEqual(FlowPhase.Paused, flow.Phase); float before = flow.RemainingTime;
-            yield return new WaitForSecondsRealtime(.15f); Assert.AreEqual(before, flow.RemainingTime);
-            hud.View.cancel.onClick.Invoke(); Assert.AreEqual(FlowPhase.Playing, flow.Phase); Assert.AreEqual(1, flow.Features.Offline.ItemCount("energy"));
-            hud.Open(definition); before = flow.RemainingTime; hud.View.accept.onClick.Invoke(); hud.View.accept.onClick.Invoke();
-            Assert.AreEqual(0, flow.Features.Offline.ItemCount("energy")); Assert.AreEqual(before + 15, flow.RemainingTime, .001f);
-            yield return null;
-            Assert.IsFalse(hud.View.slots.GetComponentsInChildren<Button>().Single(button => button.name == "Booster_energy").interactable);
-        }
-        [UnityTest] public IEnumerator BoosterStorePurchasesWithoutAutomaticallyUsingItem()
-        {
-            var hud = AddInGameHUD(); config.levels[0].timeLimitSeconds = 60;
-            flow.Play(); yield return WaitFor(FlowPhase.Playing); float before = flow.RemainingTime;
-            hud.Open(boosterCatalog.boosters[0]); yield return null;
-            Assert.AreEqual("BOOSTER STORE", hud.View.modalTitle.text);
-            hud.View.accept.onClick.Invoke(); hud.View.accept.onClick.Invoke();
-            Assert.AreEqual(150, flow.Features.Offline.Coins); Assert.AreEqual(1, flow.Features.Offline.ItemCount("energy"));
-            Assert.AreEqual(before, flow.RemainingTime, .001f); Assert.AreEqual(FlowPhase.Playing, flow.Phase);
-            hud.Open(boosterCatalog.boosters[0]); boosterCatalog.enabled = false; hud.View.accept.onClick.Invoke();
-            Assert.AreEqual(1, flow.Features.Offline.ItemCount("energy")); Assert.AreEqual(FlowPhase.Playing, flow.Phase);
-        }
-        [UnityTest] public IEnumerator BoosterSaveFailureRevertsEffectAndDoesNotStartCooldown()
-        {
-            config.levels[0].timeLimitSeconds = 60; flow.Play(); yield return WaitFor(FlowPhase.Playing);
-            var inventory = new BoosterInventory { fail = true }; var controller = new BoosterController(flow, inventory);
-            var definition = new BoosterDefinition { itemId = "energy", effectId = "extra_time", amount = 15, cooldownSeconds = 10 };
-            float before = flow.RemainingTime;
-            Assert.IsFalse(controller.TryUse(definition)); Assert.AreEqual("Disk full", controller.LastError);
-            Assert.AreEqual(before, flow.RemainingTime); Assert.AreEqual(1, inventory.count); Assert.AreEqual(0, controller.Cooldown(definition));
-            inventory.fail = false; Assert.IsTrue(controller.TryUse(definition)); Assert.AreEqual(before + 15, flow.RemainingTime, .001f);
-            Assert.AreEqual(0, inventory.count); Assert.AreEqual(BoosterAvailability.Cooldown, controller.Check(definition));
-            yield return null;
-        }
-        [UnityTest] public IEnumerator PreparedBoosterCannotAffectRetriedSession()
-        {
-            config.levels[0].timeLimitSeconds = 60; flow.Play(); yield return WaitFor(FlowPhase.Playing);
-            var effect = new ExtraTimeBoosterEffect(); var definition = new BoosterDefinition { itemId = "energy", effectId = effect.Id };
-            var action = effect.Prepare(new BoosterContext(flow), definition);
-            flow.LoseLevel(); yield return WaitFor(FlowPhase.Result); flow.RetryLevel(); yield return WaitFor(FlowPhase.Playing);
-            float before = flow.RemainingTime; Assert.Throws<InvalidOperationException>(() => action.Apply()); action.Revert();
-            Assert.AreEqual(before, flow.RemainingTime);
-            var inventory = new BoosterInventory(); var controller = new BoosterController(flow, inventory);
-            Assert.AreEqual(BoosterAvailability.Ready, controller.Check(definition));
-            definition.effectId = "missing"; Assert.IsFalse(controller.TryUse(definition)); Assert.AreEqual(1, inventory.count);
-        }
-        [UnityTest] public IEnumerator HintBoosterHighlightsOnlySupportedGameplay()
-        {
-            var hud = AddInGameHUD(); Assert.IsTrue(flow.Features.Offline.Buy("ticket"));
-            config.levels[0].gameplayPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/BaseUnityGameFlow/Levels/TapTargetGameplay.prefab");
-            Assert.IsNotNull(config.levels[0].gameplayPrefab);
-            flow.Play(); yield return WaitFor(FlowPhase.Playing);
-            var gameplay = flow.Levels.Instance.GetComponent<TapTargetGameplay>(); Color before = gameplay.target.image.color;
-            hud.Open(boosterCatalog.boosters[1]); hud.View.accept.onClick.Invoke(); yield return null;
-            Assert.AreEqual(0, flow.Features.Offline.ItemCount("ticket")); Assert.AreNotEqual(before, gameplay.target.image.color);
-            Assert.AreEqual(FlowPhase.Playing, flow.Phase);
-        }
         private GameFlowHub AddHub()
         {
             config.homeHubPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<HomeHubView>("Assets/BaseUnityGameFlow/HomeHub/HomeHub.prefab");
@@ -454,7 +436,6 @@ namespace BaseUnity.GameFlow.Tests
             }
             UnityEngine.Time.timeScale = 1; yield return null;
             UnityEngine.Object.Destroy(config); UnityEngine.Object.Destroy(features); UnityEngine.Object.Destroy(provider); UnityEngine.Object.Destroy(consentProvider); UnityEngine.Object.Destroy(assetProvider); if (assetTemplate) UnityEngine.Object.Destroy(assetTemplate);
-            if (boosterCatalog) UnityEngine.Object.Destroy(boosterCatalog);
         }
     }
 }

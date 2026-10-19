@@ -12,10 +12,22 @@ namespace BaseUnity.GameFlow
         private Font font;
         private Sprite buttonSprite;
         private int page;
+        private LevelSelectionPrefabView prefab;
+        private readonly System.Collections.Generic.List<Button> cells = new System.Collections.Generic.List<Button>();
         private const int PageSize = 6;
 
         public static LevelSelectionView Create(GameFlowBootstrap flow, Transform parent, Font font, Sprite buttonSprite = null)
         {
+            if (flow.Config.levelSelectionPrefab)
+            {
+                var instance = Instantiate(flow.Config.levelSelectionPrefab, parent);
+                var presenter = instance.gameObject.AddComponent<LevelSelectionView>();
+                presenter.prefab = instance; presenter.flow = flow;
+                instance.previous.onClick.AddListener(() => { presenter.page--; presenter.Draw(); });
+                instance.next.onClick.AddListener(() => { presenter.page++; presenter.Draw(); });
+                instance.back.onClick.AddListener(flow.CloseLevels);
+                flow.Changed += presenter.Refresh; presenter.Refresh(); return presenter;
+            }
             var root = new GameObject("Level Selection", typeof(RectTransform), typeof(CanvasGroup), typeof(Image));
             root.transform.SetParent(parent, false);
             var rect = (RectTransform)root.transform;
@@ -36,6 +48,7 @@ namespace BaseUnity.GameFlow
         }
         private void Draw()
         {
+            if (prefab) { DrawPrefab(); return; }
             if (content) { content.gameObject.SetActive(false); Destroy(content.gameObject); }
             content = MakeRect("Level grid", transform, 900, 1600, 0, 0);
             int pages = Mathf.Max(1, Mathf.CeilToInt(flow.Config.LevelCount / (float)PageSize));
@@ -65,6 +78,26 @@ namespace BaseUnity.GameFlow
             var back = MakeButton("Back to Home", content, "BACK HOME", 0, -640, 640, 110);
             back.onClick.AddListener(flow.CloseLevels);
             if (EventSystem.current) EventSystem.current.SetSelectedGameObject(firstUnlocked ? firstUnlocked.gameObject : back.gameObject);
+        }
+        private void DrawPrefab()
+        {
+            foreach (var cell in cells) { cell.gameObject.SetActive(false); Destroy(cell.gameObject); } cells.Clear();
+            int pages = Mathf.Max(1, Mathf.CeilToInt(flow.Config.LevelCount / (float)PageSize));
+            page = Mathf.Clamp(page, 0, pages - 1);
+            prefab.completed.text = flow.Progress.highestCompletedLevel + " / " + flow.Config.LevelCount + " COMPLETED";
+            prefab.pageNumber.text = (page + 1) + " / " + pages;
+            Button first = null;
+            for (int i = 0; i < PageSize; i++)
+            {
+                int number = page * PageSize + i + 1; if (number > flow.Config.LevelCount) break;
+                var cell = Instantiate(prefab.cellPrefab, prefab.cells); cells.Add(cell);
+                cell.name = "Level " + number; cell.interactable = flow.IsLevelUnlocked(number);
+                cell.GetComponentInChildren<Text>().text = number + "  " + (flow.Config.GetLevel(number)?.title ?? "Level") + "\n" + (!cell.interactable ? "LOCKED" : flow.IsLevelCompleted(number) ? "COMPLETED" : "PLAY");
+                cell.onClick.AddListener(() => flow.StartLevel(number));
+                if (!first && cell.interactable) first = cell;
+            }
+            prefab.previous.interactable = page > 0; prefab.next.interactable = page + 1 < pages;
+            if (EventSystem.current) EventSystem.current.SetSelectedGameObject(first ? first.gameObject : prefab.back.gameObject);
         }
         private static RectTransform MakeRect(string name, Transform parent, float w, float h, float x, float y)
         {

@@ -10,6 +10,7 @@ namespace BaseUnity.GameFlow
     public sealed class GameFlowOfflineUI : MonoBehaviour
     {
         private GameFlowBootstrap flow;
+        private OfflineOverlayView overlay;
         private GameFlowFeatures features;
         private RectTransform content;
         private GameObject page;
@@ -21,7 +22,7 @@ namespace BaseUnity.GameFlow
         private string tab = "SHOP", message;
         private int pageIndex;
         private float refreshAt;
-        public bool IsOpen => open || GetComponent<GameFlowHub>()?.IsModalOpen == true || GetComponent<GameFlowInGameHUD>()?.IsModalOpen == true;
+        public bool IsOpen => open || GetComponent<GameFlowHub>()?.IsModalOpen == true;
         public bool LegacyIsOpen => open;
         public void OpenTab(string key)
         {
@@ -43,6 +44,13 @@ namespace BaseUnity.GameFlow
             scaler.referenceResolution = new Vector2(900, 1600); scaler.matchWidthOrHeight = .5f;
             content = Rect(root.transform, "Safe Area", 900, 1600, 0, 0);
             var safe = root.AddComponent<GameFlowSafeArea>(); safe.canvas = canvas; safe.content = content;
+            if (flow.Config.offlineOverlayPrefab)
+            {
+                overlay = Instantiate(flow.Config.offlineOverlayPrefab, content);
+                overlay.menu.onClick.AddListener(() => { open = !open; MarkDirty(); });
+                overlay.retry.onClick.AddListener(() => features.SaveResult());
+                overlay.doubleReward.onClick.AddListener(() => { _ = features.RewardDouble(); });
+            }
             flow.Changed += MarkDirty; Economy.Changed += MarkDirty; features.Changed += MarkDirty; features.Language.Changed += MarkDirty;
         }
         private void MarkDirty() { dirty = true; }
@@ -80,6 +88,21 @@ namespace BaseUnity.GameFlow
             page = Rect(content, "Offline features", 900, 1600, 0, 0).gameObject;
             var parent = page.transform;
             if (flow.Phase != FlowPhase.Home) open = false;
+            if (overlay)
+            {
+                overlay.waiting.SetActive(features.Busy);
+                overlay.home.SetActive(!features.Busy && flow.Phase == FlowPhase.Home && (!flow.Config.homeHubPrefab || open));
+                overlay.balance.gameObject.SetActive(Economy.Enabled); overlay.balance.text = Economy.Coins + " " + T("Coin") + "    " + Economy.Gems + " " + T("Gem");
+                overlay.menu.gameObject.SetActive(Economy.Enabled || features.Language.Enabled);
+                overlay.result.SetActive(!features.Busy && flow.Phase == FlowPhase.Result && (Economy.Enabled || features.PendingSave));
+                overlay.reward.gameObject.SetActive(Economy.Enabled); overlay.reward.text = T("REWARD") + " +" + Economy.LastReward + " " + T("Coin");
+                overlay.retry.gameObject.SetActive(features.PendingSave);
+                overlay.doubleReward.gameObject.SetActive(!features.PendingSave && Economy.CanDouble && features.RewardAdsEnabled);
+                overlay.message.text = T(features.Message ?? "");
+                overlay.transform.SetAsLastSibling();
+                if (!features.Busy && flow.Phase == FlowPhase.Home && open) DrawMenu(parent);
+                return;
+            }
             if (features.Busy)
             {
                 var cover = page.AddComponent<Image>(); cover.color = new Color(.03f, .05f, .12f, .97f);

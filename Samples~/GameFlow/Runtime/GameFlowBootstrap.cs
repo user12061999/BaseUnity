@@ -70,7 +70,6 @@ namespace BaseUnity.GameFlow
             Features.Initialize(this);
             gameObject.AddComponent<GameFlowMobileModules>().Initialize(this);
             if (config && config.homeHubPrefab) gameObject.AddComponent<GameFlowHub>().Initialize(this);
-            if (config && config.inGameHUDPrefab) gameObject.AddComponent<GameFlowInGameHUD>().Initialize(this);
             gameObject.AddComponent<GameFlowUIFeedback>().Initialize(this);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             gameObject.AddComponent<GameFlowDebugPanel>().Initialize(this);
@@ -203,7 +202,6 @@ namespace BaseUnity.GameFlow
             if (config.autoWinAtTarget && CurrentDefinition != null && Score >= CurrentDefinition.targetScore) WinLevel();
             else Changed?.Invoke();
         }
-        internal void SetBoosterTime(float seconds) { RemainingTime = seconds; }
         public void Pause()
         {
             if (Phase != FlowPhase.Playing) return;

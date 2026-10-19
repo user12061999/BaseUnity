@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.18.0
+
+- Remove sample booster catalog, runtime effects, HUD slots, use confirmation, generator and tests.
+- Generate project-owned nested prefabs for Home, InGame, Loading, Settings, Pause, Result and Error without replacing the original UI.
+- Add editable level-selection/cell, More menu/templates, queued popup, tutorial, toast/loading, ad waiting and result-reward prefabs.
+- Reuse Store/Quest/Daily/Inventory prefabs; preserve runtime content binding, services, UI sound and effects.
+- Preserve authored Result positions/colors and bind the privacy button from the Settings prefab.
+- Add Wizard generation, reference checks and PlayMode coverage for prefab-backed flows.
+
 ## 0.17.0
 
 - Add editable InGame HUD, goal progress, timer and inventory-backed booster slots.

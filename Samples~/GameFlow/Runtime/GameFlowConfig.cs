@@ -27,6 +27,8 @@ namespace BaseUnity.GameFlow
         public string gameTitle = "YOUR GAME";
         public GameFlowView uiPrefab;
         public OfflineMenuView offlineMenuPrefab;
+        public HomeHubView homeHubPrefab;
+        public HomeHubCatalog homeHubCatalog;
         public BaseUnity.Features.FeatureConfig features;
         public bool autoWinAtTarget = true;
         public GameLevel[] levels =

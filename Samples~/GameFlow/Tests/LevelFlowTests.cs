@@ -34,7 +34,7 @@ namespace BaseUnity.GameFlow.Tests
         }
         private static void Click(string name)
         {
-            var button = UnityEngine.Object.FindObjectsByType<Button>(FindObjectsSortMode.None).Single(item => item.name == name);
+            var button = UnityEngine.Object.FindObjectsByType<Button>(FindObjectsSortMode.None).Single(item => item.name == name && item.IsInteractable());
             Assert.IsTrue(button.IsInteractable()); button.onClick.Invoke();
         }
 

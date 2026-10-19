@@ -16,6 +16,13 @@ namespace BaseUnity.GameFlow
         private Text timerLabel;
         private Font font;
         private bool settings;
+        public bool SettingsOpen => settings;
+        public void CoverHome(bool covered)
+        {
+            if (!page || flow.Phase != FlowPhase.Home || settings) return;
+            var group = page.GetComponent<CanvasGroup>(); if (!group) group = page.AddComponent<CanvasGroup>();
+            group.alpha = covered ? 0 : 1; group.blocksRaycasts = group.interactable = !covered;
+        }
         private float volume;
         private bool muted;
         private string settingsError;
@@ -161,7 +168,7 @@ namespace BaseUnity.GameFlow
             }
         }
 
-        private void OpenSettings()
+        public void OpenSettings()
         {
             var audio = flow.Services.Get<AudioService>();
             volume = audio.MasterVolume; muted = audio.Muted;

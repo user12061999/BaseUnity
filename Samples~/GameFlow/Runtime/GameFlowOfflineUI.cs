@@ -21,7 +21,13 @@ namespace BaseUnity.GameFlow
         private string tab = "SHOP", message;
         private int pageIndex;
         private float refreshAt;
-        public bool IsOpen => open;
+        public bool IsOpen => open || GetComponent<GameFlowHub>()?.IsModalOpen == true;
+        public bool LegacyIsOpen => open;
+        public void OpenTab(string key)
+        {
+            if (flow.Phase != FlowPhase.Home || features.Busy || !TabEnabled(key)) return;
+            tab = key; pageIndex = 0; message = null; open = true; dirty = true;
+        }
         private OfflineService Economy => features.Offline;
         private string T(string value) => features.Language.Text(value);
         public void Initialize(GameFlowBootstrap owner, GameFlowFeatures integration)
@@ -81,6 +87,7 @@ namespace BaseUnity.GameFlow
             }
             if (flow.Phase == FlowPhase.Home)
             {
+                if (flow.Config.homeHubPrefab && !open) return;
                 if (Economy.Enabled) Label(parent, Economy.Coins + " " + T("Coin") + "    " + Economy.Gems + " " + T("Gem"), 665, 0, 800, 24);
                 if (Economy.Enabled || features.Language.Enabled) Button(parent, "MENU", 730, () => open = !open, 0, 220);
                 if (open) DrawMenu(parent);

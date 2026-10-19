@@ -40,6 +40,8 @@ namespace BaseUnity.Features
             public List<string> claimedMissions = new List<string>();
             public List<StoreReceipt> storeReceipts = new List<StoreReceipt>();
             public List<string> storeProducts = new List<string>(), entitlements = new List<string>();
+            public List<string> claimedAchievements = new List<string>();
+            public long lifetimeScore;
         }
         private readonly OfflineSettings settings;
         private readonly ISaveStore saves;
@@ -66,6 +68,8 @@ namespace BaseUnity.Features
         public bool ShopEnabled => Enabled && settings.shop;
         public bool MissionsEnabled => Enabled && settings.missions;
         public bool DailyEnabled => Enabled && settings.dailyReward;
+        public bool AchievementsEnabled => Enabled && settings.achievements;
+        public long PurchaseCount(string id) => CountOf(profile.purchases, id);
         private string Today => utcNow().ToUniversalTime().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
         public OfflineService(OfflineSettings source, ISaveStore saves, Func<DateTime> utcNow = null)
@@ -94,15 +98,16 @@ namespace BaseUnity.Features
             p.inventory = p.inventory ?? new List<Count>(); p.purchases = p.purchases ?? new List<Count>();
             p.completedLevels = p.completedLevels ?? new List<int>(); p.claimedMissions = p.claimedMissions ?? new List<string>();
             p.progress = p.progress ?? new PlayerProgress();
+            p.claimedAchievements = p.claimedAchievements ?? new List<string>();
             p.storeReceipts = p.storeReceipts ?? new List<StoreReceipt>(); p.storeProducts = p.storeProducts ?? new List<string>(); p.entitlements = p.entitlements ?? new List<string>();
             // JsonUtility represents null nested serializable objects as zero-valued objects.
             if (p.result != null && string.IsNullOrEmpty(p.result.session) && p.result.level == 0 && p.result.score == 0 && !p.result.won && !p.result.acknowledged && !p.result.bonusVerified) p.result = null;
         }
         private static bool ValidateProfile(Profile p)
         {
-            if (p.schemaVersion > 3) throw new NotSupportedException("Offline profile needs a newer BaseUnity version.");
+            if (p.schemaVersion > 4) throw new NotSupportedException("Offline profile needs a newer BaseUnity version.");
             Normalize(p);
-            return p.schemaVersion >= 0 && p.coins >= 0 && p.gems >= 0 && p.dailyClaims >= 0 && p.lastReward >= 0 &&
+            return p.schemaVersion >= 0 && p.lifetimeScore >= 0 && p.claimedAchievements.All(x => !string.IsNullOrWhiteSpace(x)) && p.claimedAchievements.Distinct().Count() == p.claimedAchievements.Count && p.coins >= 0 && p.gems >= 0 && p.dailyClaims >= 0 && p.lastReward >= 0 &&
                 p.inventory.All(x => x != null && !string.IsNullOrWhiteSpace(x.id) && x.value >= 0) &&
                 p.purchases.All(x => x != null && !string.IsNullOrWhiteSpace(x.id) && x.value >= 0) &&
                 p.inventory.Select(x => x.id).Distinct().Count() == p.inventory.Count &&
@@ -145,7 +150,7 @@ namespace BaseUnity.Features
             try
             {
                 var next = JsonUtility.FromJson<Profile>(JsonUtility.ToJson(profile));
-                Normalize(next); change(next); next.schemaVersion = 3;
+                Normalize(next); change(next); next.schemaVersion = 4;
                 saves.Save(settings.saveSlot, next); profile = next; LastError = null;
             }
             catch (Exception e) { LastError = e.Message; return false; }
@@ -216,6 +221,7 @@ namespace BaseUnity.Features
             bool ok = Commit(p => {
                 p.progress.bestScore = Math.Max(p.progress.bestScore, score);
                 p.progress.sessions = (int)Math.Min(int.MaxValue, (long)p.progress.sessions + 1);
+                p.lifetimeScore = checked(p.lifetimeScore + Math.Max(0, score));
                 if (won) {
                     p.progress.wins = (int)Math.Min(int.MaxValue, (long)p.progress.wins + 1);
                     p.progress.highestCompletedLevel = Math.Max(p.progress.highestCompletedLevel, level);
@@ -260,6 +266,15 @@ namespace BaseUnity.Features
             var mission = (settings.dailyMissions ?? Array.Empty<DailyMission>()).FirstOrDefault(x => x != null && x.id == id);
             if (mission == null || mission.target < 1 || mission.coins < 0 || MissionClaimed(id) || MissionProgress(mission) < mission.target) return Reject("Mission is not ready");
             return Commit(p => { Credit(p, Currency.Coin, mission.coins); p.claimedMissions.Add(id); });
+        }
+        public long AchievementProgress(DailyMission goal) => goal.metric == MissionMetric.GamesPlayed ? profile.progress.sessions : goal.metric == MissionMetric.GamesWon ? profile.progress.wins : profile.lifetimeScore;
+        public bool AchievementClaimed(string id) => profile.claimedAchievements.Contains(id);
+        public bool ClaimAchievement(string id)
+        {
+            if (!AchievementsEnabled) return Reject("Achievements are disabled");
+            var goal = (settings.achievementGoals ?? Array.Empty<DailyMission>()).FirstOrDefault(x => x != null && x.id == id);
+            if (goal == null || goal.target < 1 || goal.coins < 0 || AchievementClaimed(id) || AchievementProgress(goal) < goal.target) return Reject("Achievement is not ready");
+            return Commit(p => { Credit(p, Currency.Coin, goal.coins); p.claimedAchievements.Add(id); });
         }
     }
 }

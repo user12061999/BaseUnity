@@ -2,7 +2,25 @@
 
 Base game Unity tái sử dụng qua **Git submodule trong `Assets/BaseUnity`**.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.14.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.15.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+
+## Home, Store và Quest mẫu
+
+Update sample bằng Wizard, chọn **Generate Home / Store / Quest UI** hoặc chạy
+**Tools > BaseUnity > Game Flow > Generate Missing Home Store Quest Prefabs**.
+Home có ví coin/gem, avatar, level, Play, chọn màn, Settings, Store, Quest, Daily Reward,
+Inventory và More. Nút module bị tắt tự ẩn. Store có tab tiền game/IAP, xác nhận mua,
+trạng thái thiếu tiền/hết lượt/đã sở hữu, giá từ SDK, khôi phục và thử nhận giao dịch pending.
+Quest gồm nhiệm vụ ngày và thành tựu lâu dài, thanh tiến độ và chấm đỏ có thưởng nhận được.
+
+Prefab `HomeHub`, `Store`, `Quests`, `HubCard` cùng `Presentation.asset` được tạo dưới thư mục
+`HomeHub` cạnh GameFlowConfig. Có thể sửa trực tiếp; builder không ghi đè asset có sẵn.
+Nếu có Layer Lab, builder dùng sprite/font trong dự án; không đưa art lên Git.
+Giá/phần thưởng/ID vẫn chỉnh trong **Feature Manager > Offline / Modules**; Presentation chỉ chứa
+icon và tên/mô tả Việt–Anh, ghép theo ID. Xem [hướng dẫn mẫu](Samples~/GameFlow/HOME_HUB.md).
+
+Kiểm thử v0.15: **133 EditMode + 41 PlayMode đạt**; đã xem bố cục Home, Store và Quest trong Game View.
+Giao dịch IAP thật vẫn cần SDK, store sandbox và máy chủ xác minh hợp lệ.
 
 ## Build mobile và debug trên thiết bị
 
@@ -148,7 +166,7 @@ Installer chỉ thêm file thiếu, không ghi đè code mà dự án đã sửa
 
 ## Lưu dữ liệu và khôi phục (0.8)
 
-- Hồ sơ offline dùng `schemaVersion = 3` bên trong payload; envelope `ISaveStore` vẫn ở version 1 để giữ tương thích API.
+- Hồ sơ offline dùng `schemaVersion = 4` bên trong payload; envelope `ISaveStore` vẫn ở version 1 để giữ tương thích API.
 - Lần đầu chạy Game Flow 0.8, tiến trình v0.7 từ `GameFlowConfig.saveSlot` được nhập vào `offline.saveSlot`,
   cùng với tiền/vật phẩm đã có. Chỉ đánh dấu `progressMigrated` khi ghi thành công; file tiến trình cũ được giữ nguyên.
 - Sau migration, Game Flow chỉ ghi tiến trình vào hồ sơ chung. Tắt economy vẫn tiếp tục lưu tiến trình trong hồ sơ đó,

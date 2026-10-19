@@ -30,6 +30,7 @@ namespace BaseUnity.GameFlow
         public Button volumeDownButton, volumeUpButton, soundButton, saveButton, cancelButton, closeSettingsButton;
         private GameFlowBootstrap flow;
         private bool settingsOpen;
+        public bool SettingsOpen => settingsOpen;
         private bool muted;
         private GameObject selectedScreen;
 
@@ -85,7 +86,7 @@ namespace BaseUnity.GameFlow
             LevelSelectionView.Create(flow, home.transform.parent, title.font, playButton.image.sprite);
         }
 
-        private void OpenSettings()
+        public void OpenSettings()
         {
             var audio = flow.Services.Get<AudioService>();
             masterSlider.SetValueWithoutNotify(audio.MasterVolume);

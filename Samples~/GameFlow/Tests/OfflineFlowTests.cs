@@ -116,6 +116,53 @@ namespace BaseUnity.GameFlow.Tests
             var button = flow.GetComponentsInChildren<Button>().Single(x => x.name == name);
             Assert.IsTrue(button.interactable); button.onClick.Invoke();
         }
+#if UNITY_EDITOR
+        private GameFlowHub AddHub()
+        {
+            config.homeHubPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<HomeHubView>("Assets/BaseUnityGameFlow/HomeHub/HomeHub.prefab");
+            Assert.IsNotNull(config.homeHubPrefab, "Generate Missing Home Store Quest Prefabs before running sample tests.");
+            config.homeHubCatalog = UnityEditor.AssetDatabase.LoadAssetAtPath<HomeHubCatalog>("Assets/BaseUnityGameFlow/HomeHub/Presentation.asset");
+            var hub = flow.gameObject.AddComponent<GameFlowHub>(); hub.Initialize(flow); return hub;
+        }
+        [UnityTest] public IEnumerator HubStoreConfirmsAndPreventsRepeatedPurchase()
+        {
+            var hub = AddHub(); yield return null;
+            Assert.IsTrue(hub.View.dailyDot.activeSelf); Assert.AreEqual("200 Coin    0 Gem", hub.View.wallet.text);
+            hub.Open("STORE"); yield return null;
+            var buy = hub.View.rows.GetComponentsInChildren<Button>().Single(button => button.name == "Buy_energy");
+            buy.onClick.Invoke(); Assert.IsTrue(hub.View.confirmation.activeSelf); Assert.AreEqual(200, flow.Features.Offline.Coins);
+            hub.View.confirmCancel.onClick.Invoke(); Assert.AreEqual(200, flow.Features.Offline.Coins);
+            buy.onClick.Invoke(); hub.View.confirmAccept.onClick.Invoke(); hub.View.confirmAccept.onClick.Invoke(); yield return null;
+            Assert.AreEqual(150, flow.Features.Offline.Coins); Assert.AreEqual(1, flow.Features.Offline.ItemCount("energy"));
+            Assert.IsFalse(hub.View.iapTab.gameObject.activeSelf);
+        }
+        [UnityTest] public IEnumerator HubQuestBadgeClaimsAndHidesDisabledModules()
+        {
+            var hub = AddHub(); yield return null; Assert.IsFalse(hub.View.questDot.activeSelf);
+            flow.Play(); yield return WaitFor(FlowPhase.Playing); flow.WinLevel(); yield return WaitFor(FlowPhase.Result);
+            flow.GoHome(); yield return WaitFor(FlowPhase.Home); yield return null;
+            Assert.IsTrue(hub.View.questDot.activeSelf);
+            hub.Open("QUESTS"); yield return null; hub.View.achievementTab.onClick.Invoke(); yield return null;
+            Assert.IsFalse(hub.View.questPage.restore.gameObject.activeSelf); Assert.IsFalse(hub.View.questPage.retryPending.gameObject.activeSelf);
+            var claim = hub.View.rows.GetComponentsInChildren<Button>().Single(button => button.name == "Claim_first_win");
+            Assert.IsTrue(claim.interactable); long coins = flow.Features.Offline.Coins;
+            claim.onClick.Invoke(); claim.onClick.Invoke(); yield return null;
+            Assert.AreEqual(coins + 200, flow.Features.Offline.Coins); Assert.IsFalse(hub.View.questDot.activeSelf);
+            hub.Close(); yield return null;
+            Assert.IsTrue(hub.View.home.activeSelf); Assert.IsFalse(hub.View.modal.activeSelf);
+        }
+        [UnityTest] public IEnumerator HubPurchaseLimitAndInsufficientFundsReflectService()
+        {
+            var hub = AddHub(); var economy = flow.Features.Offline;
+            Assert.IsTrue(economy.Spend(Currency.Coin, 200)); hub.Open("STORE"); yield return null;
+            var buy = hub.View.rows.GetComponentsInChildren<Button>().Single(button => button.name == "Buy_energy");
+            buy.onClick.Invoke(); yield return null;
+            Assert.IsFalse(hub.View.confirmation.activeSelf); Assert.AreEqual(0, economy.ItemCount("energy"));
+            StringAssert.Contains("Not enough currency", hub.View.message.text);
+            hub.Close(); flow.GetComponent<GameFlowUI>().OpenSettings(); yield return null;
+            Assert.IsFalse(hub.View.gameObject.activeSelf);
+        }
+#endif
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         [UnityTest] public IEnumerator DebugPanelOwnsOnlyItsPauseAndReportsServices()
         {

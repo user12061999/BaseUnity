@@ -98,6 +98,7 @@ namespace BaseUnity.Editor
             if (Field("offline.shop", "Shop").boolValue) Field("offline.items", "Items", true);
             if (Field("offline.dailyReward", "Daily rewards").boolValue) Field("offline.dailyCoins", "Daily cycle coins", true);
             if (Field("offline.missions", "Daily missions").boolValue) Field("offline.dailyMissions", "Missions", true);
+            if (Field("offline.achievements", "Achievements").boolValue) Field("offline.achievementGoals", "Lifetime goals", true);
         }
         private void DrawLanguage()
         {

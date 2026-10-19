@@ -23,7 +23,7 @@ namespace BaseUnity.Tests
             var service = Load(); Assert.IsTrue(service.InitializeProgress(new PlayerProgress { bestScore = 42, sessions = 7, highestUnlockedLevel = 3 }));
             service = Load(); Assert.AreEqual(900, service.Coins); Assert.AreEqual(12, service.Gems);
             Assert.IsTrue(service.InitializeProgress(new PlayerProgress())); Assert.AreEqual(42, service.Progress.bestScore); Assert.AreEqual(3, service.Progress.highestUnlockedLevel);
-            Assert.IsTrue(store.TryLoad<OfflineService.Profile>(settings.saveSlot, out var data)); Assert.AreEqual(3, data.schemaVersion);
+            Assert.IsTrue(store.TryLoad<OfflineService.Profile>(settings.saveSlot, out var data)); Assert.AreEqual(4, data.schemaVersion);
         }
         [Test] public void ResultAndProgressAndRewardCommitTogetherAndRestore()
         {

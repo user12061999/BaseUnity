@@ -50,6 +50,8 @@ namespace BaseUnity.GameFlow
             BuildTutorial(); WireTargets();
         }
         private string T(string text) => services.Localization.Text(text ?? "");
+        public bool IsMenuOpen => menuOpen;
+        public void OpenMenu() { if (flow.Phase == FlowPhase.Home) { menuOpen = true; Dirty(); } }
         private RectTransform Rect(Transform parent, string name, float w, float h, float x, float y)
         {
             var rect = new GameObject(name, typeof(RectTransform)).GetComponent<RectTransform>(); rect.SetParent(parent, false);
@@ -110,7 +112,7 @@ namespace BaseUnity.GameFlow
         {
             if (menu) { menu.SetActive(false); Destroy(menu); }
             menu = Rect(root, "Mobile settings and store", 900, 1600, 0, 0).gameObject;
-            if (!menuOpen) { Button(menu.transform, "MORE", -300, -730, () => { menuOpen = true; if (services.Purchases.Enabled) _ = services.Purchases.InitializeAsync(); Dirty(); }, 240); return; }
+            if (!menuOpen) { if (!flow.Config.homeHubPrefab) Button(menu.transform, "MORE", -300, -730, OpenMenu, 240); return; }
             Box(menu.transform, "Blocker", 4000, 4000, 0, 0);
             var panel = Box(menu.transform, "Settings", 820, 1400, 0, 0); Label(panel, "SETTINGS & STORE", 0, 600, 740, 80, 38);
             float y = 470;
@@ -187,7 +189,7 @@ namespace BaseUnity.GameFlow
         {
             var step = services.Tutorial.Current;
             tutorialRoot.gameObject.SetActive(step != null && allowed && (flow.Phase == FlowPhase.Home || flow.Phase == FlowPhase.Playing)); if (!tutorialRoot.gameObject.activeSelf) return;
-            var target = flow.GetComponentsInChildren<TutorialTarget>().FirstOrDefault(x => x.key == step.target && x.gameObject.activeInHierarchy)?.transform as RectTransform;
+            var target = flow.GetComponentsInChildren<TutorialTarget>().FirstOrDefault(x => x.key == step.target && x.gameObject.activeInHierarchy && (x.GetComponentInParent<CanvasGroup>() == null || x.GetComponentInParent<CanvasGroup>().interactable))?.transform as RectTransform;
             bool hasTarget = target != null;
             tutorialText.text = T(step.message); tutorialNext.gameObject.SetActive(!step.waitForTargetAction); tutorialSkip.gameObject.SetActive(services.Tutorial.CanSkip);
             foreach (var mask in masks) { mask.gameObject.SetActive(hasTarget); mask.GetComponent<Image>().raycastTarget = step.blockOutsideTarget; }

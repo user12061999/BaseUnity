@@ -26,6 +26,29 @@ namespace BaseUnity.Tests
         private OfflineSettings config;
         private DateTime today;
         private OfflineService NewService() => new OfflineService(config, store, () => today);
+        [Test] public void AchievementClaimsAreAtomicAndSurviveDailyResetAndReload()
+        {
+            var service = NewService(); service.InitializeProgress(new PlayerProgress());
+            Assert.IsFalse(service.ClaimAchievement("first_win"));
+            service.FinishSession(service.BeginSession(), 1, true, 25);
+            long balance = service.Coins;
+            store.fail = true; Assert.IsFalse(service.ClaimAchievement("first_win")); Assert.AreEqual(balance, service.Coins);
+            Assert.IsFalse(service.AchievementClaimed("first_win"));
+            store.fail = false; Assert.IsTrue(service.ClaimAchievement("first_win")); Assert.AreEqual(balance + 200, service.Coins);
+            today = today.AddDays(1); service = NewService();
+            Assert.IsTrue(service.AchievementClaimed("first_win")); Assert.IsFalse(service.ClaimAchievement("first_win"));
+            Assert.AreEqual(1, service.AchievementProgress(config.achievementGoals[0]));
+        }
+        [Test] public void VersionThreeMigratesWithoutInventingHistoricalScore()
+        {
+            store.Save(config.saveSlot, new OfflineService.Profile { schemaVersion = 3, coins = 900, progress = new PlayerProgress { sessions = 12, wins = 5 } });
+            var service = NewService(); Assert.IsNull(service.LoadError);
+            Assert.AreEqual(5, service.AchievementProgress(config.achievementGoals[0]));
+            var score = new DailyMission { metric = MissionMetric.Score }; Assert.AreEqual(0, service.AchievementProgress(score));
+            Assert.IsTrue(service.ClaimAchievement("first_win"));
+            OfflineService.Profile saved; Assert.IsTrue(store.TryLoad(config.saveSlot, out saved)); Assert.AreEqual(4, saved.schemaVersion);
+            config.achievements = false; Assert.IsFalse(NewService().ClaimAchievement("ten_games"));
+        }
         [SetUp] public void Setup()
         { store = new Store(); config = new OfflineSettings { enabled = true, startingCoins = 200 }; today = new DateTime(2026, 10, 17, 23, 59, 0, DateTimeKind.Utc); }
         [Test] public void FailedUnifiedSaveDoesNotUnlockOrPayAndCanRetryOnce()

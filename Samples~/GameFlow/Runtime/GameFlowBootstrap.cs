@@ -69,6 +69,7 @@ namespace BaseUnity.GameFlow
             Features = gameObject.AddComponent<GameFlowFeatures>();
             Features.Initialize(this);
             gameObject.AddComponent<GameFlowMobileModules>().Initialize(this);
+            if (config && config.homeHubPrefab) gameObject.AddComponent<GameFlowHub>().Initialize(this);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             gameObject.AddComponent<GameFlowDebugPanel>().Initialize(this);
 #endif

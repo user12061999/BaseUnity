@@ -12,10 +12,10 @@ namespace BaseUnity.Editor
     [Serializable] public sealed class BaseUnitySetupOptions
     {
         public string destination = GameFlowInstaller.Destination;
-        public bool offline = true, shop = true, daily = true, missions = true, rewards = true, localization = true;
+        public bool offline = true, shop = true, daily = true, missions = true, achievements = true, rewards = true, localization = true;
         public bool assets, tutorial, haptics, notifications, purchasing;
         public bool popups = true, feedback = true;
-        public bool ads, firebase, generateLevels = true, generateOfflineUI = true, installUniTask;
+        public bool ads, firebase, generateLevels = true, generateOfflineUI = true, generateHomeHub = true, installUniTask;
     }
     [Serializable] internal sealed class PendingBaseUnitySetup { public BaseUnitySetupOptions options; public string status, error, backup; }
     [InitializeOnLoad]
@@ -93,6 +93,7 @@ namespace BaseUnity.Editor
             {
                 result.offline = config.offline.enabled; result.shop = config.offline.shop; result.daily = config.offline.dailyReward;
                 result.missions = config.offline.missions; result.rewards = config.offline.levelRewards;
+                result.achievements = config.offline.achievements;
                 result.localization = config.localization.enabled; result.ads = config.ads.enabled; result.firebase = config.firebase.enabled;
                 result.assets = config.assets.enabled; result.tutorial = config.tutorial.enabled; result.haptics = config.haptics.enabled;
                 result.notifications = config.notifications.enabled; result.purchasing = config.purchasing.enabled; result.popups = config.popups.enabled; result.feedback = config.feedback.enabled;
@@ -160,6 +161,7 @@ namespace BaseUnity.Editor
                     ApplyModules(features, pending.options);
                     if (pending.options.generateLevels) InvokeBuilder("LevelAssetBuilder", flow);
                     if (pending.options.generateOfflineUI) InvokeBuilder("OfflineUIBuilder", flow);
+                    if (pending.options.generateHomeHub) InvokeBuilder("HomeHubBuilder", flow);
                     AssetDatabase.SaveAssetIfDirty(features); AssetDatabase.SaveAssetIfDirty(flow); AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport); completed = true;
                 }
                 finally { Store.CompleteSetup(pending.backup, Scenes(), completed); }
@@ -182,7 +184,7 @@ namespace BaseUnity.Editor
         {
             Undo.RecordObject(config, "BaseUnity module setup");
             config.offline.enabled = options.offline; config.offline.shop = options.shop; config.offline.dailyReward = options.daily;
-            config.offline.missions = options.missions; config.offline.levelRewards = options.rewards;
+            config.offline.missions = options.missions; config.offline.achievements = options.achievements; config.offline.levelRewards = options.rewards;
             config.localization.enabled = options.localization; config.ads.enabled = options.ads; config.firebase.enabled = options.firebase;
             config.assets.enabled = options.assets; config.tutorial.enabled = options.tutorial; config.haptics.enabled = options.haptics;
             config.notifications.enabled = options.notifications; config.purchasing.enabled = options.purchasing; config.popups.enabled = options.popups; config.feedback.enabled = options.feedback;

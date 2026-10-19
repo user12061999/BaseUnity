@@ -138,6 +138,11 @@ namespace BaseUnity.Editor
                     if (item.price < 0 || item.quantity < 1 || item.purchaseLimit < 0 || !Enum.IsDefined(typeof(Currency), item.currency)) error("Shop: invalid price, quantity, purchase limit or currency for " + item.id);
                 }
                 ids.Clear();
+                if (offline.achievements) foreach (var goal in offline.achievementGoals ?? Array.Empty<DailyMission>())
+                {
+                    if (goal == null || string.IsNullOrWhiteSpace(goal.id) || !ids.Add(goal.id) || goal.target < 1 || goal.coins < 0 || !Enum.IsDefined(typeof(MissionMetric), goal.metric)) error("Achievements: IDs must be unique with valid target, reward and metric.");
+                }
+                ids.Clear();
                 if (offline.missions) foreach (var mission in offline.dailyMissions ?? Array.Empty<DailyMission>())
                 {
                     if (mission == null || string.IsNullOrWhiteSpace(mission.id) || !ids.Add(mission.id)) { error("Missions: IDs must be present and unique."); continue; }

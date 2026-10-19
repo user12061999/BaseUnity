@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.15.0
+
+- Add an editable portrait Home hub with wallet, player card, level, Play/Levels/Settings and feature shortcuts.
+- Add nested Store/Quest/card prefabs, optional Layer Lab styling and a separate presentation ScriptableObject catalog.
+- Add game-currency purchase confirmation, affordability/limit/owned states and verified IAP purchase/restore/pending delivery UI.
+- Add daily quest and lifetime achievement tabs with progress, transactional claims and live reward badges.
+- Upgrade offline payload schema to 4 for durable achievement claims and cumulative score; preserve older progress and purchase receipts.
+- Add optional hub generation to Setup Wizard and preserve existing generated prefabs/presentation assets.
+- Coordinate hub overlays with settings, legacy daily/inventory UI, tutorials, popups and mobile settings.
+
 ## 0.14.0
 
 - Add portable mobile Development/Release build presets with independent scene lists, APK/AAB selection, forced validation and build summaries.

@@ -48,6 +48,7 @@ namespace BaseUnity.Editor
                 EditorGUI.indentLevel++;
                 options.shop = EditorGUILayout.Toggle("Shop", options.shop); options.daily = EditorGUILayout.Toggle("Daily rewards", options.daily);
                 options.missions = EditorGUILayout.Toggle("Daily missions", options.missions); options.rewards = EditorGUILayout.Toggle("Level rewards", options.rewards);
+                options.achievements = EditorGUILayout.Toggle("Achievements", options.achievements);
                 EditorGUI.indentLevel--;
             }
             options.localization = EditorGUILayout.Toggle("English / Vietnamese", options.localization);
@@ -60,6 +61,7 @@ namespace BaseUnity.Editor
             if (options.assets || options.notifications || options.purchasing || options.haptics) EditorGUILayout.HelpBox("Configure module packages/providers and store verification in Feature Manager > Modules. Enabling a switch does not install an SDK or activate real purchases.", MessageType.Info);
             options.generateLevels = EditorGUILayout.Toggle("Generate missing LevelData", options.generateLevels);
             options.generateOfflineUI = EditorGUILayout.Toggle("Generate missing offline UI", options.generateOfflineUI);
+            options.generateHomeHub = EditorGUILayout.Toggle("Generate Home / Store / Quest UI", options.generateHomeHub);
             options.installUniTask = EditorGUILayout.Toggle("Install UniTask if missing", options.installUniTask);
             if (GUILayout.Button("1. Scan source files / review update")) Run(() => { Scan(); tab = 1; return "Review the file list before applying it."; });
             using (new EditorGUI.DisabledScope(plan == null || plan.destination != options.destination))

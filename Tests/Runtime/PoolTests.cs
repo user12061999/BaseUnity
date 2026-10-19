@@ -33,6 +33,16 @@ namespace BaseUnity.Tests
             Assert.AreSame(instance, pool.Rent(Vector3.zero, Quaternion.identity));
             yield return null;
         }
+        [UnityTest] public IEnumerator DiagnosticsFollowRentalAndDisposeWithoutOwningPool()
+        {
+            int before = PoolDiagnostics.Capture().Count;
+            var instance = pool.Rent(Vector3.zero, Quaternion.identity);
+            var snapshot = System.Linq.Enumerable.First(PoolDiagnostics.Capture(), item => item.Name == "Template");
+            Assert.AreEqual(1, snapshot.Active); Assert.AreEqual(0, snapshot.Inactive);
+            pool.Return(instance); pool.Dispose();
+            Assert.AreEqual(before - 1, PoolDiagnostics.Capture().Count);
+            yield return null;
+        }
         [UnityTest] public IEnumerator RejectsForeignObjectsAndDestroysOverflow()
         {
             Assert.Throws<InvalidOperationException>(() => pool.Return(prefab));

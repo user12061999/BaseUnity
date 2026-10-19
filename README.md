@@ -2,7 +2,33 @@
 
 Base game Unity tái sử dụng qua **Git submodule trong `Assets/BaseUnity`**.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.13.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.14.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+
+## Build mobile và debug trên thiết bị
+
+Mở **Tools > BaseUnity > Mobile Build Profiles**, chọn **Development** hoặc **Release**,
+bấm **Copy scenes from active Unity Build Profile**, đặt Bootstrap đầu tiên rồi **Validate configuration**.
+Development tạo APK thử (hoặc export iOS), có tùy chọn debugger/profiler; Release tạo AAB/APK
+(hoặc export iOS) và luôn bỏ các cờ phát triển. Đây là preset build của thư viện dùng Unity BuildPipeline;
+hai danh sách scene được lưu riêng tại `ProjectSettings/BaseUnityMobileBuilds.asset` của dự án sử dụng.
+FeatureConfig, ID ứng dụng, signing và cấu hình SDK vẫn thuộc dự án; preset không tự thay ID tài khoản.
+Thông tin thiếu được ghi vào `Library/BaseUnity/LastBuildValidation.json`; kết quả build vào
+`Library/BaseUnity/LastMobileBuild.json`. Không bỏ qua kiểm tra chỉ để tạo APK.
+Xem [hướng dẫn chi tiết](Samples~/GameFlow/BUILDING.md).
+
+Sau khi cập nhật sample bằng Wizard, nhấn Play hoặc chạy Development Build, bấm **DEBUG** ở góc trên.
+Panel hiển thị trạng thái/lỗi SDK, FPS/bộ nhớ/GC, asset lease và pool, kèm nút Win/Lose/Next/Retry/Home.
+Chỉ mã Editor/Development chứa panel và nút reset. Reset cần trở về Home, xác nhận trong panel,
+sau đó lưu thư mục backup và khởi động lại Bootstrap.
+
+Từ 0.14, save do GameBootstrap tạo nằm trong `BaseUnity_Editor` / `BaseUnity_Development`
+bên dưới `Application.persistentDataPath`; Release giữ nguyên thư mục `BaseUnity`.
+Dữ liệu cũ được giữ nguyên và không tự copy sang môi trường thử. Các SDK, PlayerPrefs, tài khoản store
+và quyền consent không nằm trong hệ thống reset này. Cùng application ID vẫn thay thế cùng ứng dụng
+khi cài APK; dùng dự án/ID và bộ cấu hình vendor riêng nếu cần cài song song.
+
+Kiểm tra v0.14: **131/131 EditMode và 38/38 PlayMode đạt** trong Unity Editor.
+APK/native SDK và giao dịch sandbox cần kiểm tra tiếp trên thiết bị có cấu hình tài khoản hợp lệ.
 
 ## Luồng game có sẵn
 

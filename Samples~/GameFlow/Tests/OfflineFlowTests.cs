@@ -116,6 +116,31 @@ namespace BaseUnity.GameFlow.Tests
             var button = flow.GetComponentsInChildren<Button>().Single(x => x.name == name);
             Assert.IsTrue(button.interactable); button.onClick.Invoke();
         }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        [UnityTest] public IEnumerator DebugPanelOwnsOnlyItsPauseAndReportsServices()
+        {
+            var debug = flow.GetComponent<GameFlowDebugPanel>(); Assert.IsNotNull(debug);
+            Assert.IsFalse(debug.IsOpen);
+            flow.Play(); yield return WaitFor(FlowPhase.Playing);
+            debug.Toggle(); yield return null;
+            Assert.IsTrue(debug.IsOpen); Assert.AreEqual(FlowPhase.Paused, flow.Phase);
+            StringAssert.Contains("Firebase:", debug.Snapshot); StringAssert.Contains("leases=", debug.Snapshot);
+            debug.Close(); Assert.AreEqual(FlowPhase.Playing, flow.Phase);
+            flow.Pause(); debug.Toggle(); debug.Close();
+            Assert.AreEqual(FlowPhase.Paused, flow.Phase);
+            flow.Resume(); flow.LoseLevel(); yield return WaitFor(FlowPhase.Result);
+        }
+        [UnityTest] public IEnumerator DebugWinUsesRealResultAndProgressionFlow()
+        {
+            flow.Play(); yield return WaitFor(FlowPhase.Playing);
+            var debug = flow.GetComponent<GameFlowDebugPanel>(); debug.Toggle(); yield return null;
+            var button = debug.GetComponentsInChildren<Button>().Single(item => item.name == "WIN");
+            Assert.IsTrue(button.interactable); button.onClick.Invoke();
+            yield return WaitFor(FlowPhase.Result);
+            Assert.AreEqual(LevelOutcome.Win, flow.Outcome); Assert.IsFalse(debug.IsOpen);
+            Assert.IsTrue(flow.CanNextLevel);
+        }
+#endif
         [UnityTest] public IEnumerator MenuPurchasesDailyAndLanguageThenWinNextLose()
         {
             var economy = flow.Features.Offline;

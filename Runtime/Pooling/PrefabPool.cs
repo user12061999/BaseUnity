@@ -18,6 +18,7 @@ namespace BaseUnity.Pooling
         private readonly int maxRetained;
         private bool disposed;
         public int CountAll => all.Count;
+        public string Name { get; }
         public int CountActive => rented.Count;
         public int CountInactive => available.Count;
         public CancellationToken DisposalToken { get; }
@@ -28,11 +29,13 @@ namespace BaseUnity.Pooling
             if (maxRetained < 0 || prewarm < 0 || prewarm > maxRetained) throw new ArgumentOutOfRangeException(nameof(prewarm));
             lifetime = new CancellationTokenSource(); DisposalToken = lifetime.Token;
             this.prefab = prefab;
+            Name = prefab.name;
             this.maxRetained = maxRetained;
             storage = new GameObject($"Pool: {prefab.name}");
             storage.transform.SetParent(parent, false);
             storage.SetActive(false);
             for (int i = 0; i < prewarm; i++) available.Push(Create());
+            PoolDiagnostics.Register(this);
         }
 
         private GameObject Create()
@@ -88,6 +91,7 @@ namespace BaseUnity.Pooling
         {
             if (disposed) return;
             disposed = true;
+            PoolDiagnostics.Unregister(this);
             try { lifetime.Cancel(); }
             finally
             {

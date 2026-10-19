@@ -69,6 +69,9 @@ namespace BaseUnity.GameFlow
             Features = gameObject.AddComponent<GameFlowFeatures>();
             Features.Initialize(this);
             gameObject.AddComponent<GameFlowMobileModules>().Initialize(this);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            gameObject.AddComponent<GameFlowDebugPanel>().Initialize(this);
+#endif
             StartCoroutine(BootAfterFirstFrame());
         }
 

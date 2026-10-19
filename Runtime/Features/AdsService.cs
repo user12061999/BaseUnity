@@ -27,6 +27,7 @@ namespace BaseUnity.Features
             Status = Enabled ? (factory == null ? FeatureStatus.MissingProvider : FeatureStatus.Initializing) : FeatureStatus.Disabled;
         }
         public bool NoAds => noAds;
+        public bool IsBusy => busy;
         public void SetNoAds(bool value) { noAds = value; if (value) HideBanner(); }
         private bool Allowed(AdFormat format) => Enabled && !disposed && (!noAds || format == AdFormat.Rewarded) &&
             (format == AdFormat.Banner ? settings.banner : format == AdFormat.Interstitial ? settings.interstitial : settings.rewarded);

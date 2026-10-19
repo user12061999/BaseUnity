@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using UnityEngine;
 using BaseUnity.Audio;
 using BaseUnity.Input;
@@ -18,6 +17,7 @@ namespace BaseUnity.Core
         public static GameBootstrap Instance { get; private set; }
         public ServiceRegistry Services { get; private set; }
         public bool IsReady { get; private set; }
+        public string StartupScenePath { get; private set; }
         private TimerService timers;
         private StateMachine states;
         [SerializeField] private FeatureConfig featureConfig;
@@ -32,6 +32,7 @@ namespace BaseUnity.Core
             if (Instance && Instance != this) { Destroy(gameObject); return; }
             if (transform.parent) { Debug.LogError("GameBootstrap must be on a dedicated root GameObject.", this); enabled = false; return; }
             Instance = this;
+            StartupScenePath = gameObject.scene.path;
             DontDestroyOnLoad(gameObject);
             Services = new ServiceRegistry();
             try
@@ -39,7 +40,7 @@ namespace BaseUnity.Core
                 Services.Register(new EventBus());
                 Services.Register(states = new StateMachine());
                 Services.Register(timers = new TimerService());
-                Services.Register<ISaveStore>(new JsonSaveStore(Path.Combine(Application.persistentDataPath, "BaseUnity")));
+                Services.Register<ISaveStore>(new JsonSaveStore(BuildEnvironment.SaveDirectory));
                 Services.Register(new SceneService());
                 Services.Register(new UIService());
                 Services.Register(new AudioService(transform, Services.Get<ISaveStore>()));

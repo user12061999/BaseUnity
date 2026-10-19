@@ -240,7 +240,7 @@ namespace BaseUnity.GameFlow.Tests
             if (config) UnityEngine.Object.Destroy(config);
             if (gameplayTemplate) UnityEngine.Object.Destroy(gameplayTemplate);
             if (levelData) UnityEngine.Object.Destroy(levelData);
-            if (slot != null) new JsonSaveStore(Path.Combine(Application.persistentDataPath, "BaseUnity")).Delete(slot);
+            if (slot != null) new JsonSaveStore(BuildEnvironment.SaveDirectory).Delete(slot);
             UnityEngine.Time.timeScale = 1;
         }
     }

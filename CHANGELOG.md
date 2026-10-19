@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.14.0
+
+- Add portable mobile Development/Release build presets with independent scene lists, APK/AAB selection, forced validation and build summaries.
+- Keep Release free of development/debugger/profiler-connect flags; restore Android bundle/export settings after each build.
+- Separate Editor and Development saves from the existing production directory, without migrating or overwriting production data.
+- Add a portrait, safe-area Game Flow debug panel compiled only for Editor/Development players.
+- Show SDK status/errors, FPS/memory/GC, asset leases, popup state and weakly tracked pool counters.
+- Test win/lose/next/retry/home through normal Game Flow APIs; preserve pause ownership.
+- Add confirmed test-save reset that cancels owned notifications, disposes services, archives test saves and reloads Bootstrap.
+- Add regression coverage for build flags, save isolation/archival, pool diagnostics and debug flow controls.
+
 ## 0.13.0
 
 - Add scoped asset leases, an optional Addressables provider and addressable level prefabs.

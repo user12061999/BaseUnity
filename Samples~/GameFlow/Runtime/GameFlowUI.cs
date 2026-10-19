@@ -126,14 +126,14 @@ namespace BaseUnity.GameFlow
                         page.GetComponent<Image>().color = Color.clear;
                         page.GetComponent<Image>().raycastTarget = false;
                         foreach (var text in page.GetComponentsInChildren<Text>()) text.gameObject.SetActive(false);
-                        Label("LEVEL " + flow.CurrentLevel + "  /  SCORE " + flow.Score, 700, 36);
+                        Label(flow.Config.inGameHUDPrefab ? "SCORE " + flow.Score : "LEVEL " + flow.CurrentLevel + "  /  SCORE " + flow.Score, 700, 36);
                         timerLabel = Label("", 610, 28);
                         Button("Pause", 520, flow.Pause);
                         break;
                     }
                     Label("LEVEL " + flow.CurrentLevel, 180, 48);
                     Label($"SCORE  {flow.Score}", 100, 32, accent);
-                    timerLabel = Label("TARGET " + (flow.CurrentDefinition?.targetScore ?? 0), 40, 22);
+                    timerLabel = flow.Config.inGameHUDPrefab ? null : Label("TARGET " + (flow.CurrentDefinition?.targetScore ?? 0), 40, 22);
                     Button("Collect +10", -30, () => flow.AddScore(10), true);
                     Button("Finish session", -100, flow.CompleteSession);
                     Button("Pause", -170, flow.Pause);

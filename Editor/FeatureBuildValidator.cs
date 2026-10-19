@@ -172,6 +172,33 @@ namespace BaseUnity.Editor
             if (!flow) { issues.Add(new FeatureValidationIssue(MessageType.Warning, "No GameFlowConfig selected; Home/InGame/level scene references were not checked.", null)); return issues; }
             if (flow.GetType().FullName != "BaseUnity.GameFlow.GameFlowConfig") { error("Choose a GameFlowConfig asset for scene validation."); return issues; }
             var data = new SerializedObject(flow);
+            var hud = data.FindProperty("inGameHUDPrefab")?.objectReferenceValue;
+            if (hud)
+            {
+                var h = new SerializedObject(hud);
+                foreach (string field in new[] { "gameplay", "boosterBar", "modal", "level", "target", "timer", "message", "modalTitle", "modalMessage", "acceptLabel", "progress", "slots", "slotPrefab", "accept", "cancel" })
+                    if (!h.FindProperty(field)?.objectReferenceValue) error("InGame HUD: missing " + field);
+                var slot = h.FindProperty("slotPrefab")?.objectReferenceValue;
+                if (slot) foreach (string field in new[] { "icon", "title", "quantity", "status", "button" })
+                    if (!new SerializedObject(slot).FindProperty(field)?.objectReferenceValue) error("Booster slot: missing " + field);
+            }
+            var boosters = data.FindProperty("boosters")?.objectReferenceValue;
+            if (boosters)
+            {
+                var b = new SerializedObject(boosters);
+                if (b.FindProperty("enabled").boolValue)
+                {
+                    var entries = b.FindProperty("boosters"); var ids = new HashSet<string>(StringComparer.Ordinal);
+                    if (entries.arraySize > 4) error("InGame HUD: the sample supports up to four booster slots.");
+                    for (int i = 0; i < entries.arraySize; i++)
+                    {
+                        var entry = entries.GetArrayElementAtIndex(i); string id = entry.FindPropertyRelative("itemId").stringValue;
+                        float amount = entry.FindPropertyRelative("amount").floatValue, cooldown = entry.FindPropertyRelative("cooldownSeconds").floatValue;
+                        if (string.IsNullOrWhiteSpace(id) || !ids.Add(id) || string.IsNullOrWhiteSpace(entry.FindPropertyRelative("effectId").stringValue) || amount <= 0 || float.IsNaN(amount) || float.IsInfinity(amount) || cooldown < 0 || float.IsNaN(cooldown) || float.IsInfinity(cooldown) || entry.FindPropertyRelative("maxUsesPerLevel").intValue < 0)
+                            error("Boosters: unique item IDs, effect IDs, positive finite amount and non-negative cooldown/usage limit are required.");
+                    }
+                }
+            }
             var menu = data.FindProperty("offlineMenuPrefab")?.objectReferenceValue;
             if (menu)
             {

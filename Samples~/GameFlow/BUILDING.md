@@ -44,7 +44,7 @@ Build pipeline reference: [Unity BuildPlayerOptions](https://docs.unity3d.com/60
 ## DEBUG panel
 
 Update the installed sample through Setup and Update Wizard. In Editor Play or Development Build,
-tap **DEBUG** in the upper-right safe area. The entire presenter, reset runner and bootstrap hook are
+tap **DEBUG** in the upper safe area. The entire presenter, reset runner and bootstrap hook are
 inside `UNITY_EDITOR || DEVELOPMENT_BUILD`; a normal Release does not contain these classes/actions.
 Custom games can reuse `BuildEnvironment` and `PoolDiagnostics.Capture()` without this sample UI.
 

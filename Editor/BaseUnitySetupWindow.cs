@@ -62,6 +62,7 @@ namespace BaseUnity.Editor
             options.generateLevels = EditorGUILayout.Toggle("Generate missing LevelData", options.generateLevels);
             options.generateOfflineUI = EditorGUILayout.Toggle("Generate missing offline UI", options.generateOfflineUI);
             options.generateHomeHub = EditorGUILayout.Toggle("Generate Home / Store / Quest UI", options.generateHomeHub);
+            options.generateInGameHUD = EditorGUILayout.Toggle("Generate InGame HUD / boosters", options.generateInGameHUD);
             options.installUniTask = EditorGUILayout.Toggle("Install UniTask if missing", options.installUniTask);
             if (GUILayout.Button("1. Scan source files / review update")) Run(() => { Scan(); tab = 1; return "Review the file list before applying it."; });
             using (new EditorGUI.DisabledScope(plan == null || plan.destination != options.destination))

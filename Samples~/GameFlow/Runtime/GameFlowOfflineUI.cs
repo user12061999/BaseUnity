@@ -21,7 +21,7 @@ namespace BaseUnity.GameFlow
         private string tab = "SHOP", message;
         private int pageIndex;
         private float refreshAt;
-        public bool IsOpen => open || GetComponent<GameFlowHub>()?.IsModalOpen == true;
+        public bool IsOpen => open || GetComponent<GameFlowHub>()?.IsModalOpen == true || GetComponent<GameFlowInGameHUD>()?.IsModalOpen == true;
         public bool LegacyIsOpen => open;
         public void OpenTab(string key)
         {

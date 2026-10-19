@@ -77,6 +77,7 @@ namespace BaseUnity.GameFlow
             if (UnityEngine.Time.unscaledTime >= scanAt) { scanAt = UnityEngine.Time.unscaledTime + .15f; ScanButtons(); }
             var visible = current; visible.Clear();
             var hub = GetComponent<GameFlowHub>();
+            var hud = GetComponent<GameFlowInGameHUD>(); if (hud && hud.View) Add(visible, "booster", hud.View.modal);
             if (hub && hub.View && hub.View.gameObject.activeInHierarchy)
             {
                 Add(visible, "store", hub.View.storePage.gameObject); Add(visible, "quests", hub.View.questPage.gameObject);

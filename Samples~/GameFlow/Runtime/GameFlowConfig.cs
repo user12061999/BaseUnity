@@ -29,6 +29,8 @@ namespace BaseUnity.GameFlow
         public OfflineMenuView offlineMenuPrefab;
         public HomeHubView homeHubPrefab;
         public HomeHubCatalog homeHubCatalog;
+        public InGameHUDView inGameHUDPrefab;
+        public BoosterCatalog boosters;
         public BaseUnity.Features.FeatureConfig features;
         public bool autoWinAtTarget = true;
         public GameLevel[] levels =

@@ -2,7 +2,21 @@
 
 Base game Unity tái sử dụng qua **Git submodule trong `Assets/BaseUnity`**.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.16.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.17.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+
+## InGame HUD và booster mẫu
+
+Chạy **Tools > BaseUnity > Game Flow > Generate Missing InGame HUD and Boosters**, hoặc chọn
+**Generate InGame HUD / boosters** trong Setup Wizard. Mẫu có level, mục tiêu/tiến độ, timer và các ô
+booster gắn với inventory. `energy` mặc định thêm 15 giây; `ticket` gợi ý mục tiêu trong Tap Target demo.
+Bấm booster để xác nhận dùng; hết vật phẩm thì mở Store nhỏ ngay trong màn chơi. Mua không tự dùng.
+
+Giá và số lượng mua lấy từ Offline Shop hiện có. Catalog chỉnh effect, amount, icon, cooldown và
+giới hạn mỗi lượt; HUD/catalog/prefab slot nằm cạnh GameFlowConfig trong `InGameHUD`.
+Nếu lưu việc trừ vật phẩm thất bại, effect được hoàn tác. Modal giữ pause của mình và không tiếp tục
+callback từ màn cũ. Xem [hướng dẫn booster](Samples~/GameFlow/BOOSTERS.md).
+
+Kiểm thử v0.17: **134 EditMode + 52 PlayMode đạt**; gồm rollback, hủy/xác nhận, Store và Hint.
 
 ## Hiệu ứng và âm thanh UI
 

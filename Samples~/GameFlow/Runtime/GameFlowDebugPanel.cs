@@ -39,7 +39,7 @@ namespace BaseUnity.GameFlow
             var scaler = canvasObject.GetComponent<CanvasScaler>(); scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution = new Vector2(900, 1600); scaler.matchWidthOrHeight = .5f;
             root = Rect(canvasObject.transform, "Safe area", 900, 1600, 0, 0);
             var safe = canvasObject.AddComponent<GameFlowSafeArea>(); safe.canvas = canvas; safe.content = root;
-            launcher = Button(root, "DEBUG", 300, 730, 230, Toggle).gameObject;
+            launcher = Button(root, "DEBUG", -300, 660, 220, Toggle).gameObject;
             panel = Rect(root, "Debug panel", 900, 1600, 0, 0).gameObject;
             var shade = panel.AddComponent<Image>(); shade.color = new Color(.025f, .04f, .065f, .99f);
             Label(panel.transform, "BASEUNITY • " + BuildEnvironment.Name, 0, 730, 830, 60, 32);

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.17.0
+
+- Add editable InGame HUD, goal progress, timer and inventory-backed booster slots.
+- Add Extra Time and Tap Target Hint examples with a reusable reversible booster interface.
+- Confirm use, pause only the owned dialog, and offer a coin Store purchase when inventory is empty.
+- Roll back transient effects when inventory debit fails; reject unsupported/expired sessions and track per-level limits/scaled cooldowns.
+- Keep purchase and activation separate; reuse existing wallet, inventory, localization and UI feedback services.
+- Add non-destructive HUD/catalog/slot generation, Wizard options and prebuild binding/catalog checks.
+
 ## 0.16.0
 
 - Add configurable UI cue profiles, custom clips and quiet generated fallback tones; honor AudioService Master/Effects/Mute.

@@ -1,6 +1,6 @@
 {
   "name": "com.baseunity.foundation",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "displayName": "BaseUnity Foundation",
   "description": "Reusable game foundation for Git submodules and Unity packages.",
   "unity": "6000.0",
@@ -16,7 +16,7 @@
     },
     {
       "displayName": "Game Flow",
-      "description": "Bootstrap, Home, InGame, loading, settings, pause and result. Requires Unity UI.",
+      "description": "Portrait Home/Store/Quest, InGame HUD/boosters, loading, settings and results. Requires Unity UI.",
       "path": "Samples~/GameFlow"
     },
     {

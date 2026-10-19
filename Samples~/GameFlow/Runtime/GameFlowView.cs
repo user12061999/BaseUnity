@@ -150,6 +150,12 @@ namespace BaseUnity.GameFlow
             if (homeLevel) homeLevel.text = "PLAY LEVEL " + flow.HomeLevel;
             if (levelLabel) levelLabel.text = "LEVEL " + flow.CurrentLevel;
             if (targetLabel) targetLabel.text = "TARGET  " + (flow.CurrentDefinition?.targetScore ?? 0);
+            if (flow.Config && flow.Config.inGameHUDPrefab)
+            {
+                if (levelLabel) levelLabel.gameObject.SetActive(false);
+                if (targetLabel) targetLabel.gameObject.SetActive(false);
+                if (timerLabel) timerLabel.gameObject.SetActive(false);
+            }
             bool won = flow.Outcome == LevelOutcome.Win;
             if (resultTitle) resultTitle.text = won ? (flow.CanNextLevel ? "LEVEL COMPLETE!" : "ALL LEVELS COMPLETE!") : "LEVEL FAILED";
             if (resultSubtitle) resultSubtitle.text = flow.OutcomeReason ?? "";

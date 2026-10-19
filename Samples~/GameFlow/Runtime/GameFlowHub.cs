@@ -163,7 +163,7 @@ namespace BaseUnity.GameFlow
             card.action.name = "Buy_" + item.id; card.action.interactable = !owned && !Busy && Economy.LoadError == null;
             card.action.onClick.AddListener(() => {
                 if (Busy) return;
-                if (Economy.Balance(item.currency) < item.price) { message = "Not enough currency"; Dirty(); return; }
+                if (Economy.Balance(item.currency) < item.price) { message = "Not enough currency"; services.UI.Play(UICue.Error); Dirty(); return; }
                 Confirm(T("BUY") + " " + T(item.title) + " x" + item.quantity + " • " + item.price + " " + T(item.currency.ToString()), () => {
                     bool ok = Economy.Buy(item.id); Result(ok, "Purchase completed"); if (ok) flow.Features.Track("shop_purchase", "item_id", item.id);
                 });
@@ -193,7 +193,7 @@ namespace BaseUnity.GameFlow
         }
         private void Confirm(string text, Action action) { if (Busy) return; confirmed = action; view.confirmMessage.text = text; view.confirmation.SetActive(true); }
         private void Result(bool success, string successMessage)
-        { message = success ? successMessage : Economy.LastError; Dirty(); }
+        { message = success ? successMessage : Economy.LastError; if (!success) services.UI.Play(UICue.Error); else if (successMessage == "Purchase completed") services.UI.Play(UICue.Purchase); Dirty(); }
         private async Task Purchase(string id)
         {
             if (Busy) return; purchaseStarting = true; Dirty();

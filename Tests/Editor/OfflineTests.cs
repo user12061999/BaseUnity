@@ -26,6 +26,16 @@ namespace BaseUnity.Tests
         private OfflineSettings config;
         private DateTime today;
         private OfflineService NewService() => new OfflineService(config, store, () => today);
+        [Test] public void BalanceFeedbackOnlyFollowsCommittedTransactionsAndDoesNotReplayOnLoad()
+        {
+            var service = NewService(); int events = 0; long delta = 0;
+            service.BalanceChanged += (coins, gems) => { events++; delta += coins; };
+            store.fail = true; Assert.IsFalse(service.AddCurrency(Currency.Coin, 50)); Assert.AreEqual(0, events);
+            store.fail = false; Assert.IsTrue(service.AddCurrency(Currency.Coin, 50)); Assert.AreEqual(1, events); Assert.AreEqual(50, delta);
+            Assert.IsTrue(service.Buy("energy")); Assert.AreEqual(2, events); Assert.AreEqual(0, delta);
+            var reloaded = NewService(); reloaded.BalanceChanged += (coins, gems) => events++;
+            Assert.AreEqual(2, events); Assert.AreEqual(200, reloaded.Coins);
+        }
         [Test] public void AchievementClaimsAreAtomicAndSurviveDailyResetAndReload()
         {
             var service = NewService(); service.InitializeProgress(new PlayerProgress());

@@ -202,7 +202,13 @@ namespace BaseUnity.Editor
             { Field("assetProvider", "Asset provider"); DrawProvider("BaseUnity.Integrations.AddressablesProvider", "assetProvider", FeatureSetupMenu.InstallAddressables); if (GUILayout.Button("Install Addressables package")) MobileModuleSetupMenu.InstallAssets(); }
             Header("Popup queue and feedback");
             if (Field("popups.enabled", "Enable popup queue").boolValue) Field("popups.capacity", "Queue capacity");
-            if (Field("feedback.enabled", "Enable toast / loading / confirm").boolValue) Field("feedback.toastSeconds", "Toast duration");
+            if (Field("feedback.enabled", "Enable feedback / UI effects").boolValue)
+            {
+                Field("feedback.toastSeconds", "Toast duration"); Field("feedback.uiSounds", "UI sounds");
+                Field("feedback.uiMotion", "UI animations"); Field("feedback.reducedMotion", "Reduce motion");
+                Field("feedback.uiHover", "Hover sounds (desktop)"); Field("uiFeedbackProfile", "UI sound / effect profile");
+                EditorGUILayout.HelpBox("An empty profile uses quiet generated tones. Assign a UI Feedback Profile asset to replace clips, sprite and timing. Audio respects Master / Effects / Mute.", MessageType.Info);
+            }
             Header("Tutorials");
             if (Field("tutorial.enabled", "Enable Tutorials").boolValue)
             { Field("tutorial.autoStartAtHome", "Auto start at Home"); Field("tutorial.saveSlot", "Progress save slot"); Field("tutorial.tutorials", "Tutorial definitions", true); }

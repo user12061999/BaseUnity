@@ -51,6 +51,7 @@ namespace BaseUnity.GameFlow
         }
         private string T(string text) => services.Localization.Text(text ?? "");
         public bool IsMenuOpen => menuOpen;
+        public bool IsPopupVisible => modal && modal.gameObject.activeInHierarchy;
         public void OpenMenu() { if (flow.Phase == FlowPhase.Home) { menuOpen = true; Dirty(); } }
         private RectTransform Rect(Transform parent, string name, float w, float h, float x, float y)
         {

@@ -45,6 +45,7 @@ namespace BaseUnity.Features
         public AssetProvider assetProvider;
         public PopupSettings popups = new PopupSettings();
         public FeedbackSettings feedback = new FeedbackSettings();
+        public UIFeedbackProfile uiFeedbackProfile;
         public TutorialSettings tutorial = new TutorialSettings();
         public HapticSettings haptics = new HapticSettings();
         public HapticProvider hapticProvider;

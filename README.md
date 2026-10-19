@@ -2,7 +2,22 @@
 
 Base game Unity tái sử dụng qua **Git submodule trong `Assets/BaseUnity`**.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.15.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.16.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+
+## Hiệu ứng và âm thanh UI
+
+Sample tự gắn phản hồi cho button, slider, toggle, dropdown: nhấn/nhả có scale và ripple,
+mở popup có animation, đóng có phản hồi, nhận thưởng có hạt/coin bay về ví; Win/Lose và lỗi có cue riêng.
+Âm thanh mẫu được tổng hợp lúc chạy, không cần tải sound pack. Âm lượng dùng chung **Master / Effects / Mute**.
+Animation chạy bằng thời gian thực, hoạt động khi game pause; hạt dùng pool và giới hạn 32 hạt đang chạy.
+
+Trong **Feature Manager > Modules > Feedback**, bật/tắt riêng **UI sounds**, **UI animations**,
+**Hover sounds** và **Reduce motion**. Tạo profile qua **Tools > BaseUnity > Game Flow > Generate Missing UI Feedback Profile**;
+chỉnh AudioClip theo cue, volume, sprite thưởng và thời gian tại `UIFeedback/UIFeedback.asset` của dự án.
+Profile trống dùng mặc định; cấu hình có sẵn không bị ghi đè. Xem [hướng dẫn](Samples~/GameFlow/UI_FEEDBACK.md).
+
+Kiểm thử v0.16: **134 EditMode + 47 PlayMode đạt**, gồm mute, chống lặp cue, khôi phục scale,
+slider cập nhật không phát sự kiện, giới hạn hạt và phản hồi sau khi lưu thành công.
 
 ## Home, Store và Quest mẫu
 

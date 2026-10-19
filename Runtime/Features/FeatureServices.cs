@@ -11,6 +11,7 @@ namespace BaseUnity.Features
         public AssetService Assets { get; }
         public PopupService Popups { get; }
         public FeedbackService Feedback { get; }
+        public UIFeedbackService UI { get; private set; }
         public TutorialService Tutorial { get; private set; }
         public HapticService Haptics { get; private set; }
         public LocalNotificationService Notifications { get; private set; }
@@ -37,6 +38,10 @@ namespace BaseUnity.Features
             services.Register(this); services.Register(Consent); services.Register(Ads); services.Register(Firebase);
             var saves = services.Get<BaseUnity.Save.ISaveStore>();
             Offline = new OfflineService(runtimeConfig.offline, saves);
+            services.TryGet<BaseUnity.Audio.AudioService>(out var audio);
+            UI = new UIFeedbackService(runtimeConfig.feedback, audio, runtimeConfig.uiFeedbackProfile);
+            services.Register(UI); Offline.BalanceChanged += BalanceFeedback;
+            Feedback.ToastRequested += ToastFeedback;
             Localization = new LocalizationService(runtimeConfig.localization, saves);
             services.Register(Offline); services.Register(Localization);
             Tutorial = new TutorialService(runtimeConfig.tutorial, saves);
@@ -54,9 +59,14 @@ namespace BaseUnity.Features
             await Task.WhenAll(Ads.InitializeAsync(), Firebase.InitializeAsync(), Purchases != null ? Purchases.InitializeAsync() : Task.CompletedTask);
         }
         private void ApplyEntitlements() => Ads.SetNoAds(Offline.HasEntitlement(runtimeConfig.purchasing?.removeAdsEntitlement ?? "remove_ads"));
+        private void BalanceFeedback(long coins, long gems) { if (coins > 0 || gems > 0) UI.Play(UICue.Reward); }
+        private void ToastFeedback(ToastMessage toast) => UI.Play(toast.error ? UICue.Error : UICue.Success);
         public void Dispose()
         {
             if (Offline != null) Offline.Changed -= ApplyEntitlements;
+            if (Offline != null) Offline.BalanceChanged -= BalanceFeedback;
+            Feedback.ToastRequested -= ToastFeedback;
+            UI?.Dispose();
             Purchases?.Dispose(); Notifications?.Dispose(); Haptics?.Dispose(); Tutorial?.Dispose();
             Assets.Dispose(); Feedback.Dispose(); Popups.Dispose(); Ads.Dispose(); Consent.Dispose(); Firebase.Dispose();
             if (runtimeConfig) UnityEngine.Object.Destroy(runtimeConfig);

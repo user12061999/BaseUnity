@@ -5,7 +5,13 @@ namespace BaseUnity.Features
 {
     [Serializable] public sealed class AssetSettings { public bool enabled; }
     [Serializable] public sealed class PopupSettings { public bool enabled = true; [Min(1)] public int capacity = 32; }
-    [Serializable] public sealed class FeedbackSettings { public bool enabled = true; [Min(.1f)] public float toastSeconds = 2.5f; }
+    [Serializable] public sealed class FeedbackSettings
+    {
+        public bool enabled = true;
+        [Min(.1f)] public float toastSeconds = 2.5f;
+        public bool uiSounds = true, uiMotion = true;
+        public bool uiHover, reducedMotion;
+    }
     [Serializable] public sealed class TutorialStep
     {
         public string id, message, target;

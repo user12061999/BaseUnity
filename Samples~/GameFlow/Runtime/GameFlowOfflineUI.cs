@@ -242,7 +242,7 @@ namespace BaseUnity.GameFlow
             Button(panel, ">", -350, () => pageIndex++, 280, 110, pageIndex + 1 < pages);
         }
         private void Act(bool success, string name, string key, string value)
-        { messageIsError = !success; message = success ? "Saved" : Economy.LastError; if (success) features.Track(name, key, value); }
+        { messageIsError = !success; message = success ? "Saved" : Economy.LastError; var ui = flow.Services.Get<BaseUnity.Features.FeatureServices>().UI; if (!success) ui.Play(UICue.Error); else if (name == "shop_purchase") ui.Play(UICue.Purchase); if (success) features.Track(name, key, value); }
         private void OnDestroy()
         {
             if (flow) flow.Changed -= MarkDirty;

@@ -116,6 +116,45 @@ namespace BaseUnity.GameFlow.Tests
             var button = flow.GetComponentsInChildren<Button>().Single(x => x.name == name);
             Assert.IsTrue(button.interactable); button.onClick.Invoke();
         }
+        [UnityTest] public IEnumerator UIEffectsAreBoundedAndRewardDoesNotRepeatOnRefresh()
+        {
+            var effects = flow.GetComponent<GameFlowUIFeedback>(); Assert.IsNotNull(effects);
+            Assert.AreEqual(0, effects.ActiveParticles);
+            Assert.IsTrue(flow.Features.Offline.AddCurrency(Currency.Coin, 10));
+            Assert.AreEqual(8, effects.ActiveParticles);
+            for (int i = 0; i < 20; i++) flow.Services.Get<FeatureServices>().UI.Play(UICue.Reward);
+            Assert.LessOrEqual(effects.ActiveParticles, 32);
+            UnityEngine.Time.timeScale = 0; yield return new WaitForSecondsRealtime(1);
+            Assert.AreEqual(0, effects.ActiveParticles); yield return null; Assert.AreEqual(0, effects.ActiveParticles);
+            UnityEngine.Time.timeScale = 1;
+        }
+        [UnityTest] public IEnumerator UIButtonFeedbackRestoresAuthoredScaleAndAvoidsDuplicatePointerSound()
+        {
+            var node = new GameObject("Feedback test button", typeof(RectTransform), typeof(Image), typeof(Button)); node.transform.SetParent(flow.transform, false);
+            Vector3 authored = new Vector3(1.2f, .8f, 1); node.transform.localScale = authored;
+            var button = node.GetComponent<Button>(); var feedback = node.AddComponent<UIButtonFeedback>(); feedback.Bind(); feedback.Bind();
+            var service = flow.Services.Get<FeatureServices>().UI; int clicks = 0;
+            Action<UICue, Vector2?> listener = (cue, position) => { if (cue == UICue.Click) clicks++; }; service.Played += listener;
+            var pointer = new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current) { button = UnityEngine.EventSystems.PointerEventData.InputButton.Left };
+            feedback.OnPointerDown(pointer); button.onClick.Invoke(); Assert.AreEqual(1, clicks);
+            UnityEngine.Time.timeScale = 0; yield return new WaitForSecondsRealtime(.15f);
+            Assert.Less(node.transform.localScale.x, authored.x);
+            feedback.OnPointerUp(pointer); node.SetActive(false); Assert.AreEqual(authored, node.transform.localScale);
+            node.SetActive(true); button.interactable = false; feedback.OnPointerDown(pointer); button.onClick.Invoke(); Assert.AreEqual(1, clicks);
+            service.Played -= listener; UnityEngine.Object.Destroy(node); UnityEngine.Time.timeScale = 1;
+        }
+        [UnityTest] public IEnumerator UIValueFeedbackIgnoresSilentUpdatesAndDisabledControls()
+        {
+            var node = new GameObject("Feedback slider", typeof(RectTransform), typeof(Slider)); node.transform.SetParent(flow.transform, false);
+            var slider = node.GetComponent<Slider>(); var feedback = node.AddComponent<UIValueFeedback>(); feedback.Bind(); feedback.Bind();
+            int ticks = 0; var service = flow.Services.Get<FeatureServices>().UI;
+            Action<UICue, Vector2?> listener = (cue, position) => { if (cue == UICue.Change) ticks++; }; service.Played += listener;
+            slider.SetValueWithoutNotify(.5f); Assert.AreEqual(0, ticks);
+            slider.value = .6f; slider.value = .7f; Assert.AreEqual(1, ticks);
+            yield return new WaitForSecondsRealtime(.1f); slider.value = .8f; Assert.AreEqual(2, ticks);
+            slider.interactable = false; slider.value = .9f; Assert.AreEqual(2, ticks);
+            service.Played -= listener; UnityEngine.Object.Destroy(node);
+        }
 #if UNITY_EDITOR
         private GameFlowHub AddHub()
         {

@@ -162,6 +162,7 @@ namespace BaseUnity.Editor
                     if (pending.options.generateLevels) InvokeBuilder("LevelAssetBuilder", flow);
                     if (pending.options.generateOfflineUI) InvokeBuilder("OfflineUIBuilder", flow);
                     if (pending.options.generateHomeHub) InvokeBuilder("HomeHubBuilder", flow);
+                    if (pending.options.generateHomeHub || pending.options.generateOfflineUI) InvokeBuilder("UIFeedbackBuilder", flow);
                     AssetDatabase.SaveAssetIfDirty(features); AssetDatabase.SaveAssetIfDirty(flow); AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport); completed = true;
                 }
                 finally { Store.CompleteSetup(pending.backup, Scenes(), completed); }

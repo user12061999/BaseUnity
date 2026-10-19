@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.16.0
+
+- Add configurable UI cue profiles, custom clips and quiet generated fallback tones; honor AudioService Master/Effects/Mute.
+- Add automatic button press/release, click ripple, optional desktop hover and slider/toggle/dropdown ticks.
+- Add unscaled panel entry/close feedback and bounded pooled reward/win/lose/success/error particles.
+- Emit balance deltas only after committed saves; animate currency grants without replaying loaded state or granting rewards from presentation.
+- Add independent sound/motion/hover/reduced-motion controls to Feature Manager and a project-owned profile generator.
+- Restore authored button scales on disable and avoid duplicate pointer/onClick feedback; reuse scan buffers and particle instances.
+
 ## 0.15.0
 
 - Add an editable portrait Home hub with wallet, player card, level, Play/Levels/Settings and feature shortcuts.

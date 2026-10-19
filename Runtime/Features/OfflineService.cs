@@ -61,6 +61,8 @@ namespace BaseUnity.Features
         public OfflineSettings Settings => JsonUtility.FromJson<OfflineSettings>(JsonUtility.ToJson(settings));
         public string LastError { get; private set; }
         public event Action Changed;
+        /// <summary>Emitted only after a successful save. Deltas include spending; loading emits nothing.</summary>
+        public event Action<long, long> BalanceChanged;
         public long Coins => profile.coins;
         public long Gems => profile.gems;
         public int LastReward => profile.rewardSession == activeSession ? profile.lastReward : 0;
@@ -145,6 +147,7 @@ namespace BaseUnity.Features
         }
         private bool Commit(Action<Profile> change, bool progressOnly = false)
         {
+            long oldCoins = profile.coins, oldGems = profile.gems;
             if (LoadError != null) return Reject(LoadError);
             if (!Enabled && !(progressOnly && HasProgress)) return Reject("Feature is disabled");
             try
@@ -154,6 +157,9 @@ namespace BaseUnity.Features
                 saves.Save(settings.saveSlot, next); profile = next; LastError = null;
             }
             catch (Exception e) { LastError = e.Message; return false; }
+            long coins = profile.coins - oldCoins, gems = profile.gems - oldGems;
+            if ((coins != 0 || gems != 0) && BalanceChanged != null) foreach (Action<long, long> listener in BalanceChanged.GetInvocationList())
+                try { listener(coins, gems); } catch (Exception e) { Debug.LogException(e); }
             if (Changed != null) foreach (Action listener in Changed.GetInvocationList())
                 try { listener(); } catch (Exception e) { Debug.LogException(e); }
             return true;

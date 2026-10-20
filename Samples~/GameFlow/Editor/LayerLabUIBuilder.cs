@@ -245,6 +245,7 @@ namespace BaseUnity.GameFlow.Editor
             Label("Message", box, "Your adventure will be right here.", 730, 80, 0, 80, 29, Pale);
             v.resumeButton = Button("Resume", box, "RESUME", yellow, 620, 120, 0, -110, 42);
             v.pauseHomeButton = Button("Home", box, "BACK HOME", blue, 620, 110, 0, -290, 36);
+            v.restartButton = Button("Restart level", box, "RESTART", blue, 620, 90, 0, -430, 30);
         }
         private static void Result(GameFlowView v)
         {

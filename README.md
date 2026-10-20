@@ -2,7 +2,17 @@
 
 Base game Unity tái sử dụng qua **Git submodule trong `Assets/BaseUnity`**.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.19.1**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.20.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+
+## Save, audio và vòng đời InGame
+
+Chạy **Tools > BaseUnity > Game Flow > Prepare Session Flow and Audio** để tạo prefab đếm ngược,
+nút Restart trong Pause và `UI/Theme/AudioProfile.asset`. Trong GameFlowConfig, bật **Session Flow**
+và chỉnh thời gian chuẩn bị, đếm ngược, chờ kết quả. Cấu hình cũ mặc định giữ luồng chơi trực tiếp.
+AudioProfile có nhạc Home/InGame/thắng/thua, thời gian chuyển nhạc, giới hạn SFX và nhạc demo có thể tắt.
+Save hỗ trợ migration từng phiên bản, checksum và khôi phục backup; [xem cách tích hợp](Samples~/GameFlow/SESSION_SAVE_AUDIO.md).
+Kiểm thử v0.20: **149 EditMode + 55 PlayMode đạt**; 144 tổ hợp layout không có lỗi,
+sinh lại giữ nguyên 43 asset cấu hình/UI và 41 prefab khi chuẩn bị theme.
 
 ## Theme, component dùng chung và Preview
 

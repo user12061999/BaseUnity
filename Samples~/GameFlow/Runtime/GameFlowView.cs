@@ -23,7 +23,7 @@ namespace BaseUnity.GameFlow
         public Button playButton, settingsButton, collectButton, finishButton, pauseButton, resumeButton;
         public Button pauseHomeButton, retryButton, resultHomeButton, errorHomeButton;
         public Button loseButton, nextLevelButton;
-        public Button levelsButton;
+        public Button levelsButton, restartButton;
         public Button privacyButton;
         [Header("Settings")]
         public Slider masterSlider, musicSlider, effectsSlider;
@@ -67,6 +67,7 @@ namespace BaseUnity.GameFlow
             if (nextLevelButton) nextLevelButton.onClick.AddListener(flow.NextLevel);
             pauseButton.onClick.AddListener(flow.Pause);
             resumeButton.onClick.AddListener(flow.Resume);
+            if (restartButton) restartButton.onClick.AddListener(flow.RestartLevel);
             pauseHomeButton.onClick.AddListener(flow.GoHome);
             retryButton.onClick.AddListener(flow.RetryLevel);
             resultHomeButton.onClick.AddListener(flow.GoHome);
@@ -140,7 +141,7 @@ namespace BaseUnity.GameFlow
                 phase == FlowPhase.Error || (gameplayDemo && gameplayDemo.activeSelf));
             if (phase != FlowPhase.Home) settingsOpen = false;
             home.SetActive(phase == FlowPhase.Home);
-            gameplay.SetActive(phase == FlowPhase.Playing || phase == FlowPhase.Paused || phase == FlowPhase.Result);
+            gameplay.SetActive(flow.IsSessionTransition || phase == FlowPhase.Playing || phase == FlowPhase.Paused || phase == FlowPhase.Result);
             loading.SetActive(phase == FlowPhase.Boot || phase == FlowPhase.Loading);
             settings.SetActive(settingsOpen);
             pause.SetActive(phase == FlowPhase.Paused);

@@ -18,9 +18,21 @@ namespace BaseUnity.GameFlow
         public string sceneOverride;
     }
 
+    [Serializable]
+    public sealed class SessionFlowSettings
+    {
+        public bool enabled;
+        [Min(0)] public float prepareSeconds = .25f;
+        [Min(0)] public float countdownSeconds = 3;
+        [Min(0)] public float resultDelaySeconds = .4f;
+    }
+
     [CreateAssetMenu(menuName = "BaseUnity/Game Flow Config")]
     public sealed class GameFlowConfig : ScriptableObject
     {
+        public SessionFlowSettings sessionFlow = new SessionFlowSettings();
+        public GameFlowAudioProfile audioProfile;
+        public SessionOverlayView sessionOverlayPrefab;
         public string homeScene;
         public string inGameScene;
         public string saveSlot = "gameflow_progress";

@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement;
 
 namespace BaseUnity.GameFlow
 {
-    public enum FlowPhase { Boot, Loading, Home, Playing, Paused, Result, Error, LevelSelect }
+    public enum FlowPhase { Boot, Loading, Home, Playing, Paused, Result, Error, LevelSelect, Preparing, Countdown, Finishing }
     public enum LevelOutcome { None, Win, Lose }
     public readonly struct SessionStarted
     {
@@ -34,6 +34,9 @@ namespace BaseUnity.GameFlow
         protected override BaseUnity.Features.FeatureConfig GetFeatureConfig() => config && config.features ? config.features : base.GetFeatureConfig();
         public FlowPhase Phase { get; private set; } = FlowPhase.Boot;
         public int Score { get; private set; }
+        public float StageRemaining { get; private set; }
+        public bool IsSessionTransition => Phase == FlowPhase.Preparing || Phase == FlowPhase.Countdown || Phase == FlowPhase.Finishing;
+        private bool stageFocused = true, stageApplicationPaused;
         public int CurrentLevel { get; private set; } = 1;
         public GameLevel CurrentDefinition => config ? config.GetLevel(CurrentLevel) : null;
         public LevelOutcome Outcome { get; private set; }
@@ -72,6 +75,8 @@ namespace BaseUnity.GameFlow
             if (config && config.homeHubPrefab) gameObject.AddComponent<GameFlowHub>().Initialize(this);
             gameObject.AddComponent<GameFlowThemeController>().SetTheme(config ? config.uiTheme : null);
             gameObject.AddComponent<GameFlowUIFeedback>().Initialize(this);
+            gameObject.AddComponent<GameFlowAudio>().Initialize(this);
+            if (config && config.sessionOverlayPrefab) Instantiate(config.sessionOverlayPrefab, transform).Initialize(this);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             gameObject.AddComponent<GameFlowDebugPanel>().Initialize(this);
 #endif
@@ -114,16 +119,17 @@ namespace BaseUnity.GameFlow
             OutcomeReason = "Restored result"; Features.RestoreSession(); UnityEngine.Time.timeScale = 0;
             SetPhase(FlowPhase.Result);
         }
-        public void GoHome() { if (dataReady && !loading && config && !Features.Busy && Features.LeaveResult()) _ = Transition(config.homeScene, FlowPhase.Home); }
+        public void GoHome() { if (dataReady && !loading && config && !Features.Busy && Phase != FlowPhase.Finishing && Features.LeaveResult()) _ = Transition(config.homeScene, FlowPhase.Home); }
         public void Play()
         {
             if (Phase == FlowPhase.Home) StartLevel(HomeLevel);
             else if (Phase == FlowPhase.Result) RetryLevel();
         }
 
-        public void StartLevel(int number)
+        public void StartLevel(int number) => StartLevelInternal(number, false);
+        private void StartLevelInternal(int number, bool restarting)
         {
-            if (!dataReady || Features.Busy || loading || (Phase != FlowPhase.Home && Phase != FlowPhase.Result && Phase != FlowPhase.LevelSelect) || !config) return;
+            if (!dataReady || Features.Busy || loading || (!restarting && Phase != FlowPhase.Home && Phase != FlowPhase.Result && Phase != FlowPhase.LevelSelect) || !config) return;
             if (number < 1 || number > config.LevelCount || number > HomeLevel) return;
             var definition = config.GetLevel(number);
             if (definition == null) { Fail("Level " + number + " has no configuration."); return; }
@@ -143,6 +149,12 @@ namespace BaseUnity.GameFlow
             await Features.BeforeNextLevel();
             if (!this || !IsReady) return;
             await Transition(scene, FlowPhase.Playing);
+        }
+        public void RestartLevel()
+        {
+            if (loading || Features.Busy || !(Phase == FlowPhase.Playing || Phase == FlowPhase.Paused || Phase == FlowPhase.Preparing || Phase == FlowPhase.Countdown)) return;
+            // Abandon the active run without a result or reward. Transition clears the old context.
+            StartLevelInternal(CurrentLevel, true);
         }
         public void RetryLevel() { if (Phase == FlowPhase.Result) StartLevel(CurrentLevel); }
         public void NextLevel() { if (CanNextLevel) StartLevel(CurrentLevel + 1); }
@@ -181,8 +193,12 @@ namespace BaseUnity.GameFlow
                 if (!this || !IsReady) return;
                 if (destination == FlowPhase.Playing) await Levels.LoadGameplayAsync();
                 if (!this || !IsReady) return;
-                SetPhase(destination);
-                if (destination == FlowPhase.Playing) Services.Get<EventBus>().Publish(new SessionStarted(CurrentLevel));
+                if (destination == FlowPhase.Playing)
+                {
+                    if (config.sessionFlow != null && config.sessionFlow.enabled) EnterStage(FlowPhase.Preparing, config.sessionFlow.prepareSeconds);
+                    else BeginPlaying();
+                }
+                else SetPhase(destination);
             }
             catch (OperationCanceledException) { }
             catch (Exception error) { if (this) Fail(error.Message); }
@@ -225,6 +241,10 @@ namespace BaseUnity.GameFlow
         private void EndLevel(LevelOutcome outcome, string reason)
         {
             if (Phase != FlowPhase.Playing) return;
+            // Lock input and result callbacks before invoking services or external subscribers.
+            Phase = FlowPhase.Finishing;
+            Services.Get<InputRouter>().Enabled = false;
+            Services.Get<ManualInputSource>().Reset();
             Outcome = outcome;
             OutcomeReason = reason;
             UnityEngine.Time.timeScale = 0;
@@ -242,8 +262,9 @@ namespace BaseUnity.GameFlow
                 ProgressSavePending = true;
             }
             Features.CompleteSession();
-            SetPhase(FlowPhase.Result);
-            Services.Get<EventBus>().Publish(new SessionEnded(Score, CurrentLevel, outcome));
+            var ended = new SessionEnded(Score, CurrentLevel, outcome);
+            EnterStage(FlowPhase.Finishing, config.sessionFlow != null && config.sessionFlow.enabled ? config.sessionFlow.resultDelaySeconds : 0);
+            Services.Get<EventBus>().Publish(ended);
         }
         public bool SaveProgress()
         {
@@ -255,19 +276,51 @@ namespace BaseUnity.GameFlow
         protected override void Update()
         {
             base.Update();
+            if (IsSessionTransition)
+            {
+                if (stageFocused && !stageApplicationPaused)
+                {
+                    StageRemaining = Mathf.Max(0, StageRemaining - UnityEngine.Time.unscaledDeltaTime);
+                    if (StageRemaining <= 0) AdvanceStage();
+                }
+                return;
+            }
             if (Phase != FlowPhase.Playing || !HasTimeLimit) return;
             RemainingTime = Mathf.Max(0, RemainingTime - UnityEngine.Time.deltaTime);
             if (RemainingTime <= 0) LoseLevel("Time is up. Try again!");
         }
-        private void SetPhase(FlowPhase phase)
+        private static float SafeDuration(float seconds) => float.IsNaN(seconds) || float.IsInfinity(seconds) ? 0 : Mathf.Max(0, seconds);
+        private void EnterStage(FlowPhase phase, float seconds)
+        {
+            UnityEngine.Time.timeScale = 0;
+            StageRemaining = SafeDuration(seconds);
+            SetPhase(phase);
+            if (Phase == phase && StageRemaining <= 0) AdvanceStage();
+        }
+        private void AdvanceStage()
+        {
+            if (Phase == FlowPhase.Preparing) EnterStage(FlowPhase.Countdown, config.sessionFlow.countdownSeconds);
+            else if (Phase == FlowPhase.Countdown) BeginPlaying();
+            else if (Phase == FlowPhase.Finishing) SetPhase(FlowPhase.Result);
+        }
+        private void BeginPlaying()
+        {
+            UnityEngine.Time.timeScale = 1;
+            SetPhase(FlowPhase.Playing, () => Services.Get<EventBus>().Publish(new SessionStarted(CurrentLevel)));
+        }
+        private void SetPhase(FlowPhase phase, Action beforeNotify = null)
         {
             Phase = phase;
+            Services.Get<ManualInputSource>().Reset();
             Services.Get<InputRouter>().Enabled = phase == FlowPhase.Playing;
+            beforeNotify?.Invoke();
             Changed?.Invoke();
         }
         private void Fail(string message) { ErrorMessage = message; SetPhase(FlowPhase.Error); }
         protected override void OnApplicationFocus(bool focus)
-        { base.OnApplicationFocus(focus); if (!focus) Pause(); }
+        { base.OnApplicationFocus(focus); stageFocused = focus; if (!focus) Pause(); }
+        private void OnApplicationPause(bool paused)
+        { stageApplicationPaused = paused; if (paused) { if (IsReady) Services.Get<ManualInputSource>().Reset(); Pause(); } }
         protected override void OnDestroy()
         {
             if (Instance == this) UnityEngine.Time.timeScale = originalScale;

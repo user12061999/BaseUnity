@@ -36,6 +36,7 @@ namespace BaseUnity.GameFlow
         internal void Initialize(GameFlowBootstrap owner) { flow = owner; }
         public void StartLevel(int number) => flow.StartLevel(number);
         public void RetryLevel() => flow.RetryLevel();
+        public void RestartLevel() => flow.RestartLevel();
         public void NextLevel() => flow.NextLevel();
 
         internal async Task LoadGameplayAsync()

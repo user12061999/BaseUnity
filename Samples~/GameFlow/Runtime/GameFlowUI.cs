@@ -13,7 +13,7 @@ namespace BaseUnity.GameFlow
         private Transform canvas;
         private GameObject page;
         private Text loadingLabel;
-        private Text timerLabel;
+        private Text timerLabel, stageLabel;
         private Font font;
         private bool settings;
         public bool SettingsOpen => settings;
@@ -102,7 +102,7 @@ namespace BaseUnity.GameFlow
             if (EventSystem.current) EventSystem.current.SetSelectedGameObject(null);
             if (page) { page.SetActive(false); Destroy(page); }
             loadingLabel = null;
-            timerLabel = null;
+            timerLabel = null; stageLabel = null;
             page = Rect("Page", canvas, Vector2.zero, Vector2.zero).gameObject;
             var full = page.GetComponent<RectTransform>();
             full.anchorMin = Vector2.zero; full.anchorMax = Vector2.one; full.offsetMin = full.offsetMax = Vector2.zero;
@@ -119,6 +119,11 @@ namespace BaseUnity.GameFlow
                     Button("Play", -20, flow.Play, true);
                     Button("Settings", -70, OpenSettings);
                     Button("Choose Level", -140, flow.ShowLevels);
+                    break;
+                case FlowPhase.Preparing:
+                case FlowPhase.Countdown:
+                case FlowPhase.Finishing:
+                    stageLabel = Label(flow.Phase.ToString(), 20, 48, accent);
                     break;
                 case FlowPhase.Playing:
                     if (flow.Levels && flow.Levels.Instance)
@@ -144,6 +149,7 @@ namespace BaseUnity.GameFlow
                     Label("Take your time", 95, 24);
                     Button("Resume", 0, flow.Resume, true);
                     Button("Home", -70, flow.GoHome);
+                    Button("Restart level", -140, flow.RestartLevel);
                     break;
                 case FlowPhase.Result:
                     Label(flow.Outcome == LevelOutcome.Win ? (flow.CanNextLevel ? "LEVEL COMPLETE" : "ALL LEVELS COMPLETE") : "LEVEL FAILED", 180, 40);
@@ -210,6 +216,7 @@ namespace BaseUnity.GameFlow
         }
         private void Update()
         {
+            if (stageLabel) stageLabel.text = flow.Phase == FlowPhase.Countdown ? Mathf.Max(1, Mathf.CeilToInt(flow.StageRemaining)).ToString() : flow.Phase.ToString();
             if (loadingLabel) loadingLabel.text = $"Loading  {Mathf.RoundToInt(flow.LoadingProgress * 100)}%";
             if (timerLabel) timerLabel.text = "TARGET " + (flow.CurrentDefinition?.targetScore ?? 0) +
                 (flow.HasTimeLimit ? "  /  TIME " + Mathf.CeilToInt(flow.RemainingTime) + "s" : "");

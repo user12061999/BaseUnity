@@ -53,6 +53,7 @@ namespace BaseUnity.GameFlow.Tests
             Assert.AreEqual(flow.Config.homeScene, SceneManager.GetActiveScene().path);
             originalSlot = flow.Config.saveSlot;
             testConfig = UnityEngine.Object.Instantiate(flow.Config);
+            testConfig.sessionFlow = new SessionFlowSettings();
             // This test covers the legacy HUD controls; prefab gameplay has its own lifecycle tests.
             testConfig.levels = new[] { new GameLevel { targetScore = 100, timeLimitSeconds = 0 } };
             flow.Config = testConfig;

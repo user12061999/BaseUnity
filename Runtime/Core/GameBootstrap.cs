@@ -40,7 +40,8 @@ namespace BaseUnity.Core
                 Services.Register(new EventBus());
                 Services.Register(states = new StateMachine());
                 Services.Register(timers = new TimerService());
-                Services.Register<ISaveStore>(new JsonSaveStore(BuildEnvironment.SaveDirectory));
+                var migrations = new SaveMigrationRegistry(); ConfigureSaveMigrations(migrations);
+                Services.Register<ISaveStore>(new JsonSaveStore(BuildEnvironment.SaveDirectory, migrations));
                 Services.Register(new SceneService());
                 Services.Register(new UIService());
                 Services.Register(new AudioService(transform, Services.Get<ISaveStore>()));
@@ -66,10 +67,12 @@ namespace BaseUnity.Core
 
         protected virtual IInputSource CreateInputSource(ManualInputSource fallback) => fallback;
         protected virtual void Configure(ServiceRegistry services) { }
+        protected virtual void ConfigureSaveMigrations(SaveMigrationRegistry migrations) { }
         protected virtual void OnReady() { }
         protected virtual void Update()
         {
             if (!IsReady) return;
+            Services.Get<AudioService>().Tick(UnityEngine.Time.unscaledDeltaTime);
             timers.Tick(UnityEngine.Time.deltaTime, UnityEngine.Time.unscaledDeltaTime);
             states.Tick(UnityEngine.Time.deltaTime);
         }

@@ -37,7 +37,8 @@ namespace BaseUnity.Tests
             Assert.IsTrue(service.Play(UICue.Click));
             audio.SetVolume(.5f, 1, .25f, true);
             foreach (var source in owner.GetComponentsInChildren<AudioSource>()) Assert.IsTrue(source.mute);
-            Assert.AreEqual(.125f, owner.GetComponentsInChildren<AudioSource>()[1].volume, .001f);
+            // The bounded voice stores the cue gain on its source, preserving the audible mix.
+            Assert.AreEqual(.125f * profile.sounds[0].volume, owner.GetComponentsInChildren<AudioSource>()[1].volume, .001f);
             service.Dispose(); yield return null;
             Assert.IsTrue(clip); Assert.IsTrue(profile); // Only runtime clones/generated tones are released.
             audio.Dispose(); Object.Destroy(owner); Object.Destroy(profile); Object.Destroy(clip); yield return null;

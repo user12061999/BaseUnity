@@ -244,6 +244,31 @@ namespace BaseUnity.Editor
             check(data.FindProperty("inGameScene").stringValue, "InGame", true);
             string saveSlot = data.FindProperty("saveSlot").stringValue;
             if (saveSlot == null || !Regex.IsMatch(saveSlot, @"\A[a-zA-Z0-9_-]{1,64}\z") || saveSlot == "baseunity_audio" || saveSlot == "baseunity_language" || saveSlot == "baseunity_haptics" || saveSlot == "baseunity_notifications" || (feature && feature.tutorial?.enabled == true && saveSlot == feature.tutorial.saveSlot)) error("GameFlow: invalid, reserved or shared tutorial save slot.");
+            var sessionFlow = data.FindProperty("sessionFlow");
+            if (sessionFlow != null && sessionFlow.FindPropertyRelative("enabled").boolValue)
+            {
+                foreach (string field in new[] { "prepareSeconds", "countdownSeconds", "resultDelaySeconds" })
+                {
+                    float seconds = sessionFlow.FindPropertyRelative(field).floatValue;
+                    if (float.IsNaN(seconds) || float.IsInfinity(seconds) || seconds < 0) error("Session Flow: " + field + " must be finite and non-negative.");
+                }
+                if (data.FindProperty("uiPrefab").objectReferenceValue && !data.FindProperty("sessionOverlayPrefab").objectReferenceValue) error("Session Flow: generate or assign a SessionOverlay prefab for the editable UI.");
+            }
+            var audioProfile = data.FindProperty("audioProfile")?.objectReferenceValue;
+            if (audioProfile)
+            {
+                var audio = new SerializedObject(audioProfile);
+                if (audio.FindProperty("enabled").boolValue)
+                {
+                    foreach (string field in new[] { "crossfadeSeconds", "effectCooldownSeconds" })
+                    {
+                        float seconds = audio.FindProperty(field).floatValue;
+                        if (float.IsNaN(seconds) || float.IsInfinity(seconds) || seconds < 0) error("Audio: " + field + " must be finite and non-negative.");
+                    }
+                    int voices = audio.FindProperty("maxEffectVoices").intValue, perClip = audio.FindProperty("maxSimultaneousPerClip").intValue;
+                    if (voices < 1 || voices > 64 || perClip < 1 || perClip > voices) error("Audio: effect voice limits must be 1..64, and per-clip limit must not exceed total voices.");
+                }
+            }
             var levels = data.FindProperty("levels");
             if (levels.arraySize == 0) error("GameFlow: configure at least one level.");
             for (int i = 0; i < levels.arraySize; i++)

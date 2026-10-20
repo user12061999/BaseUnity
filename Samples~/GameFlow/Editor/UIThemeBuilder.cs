@@ -21,7 +21,7 @@ namespace BaseUnity.GameFlow.Editor
         public static void GenerateSelected() { Generate(SelectedConfig()); }
         public static string[] PrefabPaths(GameFlowConfig config)
         {
-            var roots = new UnityEngine.Object[] { config.uiPrefab, config.homeHubPrefab, config.offlineMenuPrefab, config.mobileModulesPrefab, config.offlineOverlayPrefab, config.levelSelectionPrefab, config.uiComponents };
+            var roots = new UnityEngine.Object[] { config.uiPrefab, config.homeHubPrefab, config.offlineMenuPrefab, config.mobileModulesPrefab, config.offlineOverlayPrefab, config.levelSelectionPrefab, config.uiComponents, config.sessionOverlayPrefab };
             string prefix = Folder(config) + "/";
             return AssetDatabase.GetDependencies(roots.Where(x => x).Select(AssetDatabase.GetAssetPath).ToArray(), true)
                 .Where(path => path.StartsWith(prefix, StringComparison.Ordinal) && path.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
@@ -32,7 +32,7 @@ namespace BaseUnity.GameFlow.Editor
             if (!config || !AssetDatabase.GetAssetPath(config).StartsWith("Assets/", StringComparison.Ordinal)) throw new InvalidOperationException("Choose a project-owned config in Assets.");
             if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling) throw new InvalidOperationException("Stop Play Mode and wait for compilation first.");
             string prefix = Folder(config) + "/";
-            var owned = new UnityEngine.Object[] { config.uiPrefab, config.homeHubPrefab, config.offlineMenuPrefab, config.mobileModulesPrefab, config.offlineOverlayPrefab, config.levelSelectionPrefab, config.uiComponents };
+            var owned = new UnityEngine.Object[] { config.uiPrefab, config.homeHubPrefab, config.offlineMenuPrefab, config.mobileModulesPrefab, config.offlineOverlayPrefab, config.levelSelectionPrefab, config.uiComponents, config.sessionOverlayPrefab };
             if (config.uiComponents) owned = owned.Concat(new UnityEngine.Object[] { config.uiComponents.primaryButton, config.uiComponents.secondaryButton, config.uiComponents.tabButton, config.uiComponents.currencyBar, config.uiComponents.itemCard, config.uiComponents.questCard }).ToArray();
             foreach (var asset in owned.Where(x => x)) if (!AssetDatabase.GetAssetPath(asset).StartsWith(prefix, StringComparison.Ordinal)) throw new InvalidOperationException("Copy editable UI assets into the config folder before preparing/applying: " + AssetDatabase.GetAssetPath(asset));
             foreach (var path in PrefabPaths(config).Concat(new[] { AssetDatabase.GetAssetPath(config), AssetDatabase.GetAssetPath(config.uiTheme) }))

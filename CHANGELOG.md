@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.20.0
+
+- Add per-store sequential save migrations, validation before atomic persistence, optional SHA-256 envelope checksums, slot inspection and explicit backup restore. Preserve legacy saves and reject overwriting future versions.
+- Add interruptible two-source music crossfades driven by unscaled time, bounded SFX voices, per-clip limits/cooldown and independent per-voice volume.
+- Add optional Preparing/Countdown/Finishing session phases, input flushing, background stage suspension and restart without rewards for an abandoned run. Existing configs retain immediate gameplay by default.
+- Add project-owned SessionOverlay prefab, Pause Restart action and Home/InGame audio profile with replaceable generated demo music. Repeat generation preserves authored assets and creates backups before assigning references.
+- Add prebuild checks, save/audio/lifecycle regression coverage and integration guide.
+
 ## 0.19.1
 
 - Fix slider/loading/quest progress endpoints: align fill to the track interior and clip full-size nine-sliced artwork instead of shrinking or stretching button sprites.

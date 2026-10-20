@@ -48,6 +48,7 @@ namespace BaseUnity.GameFlow.Tests
             yield return WaitFor(FlowPhase.Home);
             // Never mutate the project's config asset or persistent progress in these tests.
             config = UnityEngine.Object.Instantiate(flow.Config);
+            config.sessionFlow = new SessionFlowSettings();
             installedDemo = flow.Config.GetLevel(1)?.gameplayPrefab;
             slot = "level_test_" + Guid.NewGuid().ToString("N");
             config.saveSlot = slot;
@@ -62,6 +63,53 @@ namespace BaseUnity.GameFlow.Tests
             flow.Progress.highestUnlockedLevel = 1; flow.Progress.highestCompletedLevel = 0;
             flow.Progress.sessions = 0; flow.Progress.wins = 0; flow.Progress.losses = 0;
             flow.Progress.bestScore = 0;
+        }
+
+
+        [UnityTest] public IEnumerator StagedSessionBlocksInputFreezesInBackgroundAndCommitsResultOnce()
+        {
+            config.sessionFlow = new SessionFlowSettings { enabled = true, prepareSeconds = 2f, countdownSeconds = 2f, resultDelaySeconds = .2f };
+            config.levels[0].timeLimitSeconds = 10;
+            int started = 0, ended = 0;
+            using (flow.Services.Get<EventBus>().Subscribe<SessionStarted>(m => started++))
+            using (flow.Services.Get<EventBus>().Subscribe<SessionEnded>(m => ended++))
+            {
+                flow.SendMessage("OnApplicationFocus", true);
+                flow.Play(); yield return WaitFor(FlowPhase.Preparing);
+                Assert.IsFalse(flow.Services.Get<BaseUnity.Input.InputRouter>().Enabled);
+                flow.AddScore(99); flow.WinLevel(); Assert.AreEqual(0, flow.Score); Assert.AreEqual(0, ended);
+                flow.SendMessage("OnApplicationFocus", false);
+                float remaining = flow.StageRemaining;
+                yield return new WaitForSecondsRealtime(.2f);
+                Assert.AreEqual(remaining, flow.StageRemaining); Assert.AreEqual(10, flow.RemainingTime);
+                flow.SendMessage("OnApplicationFocus", true);
+                yield return WaitFor(FlowPhase.Countdown);
+                Assert.AreEqual(0, started); Assert.AreEqual(0, UnityEngine.Time.timeScale);
+                flow.Services.Get<BaseUnity.Input.ManualInputSource>().SetButton("fire", true);
+                yield return WaitFor(FlowPhase.Playing);
+                Assert.AreEqual(1, started); Assert.IsTrue(flow.Services.Get<BaseUnity.Input.InputRouter>().Enabled);
+                Assert.IsFalse(flow.Services.Get<BaseUnity.Input.InputRouter>().IsPressed("fire"));
+                flow.WinLevel(); Assert.AreEqual(FlowPhase.Finishing, flow.Phase); Assert.AreEqual(1, ended);
+                flow.WinLevel(); flow.LoseLevel(); flow.GoHome(); flow.NextLevel();
+                Assert.AreEqual(FlowPhase.Finishing, flow.Phase); Assert.AreEqual(1, ended); Assert.AreEqual(1, flow.Progress.sessions);
+                yield return WaitFor(FlowPhase.Result); Assert.AreEqual(1, ended);
+            }
+        }
+        [UnityTest] public IEnumerator RestartAbandonsRunClearsContextAndResetsScoreAndTimer()
+        {
+            config.levels[0].timeLimitSeconds = 60;
+            flow.Play(); yield return WaitFor(FlowPhase.Playing);
+            var oldContext = flow.Levels.Context;
+            flow.AddScore(10); flow.Pause(); flow.RestartLevel();
+            yield return WaitFor(FlowPhase.Playing);
+            Assert.AreEqual(0, flow.Score); Assert.AreEqual(0, flow.Progress.sessions);
+            Assert.Greater(flow.RemainingTime, 59); Assert.AreEqual(1, UnityEngine.Time.timeScale);
+            Assert.AreNotSame(oldContext, flow.Levels.Context);
+            oldContext.AddScore(999); oldContext.Win();
+            Assert.AreEqual(0, flow.Score); Assert.AreEqual(FlowPhase.Playing, flow.Phase);
+            flow.SendMessage("OnApplicationFocus", false); Assert.AreEqual(FlowPhase.Paused, flow.Phase);
+            flow.SendMessage("OnApplicationFocus", true); Assert.AreEqual(FlowPhase.Paused, flow.Phase);
+            flow.Resume(); Assert.AreEqual(FlowPhase.Playing, flow.Phase);
         }
 
         [UnityTest] public IEnumerator WinUnlocksNextAndDuplicateResultsAreIgnored()

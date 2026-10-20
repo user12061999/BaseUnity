@@ -107,7 +107,7 @@ namespace BaseUnity.GameFlow
             if (services == null || !flow || !flow.IsReady) return;
             if (UnityEngine.Time.unscaledTime >= wireAt) { wireAt = UnityEngine.Time.unscaledTime + .25f; WireTargets(); }
             bool offlineOpen = GetComponent<GameFlowOfflineUI>()?.IsOpen == true;
-            bool blocked = services.Consent.IsBusy || flow.Features.Busy || flow.Phase == FlowPhase.Loading;
+            bool blocked = services.Consent.IsBusy || flow.Features.Busy || flow.Phase == FlowPhase.Loading || flow.IsSessionTransition;
             bool dialog = services.Popups.Active != null && !services.Popups.IsSuspended && !blocked && !offlineOpen;
             if (dialog && flow.Phase == FlowPhase.Playing) { pausedForPopup = true; flow.Pause(); }
             if (!dialog && pausedForPopup) { pausedForPopup = false; if (flow.Phase == FlowPhase.Paused) flow.Resume(); }

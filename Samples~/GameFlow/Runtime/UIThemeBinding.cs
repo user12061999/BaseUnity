@@ -20,7 +20,7 @@ namespace BaseUnity.GameFlow
         {
             if (!value) return; var style = value.Find(role); if (style == null) return;
             if (graphic)
-            { if (useGraphicColor) graphic.color = style.graphic; if (useSprite && style.replaceSprite) graphic.sprite = style.sprite; }
+            { if (useGraphicColor) graphic.color = style.graphic; if (useSprite && style.replaceSprite && (style.sprite || graphic.type != Image.Type.Filled)) graphic.sprite = style.sprite; }
             if (control && useButtonColors) control.colors = style.buttonColors;
             if (!label) return;
             if (useFont && value.font) label.font = value.font;

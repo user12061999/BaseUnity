@@ -67,6 +67,7 @@ namespace BaseUnity.GameFlow.Editor
                 config.uiComponents = AssetDatabase.LoadAssetAtPath<UIComponentLibrary>(folder + "/Components.asset");
                 if (!config.uiComponents) { config.uiComponents = ScriptableObject.CreateInstance<UIComponentLibrary>(); AssetDatabase.CreateAsset(config.uiComponents, folder + "/Components.asset"); }
             }
+            UIBarBuilder.EnsureStyles(config.uiTheme, folder);
             Components(config, folder + "/Shared"); LinkHub(config);
             foreach (string path in PrefabPaths(config)) ProcessPrefab(path, config.uiTheme, true);
             EditorUtility.SetDirty(config); AssetDatabase.SaveAssetIfDirty(config);
@@ -84,7 +85,7 @@ namespace BaseUnity.GameFlow.Editor
         {
             var result = ScriptableObject.CreateInstance<UIThemeConfig>(); result.font = config.uiPrefab.title.font;
             var primary = config.uiPrefab.playButton; var secondary = config.homeHubPrefab.settings;
-            result.styles = Enum.GetValues(typeof(UIThemeRole)).Cast<UIThemeRole>().Select(role => new UIThemeStyle { role = role }).ToArray();
+            result.styles = Enum.GetValues(typeof(UIThemeRole)).Cast<UIThemeRole>().Where(role => role != UIThemeRole.BarTrack && role != UIThemeRole.BarFill).Select(role => new UIThemeStyle { role = role }).ToArray();
             foreach (var style in result.styles)
             {
                 style.graphic = new Color(.035f, .065f, .13f); style.text = Color.white;
@@ -178,6 +179,7 @@ namespace BaseUnity.GameFlow.Editor
             {
                 if (prepare)
                 {
+                    UIBarBuilder.ConfigureRoot(root, theme, theme.barMaskSprite);
                     foreach (var slider in root.GetComponentsInChildren<Slider>(true).Where(Own))
                     {
                         var rect = (RectTransform)slider.transform; rect.sizeDelta = new Vector2(rect.sizeDelta.x, Mathf.Max(70, rect.sizeDelta.y));

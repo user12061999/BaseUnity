@@ -83,6 +83,7 @@ namespace BaseUnity.GameFlow.Editor
                 Error(view);
                 // Home is visible in prefab mode for layout editing.
                 foreach (var page in new[] { view.gameplay, view.loading, view.settings, view.pause, view.result, view.error }) page.SetActive(false);
+                UIBarBuilder.ConfigureRoot(root, null, UIBarBuilder.WhiteSprite(folder));
                 var prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
                 Undo.RecordObject(config, "Apply Layer Lab UI");
                 config.uiPrefab = prefab.GetComponent<GameFlowView>();

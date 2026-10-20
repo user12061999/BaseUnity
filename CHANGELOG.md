@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.19.1
+
+- Fix slider/loading/quest progress endpoints: align fill to the track interior and clip full-size nine-sliced artwork instead of shrinking or stretching button sprites.
+- Keep the existing Image.fillAmount/Slider API, values and callbacks; use a solid full-rectangle stencil to render exact zero and full progress.
+- Add independent BarTrack/BarFill theme roles and a backed-up repair menu for existing owned UI assets.
+- Generate the fix in new sample prefabs too; add geometry, callback and rendered 0/50/100-percent endpoint checks.
+
 ## 0.19.0
 
 - Add semantic UIThemeConfig/Binding for common fonts, colors, sprites, selectable states and baseline text scaling.

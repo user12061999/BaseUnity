@@ -71,3 +71,16 @@ The active scene setup, Screen/Game View resolution and player data are not chan
 Applying/preparing writes only project-owned prefabs referenced by config within its folder; it
 never edits vendor art or the original Layer Lab package. Save prefab edits before applying.
 Backups mirror asset paths (with metas); restore intentionally with Unity stopped and a clean checkout.
+
+## Slider/progress endpoints (v0.19.1)
+
+Run **Tools > BaseUnity > UI > Repair Slider and Progress Fills** for an installed sample, or Prepare
+in the workbench. A project backup is created before migration. Values, listeners and Image references
+stay intact. The fill is aligned inside the track's two-unit frame; zero is empty and one covers its
+entire interior. The visible frame is intentionally retained.
+
+BarTrack/BarFill have separate theme roles, so changing button sprites no longer changes bar art.
+The existing Filled Image controls progress and acts as an invisible, solid-rectangle stencil.
+Its `Fill artwork` child renders the full-size nine-sliced sprite under that stencil. Change the child
+art/theme role for the skin; keep the driver mask sprite white. The white 2x2 sprite is generated in
+the host project; vendor art is never modified. This also works without the Layer Lab pack.

@@ -113,6 +113,7 @@ namespace BaseUnity.GameFlow.Editor
                 // Filled images need a sprite, including in projects without the art pack.
                 view.progressFill.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd"); view.progressFill.type = Image.Type.Filled; view.progressFill.fillMethod = Image.FillMethod.Horizontal; view.progressFill.fillOrigin = 0;
                 view.action = Button(root, "Action", "CLAIM", 245, -65, 260, 75, true); view.actionLabel = view.action.GetComponentInChildren<Text>();
+                UIBarBuilder.ConfigureRoot(root.gameObject, null, UIBarBuilder.WhiteSprite(folder));
                 return PrefabUtility.SaveAsPrefabAsset(root.gameObject, path).GetComponent<HubCardView>();
             }
             finally { UnityEngine.Object.DestroyImmediate(root.gameObject); }

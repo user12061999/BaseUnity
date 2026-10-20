@@ -39,6 +39,7 @@ Result giữ màu và vị trí đã chỉnh. Các dòng menu/ô level sinh đ�
 Chạy lại generator giữ nguyên asset đã có. UI gốc được giữ lại; GameFlowConfig trỏ tới bản UI lồng prefab mới.
 Booster mẫu ở v0.17 đã được gỡ theo yêu cầu; HUD điểm/mục tiêu/timer, Store và inventory vẫn hoạt động.
 Xem [hướng dẫn chỉnh theme](Samples~/GameFlow/UI_PREFABS.md).
+Xem [danh mục 42 prefab mẫu và công dụng](Samples~/GameFlow/PREFABS.md).
 
 Kiểm thử v0.18: **135 EditMode + 50 PlayMode đạt**; kiểm tra sinh lại không ghi đè 26 prefab theme.
 

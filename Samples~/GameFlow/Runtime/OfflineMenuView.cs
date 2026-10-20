@@ -25,7 +25,15 @@ namespace BaseUnity.GameFlow
         private CanvasGroup group;
         private bool closing;
         private void OnEnable()
-        { group = GetComponent<CanvasGroup>(); closing = false; StartCoroutine(Animate(true, null)); }
+        {
+            var owner = GetComponentInParent<GameFlowThemeController>();
+            if (owner && owner.Theme)
+            {
+                var success = owner.Theme.Find(UIThemeRole.Success); var error = owner.Theme.Find(UIThemeRole.Error);
+                if (success != null) successColor = success.text; if (error != null) errorColor = error.text;
+            }
+            group = GetComponent<CanvasGroup>(); closing = false; StartCoroutine(Animate(true, null));
+        }
         public void Close(Action completed)
         {
             if (closing) return;

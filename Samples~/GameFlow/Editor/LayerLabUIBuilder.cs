@@ -208,8 +208,8 @@ namespace BaseUnity.GameFlow.Editor
             v.masterSlider = Slider(box, "Master", 300, out v.masterValue);
             v.musicSlider = Slider(box, "Music", 100, out v.musicValue);
             v.effectsSlider = Slider(box, "Effects", -100, out v.effectsValue);
-            v.volumeDownButton = Button("Volume -", box, "-", blue, 55, 65, -355, 300, 28);
-            v.volumeUpButton = Button("Volume +", box, "+", blue, 55, 65, 355, 300, 28);
+            v.volumeDownButton = Button("Volume -", box, "-", blue, 70, 70, -355, 300, 28);
+            v.volumeUpButton = Button("Volume +", box, "+", blue, 70, 70, 355, 300, 28);
             v.soundButton = Button("Sound toggle", box, "", grey, 380, 100, 0, -280);
             v.soundLabel = v.soundButton.GetComponentInChildren<Text>();
             v.soundLabel.text = "SOUND ON";
@@ -221,7 +221,8 @@ namespace BaseUnity.GameFlow.Editor
         {
             Label(name + " label", parent, name.ToUpperInvariant(), 210, 35, -220, y + 30, 22);
             value = Label(name + " value", parent, "100%", 120, 35, 260, y + 30, 23, new Color(1, 0.85f, 0.3f));
-            var root = Rect(name + " slider", parent, 570, 45, 0, y - 12);
+            var root = Rect(name + " slider", parent, 570, 70, 0, y - 12);
+            var touch = Picture("Touch area", root, null, 570, 70, 0, 0, false, Color.clear); touch.raycastTarget = true;
             var bg = Picture("Track", root, grey, 570, 23, 0, 0, true);
             var fillArea = Rect("Fill area", root, 550, 14, 0, 0);
             var fill = Picture("Fill", fillArea, yellow, 550, 14, 0, 0, true);

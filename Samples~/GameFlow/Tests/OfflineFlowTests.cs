@@ -128,6 +128,8 @@ namespace BaseUnity.GameFlow.Tests
             foreach (var screen in new[] { view.home, view.gameplay, view.loading, view.settings, view.pause, view.result, view.error }) Assert.IsTrue(screen.transform.IsChildOf(view.transform));
             Assert.IsNotNull(view.privacyButton); Assert.AreEqual(0, flow.GetComponentsInChildren<MonoBehaviour>(true).Count(x => x && x.GetType().Name.Contains("Booster")));
             var retryRect = (RectTransform)view.retryButton.transform; retryRect.anchoredPosition = new Vector2(17, -319);
+            var titleTheme = view.resultTitle.GetComponent<UIThemeBinding>();
+            if (titleTheme) titleTheme.useTextColor = false; // Explicit authored-color override survives screen reactivation.
             view.resultTitle.color = Color.cyan;
             view.settingsButton.onClick.Invoke(); yield return null; Assert.IsTrue(view.settings.activeSelf);
             view.cancelButton.onClick.Invoke(); yield return null; Assert.IsFalse(view.settings.activeSelf);
@@ -170,6 +172,29 @@ namespace BaseUnity.GameFlow.Tests
             flow.WinLevel(); yield return WaitFor(FlowPhase.Result); Assert.IsTrue(flow.GetComponentInChildren<OfflineOverlayView>().result.activeSelf);
         }
 #endif
+        [UnityTest] public IEnumerator RuntimeThemeSwitchAppliesToNewlyCreatedUIWithoutChangingContent()
+        {
+            var theme = ScriptableObject.CreateInstance<UIThemeConfig>(); var sourceTheme = ScriptableObject.CreateInstance<UIThemeConfig>();
+            var controller = flow.GetComponent<GameFlowThemeController>(); var original = controller.Theme;
+            GameObject template = null, clone = null;
+            try
+            {
+                sourceTheme.styles = new[] { new UIThemeStyle { role = UIThemeRole.Body, text = Color.red } };
+                theme.styles = new[] { new UIThemeStyle { role = UIThemeRole.Body, text = Color.cyan } };
+                template = new GameObject("Theme clone template", typeof(RectTransform), typeof(Text)); template.transform.SetParent(flow.transform, false);
+                var label = template.GetComponent<Text>(); label.text = "50 Coin"; label.fontSize = 20;
+                var binding = template.AddComponent<UIThemeBinding>(); binding.label = label; binding.theme = sourceTheme; binding.CaptureTypography();
+                controller.SetTheme(theme); clone = UnityEngine.Object.Instantiate(template, flow.transform);
+                yield return null;
+                Assert.AreEqual(Color.cyan, clone.GetComponent<Text>().color); Assert.AreEqual("50 Coin", clone.GetComponent<Text>().text);
+                Assert.AreEqual(20, clone.GetComponent<Text>().fontSize); Assert.AreEqual(FlowPhase.Home, flow.Phase);
+            }
+            finally
+            {
+                controller.SetTheme(original); if (template) UnityEngine.Object.Destroy(template); if (clone) UnityEngine.Object.Destroy(clone);
+                UnityEngine.Object.Destroy(theme); UnityEngine.Object.Destroy(sourceTheme);
+            }
+        }
         private void Click(string name)
         {
             var button = flow.GetComponentsInChildren<Button>().Single(x => x.name == name);

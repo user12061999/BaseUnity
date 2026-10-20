@@ -63,6 +63,7 @@ namespace BaseUnity.Editor
             options.generateOfflineUI = EditorGUILayout.Toggle("Generate missing offline UI", options.generateOfflineUI);
             options.generateHomeHub = EditorGUILayout.Toggle("Generate Home / Store / Quest UI", options.generateHomeHub);
             options.generateUIPrefabs = EditorGUILayout.Toggle("Generate editable UI prefabs", options.generateUIPrefabs);
+            options.generateUITheme = EditorGUILayout.Toggle("Prepare UI theme / shared components", options.generateUITheme);
             options.installUniTask = EditorGUILayout.Toggle("Install UniTask if missing", options.installUniTask);
             if (GUILayout.Button("1. Scan source files / review update")) Run(() => { Scan(); tab = 1; return "Review the file list before applying it."; });
             using (new EditorGUI.DisabledScope(plan == null || plan.destination != options.destination))

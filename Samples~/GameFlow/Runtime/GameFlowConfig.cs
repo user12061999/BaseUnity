@@ -26,6 +26,8 @@ namespace BaseUnity.GameFlow
         public string saveSlot = "gameflow_progress";
         public string gameTitle = "YOUR GAME";
         public GameFlowView uiPrefab;
+        public UIThemeConfig uiTheme;
+        public UIComponentLibrary uiComponents;
         public LevelSelectionPrefabView levelSelectionPrefab;
         public MobileModulesView mobileModulesPrefab;
         public OfflineOverlayView offlineOverlayPrefab;

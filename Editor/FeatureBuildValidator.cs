@@ -187,6 +187,25 @@ namespace BaseUnity.Editor
                 if (array.arraySize != 4) error("Mobile UI: " + field + " requires four bindings.");
                 for (int i = 0; i < array.arraySize; i++) if (!array.GetArrayElementAtIndex(i).objectReferenceValue) error("Mobile UI: missing " + field + " " + i);
             }
+            var theme = data.FindProperty("uiTheme")?.objectReferenceValue;
+            if (theme)
+            {
+                var styles = new SerializedObject(theme).FindProperty("styles"); var roles = new HashSet<int>();
+                for (int i = 0; i < styles.arraySize; i++)
+                {
+                    var entry = styles.GetArrayElementAtIndex(i); int role = entry.FindPropertyRelative("role").intValue; float scale = entry.FindPropertyRelative("textScale").floatValue;
+                    if (!roles.Add(role)) error("UI theme: duplicate semantic role " + role);
+                    if (float.IsNaN(scale) || float.IsInfinity(scale) || scale < .5f || scale > 2) error("UI theme: textScale must be finite and between 0.5 and 2.");
+                }
+                if (styles.arraySize == 0) error("UI theme: configure at least one semantic role.");
+            }
+            var components = data.FindProperty("uiComponents")?.objectReferenceValue;
+            if (components)
+            {
+                var library = new SerializedObject(components);
+                foreach (string field in new[] { "primaryButton", "secondaryButton", "tabButton", "currencyBar", "itemCard", "questCard" })
+                    if (!library.FindProperty(field).objectReferenceValue) error("UI component library: missing " + field);
+            }
             var menu = data.FindProperty("offlineMenuPrefab")?.objectReferenceValue;
             if (menu)
             {

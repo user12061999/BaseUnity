@@ -15,7 +15,7 @@ namespace BaseUnity.Editor
         public bool offline = true, shop = true, daily = true, missions = true, achievements = true, rewards = true, localization = true;
         public bool assets, tutorial, haptics, notifications, purchasing;
         public bool popups = true, feedback = true;
-        public bool generateUIPrefabs = true;
+        public bool generateUIPrefabs = true, generateUITheme = true;
         public bool ads, firebase, generateLevels = true, generateOfflineUI = true, generateHomeHub = true, installUniTask;
     }
     [Serializable] internal sealed class PendingBaseUnitySetup { public BaseUnitySetupOptions options; public string status, error, backup; }
@@ -164,6 +164,7 @@ namespace BaseUnity.Editor
                     if (pending.options.generateOfflineUI) InvokeBuilder("OfflineUIBuilder", flow);
                     if (pending.options.generateHomeHub) InvokeBuilder("HomeHubBuilder", flow);
                     if (pending.options.generateUIPrefabs) InvokeBuilder("GameUIPrefabBuilder", flow);
+                    if (pending.options.generateUITheme) InvokeBuilder("UIThemeBuilder", flow);
                     if (pending.options.generateHomeHub || pending.options.generateOfflineUI) InvokeBuilder("UIFeedbackBuilder", flow);
                     AssetDatabase.SaveAssetIfDirty(features); AssetDatabase.SaveAssetIfDirty(flow); AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport); completed = true;
                 }

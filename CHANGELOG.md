@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.19.0
+
+- Add semantic UIThemeConfig/Binding for common fonts, colors, sprites, selectable states and baseline text scaling.
+- Add six shared component prefabs and link currency/item/quest presentations to the sample; support runtime theme switching for dynamic clones.
+- Add an Editor Theme/Preview Workbench with 18 screens, English/Vietnamese/long text, safe area, phone/tablet presets and PNG export.
+- Add 144-case layout reports covering safe bounds, small touch targets, missing sample glyphs and truncated text.
+- Add project-scoped dependency application, pre-apply backups, Wizard integration and prebuild theme/library checks.
+- Expand Settings touch targets without changing slider track appearance; add isolated preview/role/serialization/rendering tests.
+
 ## 0.18.0
 
 - Remove sample booster catalog, runtime effects, HUD slots, use confirmation, generator and tests.

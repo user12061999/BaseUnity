@@ -143,7 +143,7 @@ namespace BaseUnity.GameFlow
         }
         private HubCardView Card(string id, string title, string fallbackDescription)
         {
-            var card = Instantiate(view.cardPrefab, view.rows); var entry = catalog ? catalog.Find(id) : null;
+            var card = Instantiate(screen == "QUESTS" && view.questCardPrefab ? view.questCardPrefab : view.cardPrefab, view.rows); var entry = catalog ? catalog.Find(id) : null;
             bool vi = services.Localization.Enabled && services.Localization.Language == "vi";
             string customTitle = entry == null ? null : vi ? entry.titleVietnamese : entry.titleEnglish;
             card.title.text = string.IsNullOrEmpty(customTitle) ? T(title) : customTitle;

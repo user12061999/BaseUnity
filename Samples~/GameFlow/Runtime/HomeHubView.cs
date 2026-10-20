@@ -28,6 +28,7 @@ namespace BaseUnity.GameFlow
         public Button retryPending => storePage.retryPending;
         public Transform rows => current.rows;
         public HubCardView cardPrefab;
+        public HubCardView questCardPrefab;
         public GameObject empty => current.empty;
         public GameObject confirmation;
         public Text confirmMessage;

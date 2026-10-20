@@ -2,7 +2,19 @@
 
 Base game Unity tái sử dụng qua **Git submodule trong `Assets/BaseUnity`**.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.18.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.19.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+
+## Theme, component dùng chung và Preview
+
+Mở **Tools > BaseUnity > UI > Theme and Preview Workbench**, chọn GameFlowConfig, rồi bấm
+**Prepare theme/components**. Chỉnh `UI/Theme/Theme.asset` để đổi font, màu, sprite và trạng thái
+nút theo vai trò; bấm **Apply theme to prefabs** để cập nhật đồng bộ. Mỗi lần Apply có backup.
+
+Có sáu prefab dùng chung: nút chính/phụ, tab, thanh tiền, item card và quest card. Currency/card được
+nối vào presenter; các nút hiện có giữ bố cục riêng và dùng cùng style qua UIThemeBinding.
+Preview 18 màn hình trong Editor, hỗ trợ tiếng Việt/chữ dài, điện thoại 16:9, 19.5:9, 20:9 và tablet 3:4,
+safe area và xuất PNG. **Validate all devices/screens** kiểm tra 144 tổ hợp và xuất báo cáo JSON.
+Xem [hướng dẫn theme và preview](Samples~/GameFlow/UI_THEME.md).
 
 ## UI prefab để tự chỉnh theme
 

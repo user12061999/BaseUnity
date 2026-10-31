@@ -27,6 +27,19 @@ namespace BaseUnity.Editor
             Action<string> error = message => issues.Add(new FeatureValidationIssue(MessageType.Error, message, config));
             Action<string> warn = message => issues.Add(new FeatureValidationIssue(MessageType.Warning, message, config));
             if (!config) { error("Choose a FeatureConfig to validate."); return issues; }
+            var gameplay = config.gameplay;
+            if (gameplay != null && gameplay.enabled)
+            {
+                if (gameplay.energy && (gameplay.maximumEnergy < 1 || gameplay.energyPerRun < 1 || gameplay.energyPerRun > gameplay.maximumEnergy || double.IsNaN(gameplay.energyRefillSeconds) || double.IsInfinity(gameplay.energyRefillSeconds) || gameplay.energyRefillSeconds <= 0)) error("Gameplay energy: capacity/cost/refill interval are invalid.");
+                if (gameplay.progression && (gameplay.experiencePerWin < 0 || gameplay.experiencePerLoss < 0 || gameplay.experiencePerLevel < 1 || gameplay.maximumPlayerLevel < 1 || gameplay.levelUpCoins < 0)) error("Gameplay progression: XP thresholds/rewards are invalid.");
+                if (gameplay.gifts)
+                {
+                    var ids = new HashSet<string>();
+                    foreach (var gift in gameplay.giftCatalog ?? Array.Empty<GiftDefinition>())
+                        if (gift == null || string.IsNullOrWhiteSpace(gift.id) || !ids.Add(gift.id) || gift.coins < 0 || gift.energy < 0 || !Enum.IsDefined(typeof(GiftKind), gift.kind) || double.IsNaN(gift.seconds) || double.IsInfinity(gift.seconds) || gift.seconds < 0) error("Gameplay gifts: IDs must be unique and rewards/timers valid.");
+                }
+            }
+            if (config.advancedSettings != null && config.advancedSettings.enabled && (config.advancedSettings.defaultFrameRate < 15 || config.advancedSettings.defaultFrameRate > 120 || config.advancedSettings.batteryFrameRate < 15 || config.advancedSettings.batteryFrameRate > 120)) error("Advanced settings: FPS must be between 15 and 120.");
             bool ios = target == BuildTarget.iOS;
             bool mobile = ios || target == BuildTarget.Android;
             var ads = config.ads;
@@ -125,9 +138,9 @@ namespace BaseUnity.Editor
             }
             issues.AddRange(MobileModuleValidator.Validate(config, target));
             var offline = config.offline;
-            if (offline != null && offline.enabled)
+            if (offline != null && (offline.enabled || config.gameplay?.enabled == true))
             {
-                if (offline.saveSlot == null || !Regex.IsMatch(offline.saveSlot, @"\A[a-zA-Z0-9_-]{1,64}\z") || (offline.saveSlot == "baseunity_language" || offline.saveSlot == "baseunity_audio")) error("Offline: choose a unique valid save slot (1-64 letters, digits, '-' or '_').");
+                if (offline.saveSlot == null || !Regex.IsMatch(offline.saveSlot, @"\A[a-zA-Z0-9_-]{1,64}\z") || (offline.saveSlot == "baseunity_language" || offline.saveSlot == "baseunity_audio" || offline.saveSlot == "baseunity_advanced_settings")) error("Offline: choose a unique valid save slot (1-64 letters, digits, '-' or '_').");
                 if (offline.startingCoins < 0 || offline.startingGems < 0) error("Offline: starting balances must not be negative.");
                 if (offline.levelRewards && (offline.winCoins < 0 || offline.firstWinBonus < 0 || (long)offline.winCoins + offline.firstWinBonus > int.MaxValue)) error("Offline: level rewards must be non-negative and fit within an integer.");
                 if (offline.dailyReward && (offline.dailyCoins == null || offline.dailyCoins.Length == 0 || offline.dailyCoins.Any(x => x < 0))) error("Daily reward: configure at least one non-negative reward.");
@@ -233,7 +246,7 @@ namespace BaseUnity.Editor
                     if (!seen.Contains(key)) error("Offline UI: missing tab " + key);
             }
             var feature = data.FindProperty("features").objectReferenceValue as FeatureConfig;
-            if (feature && feature.offline != null && feature.offline.enabled && feature.offline.saveSlot == data.FindProperty("saveSlot").stringValue)
+            if (feature && feature.offline != null && (feature.offline.enabled || feature.gameplay?.enabled == true) && feature.offline.saveSlot == data.FindProperty("saveSlot").stringValue)
                 error("Offline and GameFlow progress must use different save slots.");
             Action<string, string, bool> check = (path, label, required) => {
                 if (string.IsNullOrWhiteSpace(path)) { if (required) error(label + ": scene is not assigned."); return; }
@@ -243,7 +256,7 @@ namespace BaseUnity.Editor
             check(data.FindProperty("homeScene").stringValue, "Home", true);
             check(data.FindProperty("inGameScene").stringValue, "InGame", true);
             string saveSlot = data.FindProperty("saveSlot").stringValue;
-            if (saveSlot == null || !Regex.IsMatch(saveSlot, @"\A[a-zA-Z0-9_-]{1,64}\z") || saveSlot == "baseunity_audio" || saveSlot == "baseunity_language" || saveSlot == "baseunity_haptics" || saveSlot == "baseunity_notifications" || (feature && feature.tutorial?.enabled == true && saveSlot == feature.tutorial.saveSlot)) error("GameFlow: invalid, reserved or shared tutorial save slot.");
+            if (saveSlot == null || !Regex.IsMatch(saveSlot, @"\A[a-zA-Z0-9_-]{1,64}\z") || saveSlot == "baseunity_audio" || saveSlot == "baseunity_language" || saveSlot == "baseunity_haptics" || saveSlot == "baseunity_notifications" || saveSlot == "baseunity_advanced_settings" || (feature && feature.tutorial?.enabled == true && saveSlot == feature.tutorial.saveSlot)) error("GameFlow: invalid, reserved or shared tutorial save slot.");
             var sessionFlow = data.FindProperty("sessionFlow");
             if (sessionFlow != null && sessionFlow.FindPropertyRelative("enabled").boolValue)
             {

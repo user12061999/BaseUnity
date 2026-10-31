@@ -54,6 +54,8 @@ namespace BaseUnity.Features
         public PurchaseSettings purchasing = new PurchaseSettings();
         public PurchaseProvider purchaseProvider;
         public PurchaseVerifier purchaseVerifier;
+        public GameplaySettings gameplay = new GameplaySettings();
+        public AdvancedSettings advancedSettings = new AdvancedSettings();
         public OfflineSettings offline = new OfflineSettings();
         public LocalizationSettings localization = new LocalizationSettings();
         public GameIntegrationSettings gameIntegration = new GameIntegrationSettings();

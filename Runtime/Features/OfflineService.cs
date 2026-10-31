@@ -27,6 +27,7 @@ namespace BaseUnity.Features
         [Serializable] public sealed class Profile
         {
             public int schemaVersion;
+            public GameplayState gameplay = new GameplayState();
             public bool progressMigrated;
             public PlayerProgress progress = new PlayerProgress();
             public SavedResult result;
@@ -44,6 +45,9 @@ namespace BaseUnity.Features
             public long lifetimeScore;
         }
         private readonly OfflineSettings settings;
+        private readonly GameplaySettings gameplaySettings;
+        public GameplayState GameplaySnapshot => JsonUtility.FromJson<GameplayState>(JsonUtility.ToJson(profile.gameplay));
+        internal bool UpdateGameplay(Action<Profile> action) => Commit(action, moduleOnly: true);
         private readonly ISaveStore saves;
         private readonly Func<DateTime> utcNow;
         private Profile profile;
@@ -53,7 +57,7 @@ namespace BaseUnity.Features
         public string LoadError { get; private set; }
         public bool RecoveredFromBackup { get; private set; }
         public bool HasProgress => profile.progressMigrated;
-        public bool UsesUnifiedProgress => Enabled || HasProgress;
+        public bool UsesUnifiedProgress => Enabled || HasProgress || gameplaySettings.enabled;
         public PlayerProgress Progress => JsonUtility.FromJson<PlayerProgress>(JsonUtility.ToJson(profile.progress));
         public SavedResult PendingResult => profile.result != null && !profile.result.acknowledged ? JsonUtility.FromJson<SavedResult>(JsonUtility.ToJson(profile.result)) : null;
         public bool PendingBonus => profile.result != null && profile.result.bonusVerified && !profile.doubled;
@@ -74,9 +78,10 @@ namespace BaseUnity.Features
         public long PurchaseCount(string id) => CountOf(profile.purchases, id);
         private string Today => utcNow().ToUniversalTime().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
-        public OfflineService(OfflineSettings source, ISaveStore saves, Func<DateTime> utcNow = null)
+        public OfflineService(OfflineSettings source, ISaveStore saves, Func<DateTime> utcNow = null, GameplaySettings gameplay = null)
         {
             settings = JsonUtility.FromJson<OfflineSettings>(JsonUtility.ToJson(source ?? new OfflineSettings()));
+            gameplaySettings = JsonUtility.FromJson<GameplaySettings>(JsonUtility.ToJson(gameplay ?? new GameplaySettings()));
             this.saves = saves ?? throw new ArgumentNullException(nameof(saves)); this.utcNow = utcNow ?? (() => DateTime.UtcNow);
             profile = new Profile { coins = Math.Max(0, settings.startingCoins), gems = Math.Max(0, settings.startingGems) };
             try
@@ -97,6 +102,7 @@ namespace BaseUnity.Features
         }
         private static void Normalize(Profile p)
         {
+            p.gameplay = p.gameplay ?? new GameplayState(); GameplayService.Normalize(p.gameplay);
             p.inventory = p.inventory ?? new List<Count>(); p.purchases = p.purchases ?? new List<Count>();
             p.completedLevels = p.completedLevels ?? new List<int>(); p.claimedMissions = p.claimedMissions ?? new List<string>();
             p.progress = p.progress ?? new PlayerProgress();
@@ -107,9 +113,9 @@ namespace BaseUnity.Features
         }
         private static bool ValidateProfile(Profile p)
         {
-            if (p.schemaVersion > 4) throw new NotSupportedException("Offline profile needs a newer BaseUnity version.");
+            if (p.schemaVersion > 5) throw new NotSupportedException("Offline profile needs a newer BaseUnity version.");
             Normalize(p);
-            return p.schemaVersion >= 0 && p.lifetimeScore >= 0 && p.claimedAchievements.All(x => !string.IsNullOrWhiteSpace(x)) && p.claimedAchievements.Distinct().Count() == p.claimedAchievements.Count && p.coins >= 0 && p.gems >= 0 && p.dailyClaims >= 0 && p.lastReward >= 0 &&
+            return GameplayService.Valid(p.gameplay) && p.schemaVersion >= 0 && p.lifetimeScore >= 0 && p.claimedAchievements.All(x => !string.IsNullOrWhiteSpace(x)) && p.claimedAchievements.Distinct().Count() == p.claimedAchievements.Count && p.coins >= 0 && p.gems >= 0 && p.dailyClaims >= 0 && p.lastReward >= 0 &&
                 p.inventory.All(x => x != null && !string.IsNullOrWhiteSpace(x.id) && x.value >= 0) &&
                 p.purchases.All(x => x != null && !string.IsNullOrWhiteSpace(x.id) && x.value >= 0) &&
                 p.inventory.Select(x => x.id).Distinct().Count() == p.inventory.Count &&
@@ -125,7 +131,7 @@ namespace BaseUnity.Features
         {
             if (LoadError != null) return Reject(LoadError);
             if (HasProgress) return true;
-            return Commit(p => { p.progress = JsonUtility.FromJson<PlayerProgress>(JsonUtility.ToJson(legacy ?? new PlayerProgress())); p.progressMigrated = true; });
+            return Commit(p => { p.progress = JsonUtility.FromJson<PlayerProgress>(JsonUtility.ToJson(legacy ?? new PlayerProgress())); p.progressMigrated = true; }, true);
         }
         public bool AcknowledgeResult()
         {
@@ -145,15 +151,15 @@ namespace BaseUnity.Features
             if (!PendingBonus) return true;
             return Commit(p => { Credit(p, Currency.Coin, p.lastReward); p.doubled = true; }, true);
         }
-        private bool Commit(Action<Profile> change, bool progressOnly = false)
+        private bool Commit(Action<Profile> change, bool progressOnly = false, bool moduleOnly = false)
         {
             long oldCoins = profile.coins, oldGems = profile.gems;
             if (LoadError != null) return Reject(LoadError);
-            if (!Enabled && !(progressOnly && HasProgress)) return Reject("Feature is disabled");
+            if (!Enabled && !(progressOnly && (HasProgress || gameplaySettings.enabled)) && !(moduleOnly && gameplaySettings.enabled)) return Reject("Feature is disabled");
             try
             {
                 var next = JsonUtility.FromJson<Profile>(JsonUtility.ToJson(profile));
-                Normalize(next); change(next); next.schemaVersion = 4;
+                Normalize(next); change(next); next.schemaVersion = 5;
                 saves.Save(settings.saveSlot, next); profile = next; LastError = null;
             }
             catch (Exception e) { LastError = e.Message; return false; }
@@ -233,6 +239,7 @@ namespace BaseUnity.Features
                     p.progress.highestCompletedLevel = Math.Max(p.progress.highestCompletedLevel, level);
                     p.progress.highestUnlockedLevel = Math.Max(p.progress.highestUnlockedLevel, (int)Math.Min(levelCount, (long)level + 1));
                 } else p.progress.losses = (int)Math.Min(int.MaxValue, (long)p.progress.losses + 1);
+                GameplayService.AwardExperience(p, gameplaySettings, won);
                 p.result = new SavedResult { session = session, level = level, won = won, score = Math.Max(0, score) };
                 if (Enabled && settings.missions) { RotateMissions(p); p.gamesPlayed = checked(p.gamesPlayed + 1); if (won) p.gamesWon = checked(p.gamesWon + 1); p.score = checked(p.score + Math.Max(0, score)); }
                 p.rewardSession = session; p.doubled = false; p.lastReward = 0;

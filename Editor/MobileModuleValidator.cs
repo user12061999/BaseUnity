@@ -27,8 +27,8 @@ namespace BaseUnity.Editor
                 if (config.feedback.toastSeconds <= 0 || float.IsNaN(config.feedback.toastSeconds) || float.IsInfinity(config.feedback.toastSeconds)) error("Feedback: toast duration must be finite and positive.");
                 if (config.popups?.enabled != true) warn("Feedback: confirmation dialogs need the popup queue enabled.");
             }
-            var reserved = new[] { "baseunity_audio", "baseunity_language", "baseunity_haptics", "baseunity_notifications" };
-            if (config.offline?.enabled == true && reserved.Contains(config.offline.saveSlot)) error("Offline: save slot is reserved by a core module.");
+            var reserved = new[] { "baseunity_audio", "baseunity_language", "baseunity_haptics", "baseunity_notifications", "baseunity_advanced_settings" };
+            if ((config.offline?.enabled == true || config.gameplay?.enabled == true) && reserved.Contains(config.offline?.saveSlot)) error("Offline: save slot is reserved by a core module.");
             if (config.tutorial?.enabled == true)
             {
                 string slot = config.tutorial.saveSlot;

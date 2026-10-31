@@ -70,7 +70,7 @@ Trong bootstrap kế thừa `GameBootstrap`, override `ConfigureSaveMigrations(r
 trước khi Audio/Features load dữ liệu. GameFlowBootstrap mẫu là sealed: game dùng store registry từ
 `((JsonSaveStore)flow.Services.Get<ISaveStore>()).Migrations` trước khi load các slot riêng,
 hoặc tạo bootstrap game kế thừa GameBootstrap. Không tăng version/schema các slot mẫu nếu chưa viết migration tương ứng.
-Profile offline vẫn giữ migration schema hiện có; envelope version của nó vẫn là 1.
+Profile offline v0.20 dùng schema 4; v0.21 nâng lên schema 5 để lưu gameplay foundations. Envelope version vẫn là 1; xem GAMEPLAY_FOUNDATIONS.md.
 
 Transform phải thuần JSON, không ghi file/phát event/grant reward. LoadVersioned kiểm tra đủ bước,
 chạy migration trong bộ nhớ, validate rồi mới ghi. Thiếu bước, lỗi transform/validation hoặc gặp version mới hơn

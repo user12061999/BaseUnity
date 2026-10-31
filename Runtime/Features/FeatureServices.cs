@@ -19,6 +19,9 @@ namespace BaseUnity.Features
         public AdsService Ads { get; }
         public ConsentService Consent { get; }
         public FirebaseService Firebase { get; }
+        public GameplayService Gameplay { get; private set; }
+        public AdvancedSettingsService Preferences { get; private set; }
+        public InGameNoticeService Notices { get; private set; }
         public OfflineService Offline { get; private set; }
         public LocalizationService Localization { get; private set; }
         public GameIntegrationSettings GameIntegration => UnityEngine.JsonUtility.FromJson<GameIntegrationSettings>(UnityEngine.JsonUtility.ToJson(runtimeConfig.gameIntegration ?? new GameIntegrationSettings()));
@@ -37,9 +40,12 @@ namespace BaseUnity.Features
             services.Register(Assets); services.Register(Popups); services.Register(Feedback);
             services.Register(this); services.Register(Consent); services.Register(Ads); services.Register(Firebase);
             var saves = services.Get<BaseUnity.Save.ISaveStore>();
-            Offline = new OfflineService(runtimeConfig.offline, saves);
+            Offline = new OfflineService(runtimeConfig.offline, saves, gameplay: runtimeConfig.gameplay);
             services.TryGet<BaseUnity.Audio.AudioService>(out var audio);
             UI = new UIFeedbackService(runtimeConfig.feedback, audio, runtimeConfig.uiFeedbackProfile);
+            Gameplay = new GameplayService(runtimeConfig.gameplay, Offline);
+            Preferences = new AdvancedSettingsService(runtimeConfig.advancedSettings, saves, UI); Notices = new InGameNoticeService();
+            services.Register(Gameplay); services.Register(Preferences); services.Register(Notices);
             services.Register(UI); Offline.BalanceChanged += BalanceFeedback;
             Feedback.ToastRequested += ToastFeedback;
             Localization = new LocalizationService(runtimeConfig.localization, saves);
@@ -66,6 +72,7 @@ namespace BaseUnity.Features
             if (Offline != null) Offline.Changed -= ApplyEntitlements;
             if (Offline != null) Offline.BalanceChanged -= BalanceFeedback;
             Feedback.ToastRequested -= ToastFeedback;
+            Preferences?.Dispose();
             UI?.Dispose();
             Purchases?.Dispose(); Notifications?.Dispose(); Haptics?.Dispose(); Tutorial?.Dispose();
             Assets.Dispose(); Feedback.Dispose(); Popups.Dispose(); Ads.Dispose(); Consent.Dispose(); Firebase.Dispose();

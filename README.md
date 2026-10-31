@@ -2,7 +2,16 @@
 
 Base game Unity tái sử dụng qua **Git submodule trong `Assets/BaseUnity`**.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.20.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.21.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+
+## Gameplay foundations
+
+Bật tại **Feature Manager > Modules > Gameplay foundations** để dùng năng lượng/lượt chơi,
+EXP/cấp người chơi, quà tặng, badge, hiệu ứng, tương tác và điều khiển mobile.
+**Advanced player settings** có FPS, quality, tiết kiệm pin và giảm chuyển động; thành tích dùng lại Offline > Achievements.
+Chạy **Tools > BaseUnity > Game Flow > Prepare Gameplay Foundations** để tạo 11 prefab và LevelData playground.
+[xem cấu hình, API và cách thử](Samples~/GameFlow/GAMEPLAY_FOUNDATIONS.md).
+Kiểm thử v0.21: **160 EditMode + 60 PlayMode đạt**, 12 bố cục menu mới và 144 bố cục hiện có không có lỗi.
 
 ## Save, audio và vòng đời InGame
 
@@ -39,7 +48,7 @@ Result giữ màu và vị trí đã chỉnh. Các dòng menu/ô level sinh đ�
 Chạy lại generator giữ nguyên asset đã có. UI gốc được giữ lại; GameFlowConfig trỏ tới bản UI lồng prefab mới.
 Booster mẫu ở v0.17 đã được gỡ theo yêu cầu; HUD điểm/mục tiêu/timer, Store và inventory vẫn hoạt động.
 Xem [hướng dẫn chỉnh theme](Samples~/GameFlow/UI_PREFABS.md).
-Xem [danh mục 42 prefab mẫu và công dụng](Samples~/GameFlow/PREFABS.md).
+Xem [danh mục prefab mẫu và công dụng](Samples~/GameFlow/PREFABS.md).
 
 Kiểm thử v0.18: **135 EditMode + 50 PlayMode đạt**; kiểm tra sinh lại không ghi đè 26 prefab theme.
 

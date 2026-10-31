@@ -19,6 +19,8 @@ namespace BaseUnity.GameFlow
         private void Collect()
         {
             if (!context.IsPlaying) return;
+            var effects = FindFirstObjectByType<GameplayEffects>();
+            if (effects) effects.Show("+10", RectTransformUtility.WorldToScreenPoint(null, target.transform.position), Color.yellow);
             context.AddScore(10);
             taps++;
             // Deterministic movement keeps the trap and target apart and the example testable.

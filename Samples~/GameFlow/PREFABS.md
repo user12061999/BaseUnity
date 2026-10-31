@@ -1,4 +1,4 @@
-# Danh mục 42 prefab mẫu
+# Danh mục prefab mẫu
 
 Các đường dẫn bên dưới tính từ thư mục chứa GameFlowConfig. Trong project BaseUnity hiện tại,
 thư mục này là `Assets/BaseUnityGameFlow`.
@@ -87,5 +87,10 @@ nếu prefab đang tham chiếu đến chúng; repository phân phối code gene
 | Prefab | Công dụng |
 |---|---|
 | `Levels/TapTargetGameplay.prefab` | Gameplay màn dọc: chạm mục tiêu để thêm điểm, tránh bẫy; nối LevelContext và Win/Lose. |
+
+## Gameplay foundations (11 prefab bổ sung)
+
+Danh sách và hướng dẫn 11 prefab tại `GameplayFoundations` nằm trong [Gameplay foundations](GAMEPLAY_FOUNDATIONS.md).
+Có FoundationMenu, FloatingText, NotificationBadge, Joystick, HoldButton, SwipeSurface, TapObject, Collectible, Draggable, DropZone và GameplayPlayground.
 
 Save và AudioService là service runtime; AudioProfile là ScriptableObject cấu hình, không phải prefab.

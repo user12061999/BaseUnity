@@ -76,6 +76,7 @@ namespace BaseUnity.GameFlow
             gameObject.AddComponent<GameFlowThemeController>().SetTheme(config ? config.uiTheme : null);
             gameObject.AddComponent<GameFlowUIFeedback>().Initialize(this);
             gameObject.AddComponent<GameFlowAudio>().Initialize(this);
+            gameObject.AddComponent<GameFlowFoundations>().Initialize(this);
             if (config && config.sessionOverlayPrefab) Instantiate(config.sessionOverlayPrefab, transform).Initialize(this);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             gameObject.AddComponent<GameFlowDebugPanel>().Initialize(this);
@@ -129,8 +130,11 @@ namespace BaseUnity.GameFlow
         public void StartLevel(int number) => StartLevelInternal(number, false);
         private void StartLevelInternal(int number, bool restarting)
         {
+            if (GetComponent<GameFlowFoundations>()?.IsOpen == true) return;
             if (!dataReady || Features.Busy || loading || (!restarting && Phase != FlowPhase.Home && Phase != FlowPhase.Result && Phase != FlowPhase.LevelSelect) || !config) return;
             if (number < 1 || number > config.LevelCount || number > HomeLevel) return;
+            var gameplay = Services.Get<BaseUnity.Features.FeatureServices>().Gameplay;
+            if (!gameplay.CanStartRun) { Services.Get<BaseUnity.Features.FeatureServices>().Feedback.Toast("Not enough energy", true); return; }
             var definition = config.GetLevel(number);
             if (definition == null) { Fail("Level " + number + " has no configuration."); return; }
             if (!Features.LeaveResult()) return;
@@ -305,6 +309,8 @@ namespace BaseUnity.GameFlow
         }
         private void BeginPlaying()
         {
+            var gameplay = Services.Get<BaseUnity.Features.FeatureServices>().Gameplay;
+            if (!gameplay.SpendRunEnergy()) { Fail(gameplay.LastError ?? "Energy could not be saved"); return; }
             UnityEngine.Time.timeScale = 1;
             SetPhase(FlowPhase.Playing, () => Services.Get<EventBus>().Publish(new SessionStarted(CurrentLevel)));
         }

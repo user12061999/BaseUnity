@@ -32,6 +32,7 @@ namespace BaseUnity.Features
             Profile.rewardSeconds = Range(Profile.rewardSeconds, .2f, 2, .75f);
         }
         private static float Range(float value, float min, float max, float fallback) => float.IsNaN(value) || float.IsInfinity(value) ? fallback : Mathf.Clamp(value, min, max);
+        public void SetReducedMotion(bool value) { settings.reducedMotion = value; }
         public bool Play(UICue cue, Vector2? screenPosition = null)
         {
             if (!Enabled || !Enum.IsDefined(typeof(UICue), cue) || (cue == UICue.Hover && !HoverEnabled)) return false;

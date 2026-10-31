@@ -33,6 +33,7 @@ namespace BaseUnity.GameFlow.Editor
             if (!config.mobileModulesPrefab) config.mobileModulesPrefab = Mobile(folder);
             if (!config.offlineOverlayPrefab) config.offlineOverlayPrefab = Offline(folder);
             SessionModulesBuilder.Generate(config);
+            GameplayFoundationBuilder.Generate(config);
             EditorUtility.SetDirty(config); AssetDatabase.SaveAssetIfDirty(config);
             Selection.activeObject = AssetDatabase.LoadMainAssetAtPath(folder + "/GameFlow.prefab");
             Debug.Log("Editable BaseUnity UI ready at " + folder + ". Open Screens or Components in Prefab Mode to edit the theme.");

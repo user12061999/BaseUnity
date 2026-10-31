@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.21.0
+
+- Add configurable gameplay energy, player XP/levels and welcome/return/playtime/periodic gifts; commit rewards and claim state with the wallet profile, upgraded additively to schema 5.
+- Reuse achievements, feedback and haptics; add derived in-game badges and a player menu for gifts, achievements and advanced preferences.
+- Add saved FPS/quality/battery/reduced-motion/gameplay-effect preferences and apply them at runtime.
+- Add gated joystick/held-button/swipe components, tap/collect/UI drag/drop interactions and bounded pooled floating/flying text plus hit flash/punch feedback.
+- Generate 11 project-owned prefabs and an optional playground LevelData without replacing existing levels; integrate generation, feature toggles and prebuild validation.
+- Add energy/time/save-failure/reward/preference and mobile interaction regression coverage.
+
 ## 0.20.0
 
 - Add per-store sequential save migrations, validation before atomic persistence, optional SHA-256 envelope checksums, slot inspection and explicit backup restore. Preserve legacy saves and reject overwriting future versions.

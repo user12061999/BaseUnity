@@ -30,6 +30,7 @@ namespace BaseUnity.GameFlow
     [CreateAssetMenu(menuName = "BaseUnity/Game Flow Config")]
     public sealed class GameFlowConfig : ScriptableObject
     {
+        public GameplayFoundationView foundationPrefab;
         public SessionFlowSettings sessionFlow = new SessionFlowSettings();
         public GameFlowAudioProfile audioProfile;
         public SessionOverlayView sessionOverlayPrefab;

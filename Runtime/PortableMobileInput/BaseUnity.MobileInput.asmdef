@@ -1,0 +1,19 @@
+{
+  "name": "BaseUnity.MobileInput",
+  "rootNamespace": "BaseUnity.MobileInput",
+  "references": [
+    "BaseUnity.Runtime",
+    "Unity.ugui"
+  ],
+  "autoReferenced": true,
+  "versionDefines": [
+    {
+      "name": "com.unity.ugui",
+      "expression": "1.0.0",
+      "define": "BASEUNITY_UGUI"
+    }
+  ],
+  "defineConstraints": [
+    "BASEUNITY_UGUI"
+  ]
+}

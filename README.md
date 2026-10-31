@@ -1,8 +1,22 @@
 # BaseUnity Foundation
 
-Base game Unity tái sử dụng qua **Git submodule trong `Assets/BaseUnity`**.
+Base game Unity tái sử dụng qua Git submodule. **Dự án mới dùng `Tools/BaseUnity` và cài theo module**;
+`Assets/BaseUnity` là cách dùng bundle legacy.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.22.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.23.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+
+## Cài theo module (v0.23)
+
+Dự án mới: đặt submodule ở **Tools/BaseUnity**, ngoài Assets/Packages. Chỉ copy thư mục
+`Editor/Modularity` vào `Assets/Editor/BaseUnityModules`, mở **Tools > BaseUnity > Module Manager**
+rồi chọn phần cần cài. Đợt đầu có **Core, Save, Audio, Pooling, MobileInput**, mỗi phần có assembly/package riêng.
+Công cụ tự thêm dependency, backup và kiểm tra file đã chỉnh khi cài/gỡ; không tự nhập Ads/Firebase hay toàn bộ GameFlow.
+[Xem hướng dẫn cài/gỡ và giới hạn migration](Modules~/README.md).
+Kiểm chứng v0.23: **173 EditMode + 65 PlayMode đạt**; project sạch đã biên dịch Core-only,
+Core+MobileInput và cả 5 module, không kéo FeatureServices của bundle legacy.
+
+Phần bên dưới mô tả **bundle legacy** đang dùng trong project demo. Giữ nguyên để tương thích các game cũ;
+không cài bundle này cùng các selective package vì có class trùng nhau.
 
 ## UI năng lượng, hồ sơ và điều khiển
 

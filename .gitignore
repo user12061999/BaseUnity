@@ -15,6 +15,7 @@
 !/Tests/
 !/Tests.meta
 !/Samples~/
+!/Modules~/
 **/bin/
 **/obj/
 **/*.csproj

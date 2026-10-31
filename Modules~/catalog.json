@@ -1,0 +1,109 @@
+{
+  "format": 1,
+  "modules": [
+    {
+      "id": "core",
+      "name": "Core",
+      "package": "com.baseunity.core",
+      "assembly": "BaseUnity.Core",
+      "description": "Minimal bootstrap, service registry, events, state machine and timers.",
+      "requires": [],
+      "references": [],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/Core/ModuleBootstrap.cs",
+        "Runtime/Core/EventBus.cs",
+        "Runtime/Core/ServiceRegistry.cs",
+        "Runtime/Core/StateMachine.cs",
+        "Runtime/Core/BuildEnvironment.cs",
+        "Runtime/Time/TimerService.cs"
+      ]
+    },
+    {
+      "id": "save",
+      "name": "Save",
+      "package": "com.baseunity.save",
+      "assembly": "BaseUnity.Save",
+      "description": "Atomic JSON saves, backup and migrations.",
+      "requires": [
+        "core"
+      ],
+      "references": [
+        "BaseUnity.Core"
+      ],
+      "engineDependencies": [
+        "com.unity.modules.jsonserialize@1.0.0"
+      ],
+      "files": [
+        "Runtime/Save/JsonSaveStore.cs",
+        "Runtime/Save/SaveMigrationRegistry.cs",
+        "Runtime/Save/SaveModule.cs"
+      ]
+    },
+    {
+      "id": "audio",
+      "name": "Audio",
+      "package": "com.baseunity.audio",
+      "assembly": "BaseUnity.Audio",
+      "description": "Music crossfades, bounded effects and persisted volume settings.",
+      "requires": [
+        "core",
+        "save"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.Save"
+      ],
+      "engineDependencies": [
+        "com.unity.modules.audio@1.0.0"
+      ],
+      "files": [
+        "Runtime/Audio/AudioService.cs",
+        "Runtime/Audio/AudioModule.cs"
+      ]
+    },
+    {
+      "id": "pooling",
+      "name": "Pooling",
+      "package": "com.baseunity.pooling",
+      "assembly": "BaseUnity.Pooling",
+      "description": "Prefab pools and diagnostics; no audio, economy or SDK.",
+      "requires": [
+        "core"
+      ],
+      "references": [
+        "BaseUnity.Core"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/Pooling/PrefabPool.cs",
+        "Runtime/Pooling/PoolDiagnostics.cs"
+      ]
+    },
+    {
+      "id": "mobile-input",
+      "name": "Mobile Input",
+      "package": "com.baseunity.mobile-input",
+      "assembly": "BaseUnity.MobileInput",
+      "description": "Standalone joystick, held button and swipe. Requires Unity UI; no Save/Ads/Firebase.",
+      "requires": [
+        "core"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "Unity.ugui"
+      ],
+      "engineDependencies": [
+        "com.unity.ugui@2.0.0"
+      ],
+      "files": [
+        "Runtime/Input/InputRouter.cs",
+        "Runtime/PortableMobileInput/MobileInputModule.cs",
+        "Runtime/PortableMobileInput/TouchInputContext.cs",
+        "Runtime/PortableMobileInput/TouchJoystick.cs",
+        "Runtime/PortableMobileInput/TouchButton.cs",
+        "Runtime/PortableMobileInput/SwipeArea.cs"
+      ]
+    }
+  ]
+}

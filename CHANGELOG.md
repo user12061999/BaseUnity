@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.23.0
+
+- Add standalone Core/Save/Audio/Pooling/MobileInput package catalog and dependency-aware selective source export.
+- Add minimal ModuleBootstrap and explicit module installers without creating legacy FeatureServices.
+- Add standalone touch controls/context independent of GameFlow, profile, Ads and Firebase.
+- Add independent Editor Module Manager for install/update/remove/restore, ownership/hash checks, staging and backup. Embedded packages preserve the game manifest.
+- Keep the legacy demo intact; reject duplicate installation over BaseUnity.Runtime. Document the first-phase scope and clean-project migration workflow.
+
 ## 0.22.0
 
 - Add energy details/out-of-energy entry point, refill countdown and verified rewarded-ad energy with durable receipt deduplication and save retry without another ad.

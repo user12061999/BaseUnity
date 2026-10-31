@@ -56,7 +56,7 @@ namespace BaseUnity.Tests
             Assert.AreEqual(5, service.AchievementProgress(config.achievementGoals[0]));
             var score = new DailyMission { metric = MissionMetric.Score }; Assert.AreEqual(0, service.AchievementProgress(score));
             Assert.IsTrue(service.ClaimAchievement("first_win"));
-            OfflineService.Profile saved; Assert.IsTrue(store.TryLoad(config.saveSlot, out saved)); Assert.AreEqual(5, saved.schemaVersion);
+            OfflineService.Profile saved; Assert.IsTrue(store.TryLoad(config.saveSlot, out saved)); Assert.AreEqual(6, saved.schemaVersion);
             config.achievements = false; Assert.IsFalse(NewService().ClaimAchievement("ten_games"));
         }
         [SetUp] public void Setup()

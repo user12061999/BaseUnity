@@ -134,7 +134,7 @@ namespace BaseUnity.GameFlow
             if (!dataReady || Features.Busy || loading || (!restarting && Phase != FlowPhase.Home && Phase != FlowPhase.Result && Phase != FlowPhase.LevelSelect) || !config) return;
             if (number < 1 || number > config.LevelCount || number > HomeLevel) return;
             var gameplay = Services.Get<BaseUnity.Features.FeatureServices>().Gameplay;
-            if (!gameplay.CanStartRun) { Services.Get<BaseUnity.Features.FeatureServices>().Feedback.Toast("Not enough energy", true); return; }
+            if (!gameplay.CanStartRun) { Services.Get<BaseUnity.Features.FeatureServices>().Feedback.Toast(Services.Get<BaseUnity.Features.FeatureServices>().Localization.Text("Not enough energy"), true); GetComponent<GameFlowFoundations>()?.OpenEnergy(); return; }
             var definition = config.GetLevel(number);
             if (definition == null) { Fail("Level " + number + " has no configuration."); return; }
             if (!Features.LeaveResult()) return;

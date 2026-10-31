@@ -30,7 +30,7 @@ namespace BaseUnity.Editor
             var gameplay = config.gameplay;
             if (gameplay != null && gameplay.enabled)
             {
-                if (gameplay.energy && (gameplay.maximumEnergy < 1 || gameplay.energyPerRun < 1 || gameplay.energyPerRun > gameplay.maximumEnergy || double.IsNaN(gameplay.energyRefillSeconds) || double.IsInfinity(gameplay.energyRefillSeconds) || gameplay.energyRefillSeconds <= 0)) error("Gameplay energy: capacity/cost/refill interval are invalid.");
+                if (gameplay.energy && (gameplay.energyPerAd < 1 || gameplay.maximumEnergy < 1 || gameplay.energyPerRun < 1 || gameplay.energyPerRun > gameplay.maximumEnergy || double.IsNaN(gameplay.energyRefillSeconds) || double.IsInfinity(gameplay.energyRefillSeconds) || gameplay.energyRefillSeconds <= 0)) error("Gameplay energy: capacity/cost/refill interval are invalid.");
                 if (gameplay.progression && (gameplay.experiencePerWin < 0 || gameplay.experiencePerLoss < 0 || gameplay.experiencePerLevel < 1 || gameplay.maximumPlayerLevel < 1 || gameplay.levelUpCoins < 0)) error("Gameplay progression: XP thresholds/rewards are invalid.");
                 if (gameplay.gifts)
                 {
@@ -140,7 +140,7 @@ namespace BaseUnity.Editor
             var offline = config.offline;
             if (offline != null && (offline.enabled || config.gameplay?.enabled == true))
             {
-                if (offline.saveSlot == null || !Regex.IsMatch(offline.saveSlot, @"\A[a-zA-Z0-9_-]{1,64}\z") || (offline.saveSlot == "baseunity_language" || offline.saveSlot == "baseunity_audio" || offline.saveSlot == "baseunity_advanced_settings")) error("Offline: choose a unique valid save slot (1-64 letters, digits, '-' or '_').");
+                if (offline.saveSlot == null || !Regex.IsMatch(offline.saveSlot, @"\A[a-zA-Z0-9_-]{1,64}\z") || (offline.saveSlot == "baseunity_language" || offline.saveSlot == "baseunity_audio" || offline.saveSlot == "baseunity_advanced_settings" || offline.saveSlot == "baseunity_player_preferences")) error("Offline: choose a unique valid save slot (1-64 letters, digits, '-' or '_').");
                 if (offline.startingCoins < 0 || offline.startingGems < 0) error("Offline: starting balances must not be negative.");
                 if (offline.levelRewards && (offline.winCoins < 0 || offline.firstWinBonus < 0 || (long)offline.winCoins + offline.firstWinBonus > int.MaxValue)) error("Offline: level rewards must be non-negative and fit within an integer.");
                 if (offline.dailyReward && (offline.dailyCoins == null || offline.dailyCoins.Length == 0 || offline.dailyCoins.Any(x => x < 0))) error("Daily reward: configure at least one non-negative reward.");
@@ -256,7 +256,7 @@ namespace BaseUnity.Editor
             check(data.FindProperty("homeScene").stringValue, "Home", true);
             check(data.FindProperty("inGameScene").stringValue, "InGame", true);
             string saveSlot = data.FindProperty("saveSlot").stringValue;
-            if (saveSlot == null || !Regex.IsMatch(saveSlot, @"\A[a-zA-Z0-9_-]{1,64}\z") || saveSlot == "baseunity_audio" || saveSlot == "baseunity_language" || saveSlot == "baseunity_haptics" || saveSlot == "baseunity_notifications" || saveSlot == "baseunity_advanced_settings" || (feature && feature.tutorial?.enabled == true && saveSlot == feature.tutorial.saveSlot)) error("GameFlow: invalid, reserved or shared tutorial save slot.");
+            if (saveSlot == null || !Regex.IsMatch(saveSlot, @"\A[a-zA-Z0-9_-]{1,64}\z") || saveSlot == "baseunity_audio" || saveSlot == "baseunity_language" || saveSlot == "baseunity_haptics" || saveSlot == "baseunity_notifications" || saveSlot == "baseunity_advanced_settings" || saveSlot == "baseunity_player_preferences" || (feature && feature.tutorial?.enabled == true && saveSlot == feature.tutorial.saveSlot)) error("GameFlow: invalid, reserved or shared tutorial save slot.");
             var sessionFlow = data.FindProperty("sessionFlow");
             if (sessionFlow != null && sessionFlow.FindPropertyRelative("enabled").boolValue)
             {

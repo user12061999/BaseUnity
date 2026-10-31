@@ -55,6 +55,22 @@ namespace BaseUnity.GameFlow.Tests
             bootstrap.Services.Get<InputRouter>().Enabled=true; item.OnPointerClick(new PointerEventData(events)); item.OnPointerClick(new PointerEventData(events)); Assert.AreEqual(1,count);
             rect.gameObject.SetActive(false); rect.gameObject.SetActive(true); item.OnPointerClick(new PointerEventData(events)); Assert.AreEqual(2,count); yield return null;
         }
+        private sealed class PreferenceStore : ISaveStore
+        {
+            private string json;
+            public void Save<T>(string slot,T value,int version=1) where T:class { json=JsonUtility.ToJson(value); }
+            public bool TryLoad<T>(string slot,out T value,int version=1) where T:class { value=json==null?null:JsonUtility.FromJson<T>(json); return value!=null; }
+            public void Delete(string slot) { json=null; }
+        }
+        [UnityTest] public IEnumerator SavedControlPreferencesApplyLayoutSensitivityAndReleaseHeldInput()
+        {
+            var area=Rect("Preference joystick"); area.anchoredPosition=new Vector2(-200,-200); var stick=area.gameObject.AddComponent<MobileJoystick>(); stick.area=area; Canvas.ForceUpdateCanvases();
+            var layout=area.GetComponent<MobileControlLayout>(); var prefs=new PlayerPreferencesService(new PreferenceStore()); layout.Bind(prefs);
+            stick.OnPointerDown(new PointerEventData(events){pointerId=1,position=RectTransformUtility.WorldToScreenPoint(null,area.position)+new Vector2(90,0)}); Assert.Greater(stick.Value.x,.5f);
+            var next=prefs.Current; next.controlScale=1.2f; next.sensitivity=2; next.leftHanded=true; next.joystickOffset=new Vector2(-60,0); Assert.IsTrue(prefs.Save(next));
+            Assert.AreEqual(Vector2.zero,stick.Value); Assert.AreEqual(1.2f,area.localScale.x,.001f); Assert.Greater(area.anchoredPosition.x,0);
+            stick.OnPointerDown(new PointerEventData(events){pointerId=2,position=RectTransformUtility.WorldToScreenPoint(null,area.position)+new Vector2(90,0)}); Assert.AreEqual(1,stick.Value.x,.01f); yield return null;
+        }
         [UnityTest] public IEnumerator DropZoneAcceptsOneDropAndRestoresSourceRaycasts()
         {
             var source=Rect("Draggable"); var item=source.gameObject.AddComponent<GameplayInteractable>(); item.mode=GameplayInteractionMode.Drag;

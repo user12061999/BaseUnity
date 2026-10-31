@@ -14,6 +14,8 @@ namespace BaseUnity.Features
         public bool enabled;
         public bool energy = true, progression = true, gifts = true, badges = true;
         public bool effects = true, interactions = true, mobileControls = true;
+        public bool rewardedEnergy = true;
+        public int energyPerAd = 1;
         public int maximumEnergy = 5, energyPerRun = 1;
         public double energyRefillSeconds = 300;
         public int experiencePerWin = 25, experiencePerLoss = 5, experiencePerLevel = 100, maximumPlayerLevel = 100, levelUpCoins = 50;

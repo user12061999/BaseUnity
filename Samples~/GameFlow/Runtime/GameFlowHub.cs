@@ -48,7 +48,7 @@ namespace BaseUnity.GameFlow
             view.confirmAccept.onClick.AddListener(() => { if (Busy || confirmed == null) return; var action = confirmed; confirmed = null; view.confirmation.SetActive(false); action(); });
             view.restore.onClick.AddListener(() => { _ = StoreOperation(true); });
             view.retryPending.onClick.AddListener(() => { _ = StoreOperation(false); });
-            services.Offline.Changed += Dirty; services.Purchases.Changed += Dirty; services.Localization.Changed += Dirty; flow.Changed += FlowChanged;
+            services.Offline.Changed += Dirty; services.Purchases.Changed += Dirty; services.Localization.Changed += Dirty; services.PlayerPreferences.Changed += Dirty; flow.Changed += FlowChanged;
             (view.play.GetComponent<TutorialTarget>() ?? view.play.gameObject.AddComponent<TutorialTarget>()).Initialize("home.play", services.Tutorial);
             Refresh();
         }
@@ -92,7 +92,9 @@ namespace BaseUnity.GameFlow
         {
             view.wallet.gameObject.SetActive(Economy.Enabled);
             view.wallet.text = Economy.Coins.ToString("N0") + " " + T("Coin") + "    " + Economy.Gems.ToString("N0") + " " + T("Gem");
-            view.playerName.text = catalog ? catalog.playerName : "PLAYER";
+            view.playerName.supportRichText=false;
+            view.playerName.text = services.Gameplay.ProgressionEnabled ? services.PlayerPreferences.Current.playerName : catalog ? catalog.playerName : "PLAYER";
+            if(services.Gameplay.ProgressionEnabled) view.avatar.color=FoundationDetailsView.AvatarTint(services.PlayerPreferences.Current.avatar);
             if (catalog && catalog.avatar) { view.avatar.sprite = catalog.avatar; view.avatar.enabled = true; }
             view.level.text = T("LEVEL") + " " + flow.HomeLevel;
             view.gameTitle.text = flow.Config.gameTitle;
@@ -212,7 +214,7 @@ namespace BaseUnity.GameFlow
         }
         private void OnDestroy()
         {
-            if (services != null) { services.Offline.Changed -= Dirty; services.Purchases.Changed -= Dirty; services.Localization.Changed -= Dirty; }
+            if (services != null) { services.Offline.Changed -= Dirty; services.Purchases.Changed -= Dirty; services.Localization.Changed -= Dirty; services.PlayerPreferences.Changed -= Dirty; }
             if (flow) flow.Changed -= FlowChanged;
         }
     }

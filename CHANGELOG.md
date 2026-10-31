@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.22.0
+
+- Add energy details/out-of-energy entry point, refill countdown and verified rewarded-ad energy with durable receipt deduplication and save retry without another ad.
+- Add saved player name/avatar preferences, EXP bar and cosmetic level-up reward popup; extend existing prefabs with project-owned nested ProfilePanel/LevelUpPopup assets.
+- Show gift conditions/cooldowns/claimed states and achievement readiness; play reward feedback after successful claims.
+- Localize new menus, statuses and settings into Vietnamese with user catalog overrides.
+- Persist mobile size/sensitivity/dead zone/handedness/position presets and apply layouts while releasing stale input.
+- Upgrade offline profile additively to schema 6 for energy-ad receipts; reserve the independent player-preference slot.
+
 ## 0.21.0
 
 - Add configurable gameplay energy, player XP/levels and welcome/return/playtime/periodic gifts; commit rewards and claim state with the wallet profile, upgraded additively to schema 5.

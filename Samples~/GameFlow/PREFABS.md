@@ -94,3 +94,5 @@ Danh sách và hướng dẫn 11 prefab tại `GameplayFoundations` nằm trong 
 Có FoundationMenu, FloatingText, NotificationBadge, Joystick, HoldButton, SwipeSurface, TapObject, Collectible, Draggable, DropZone và GameplayPlayground.
 
 Save và AudioService là service runtime; AudioProfile là ScriptableObject cấu hình, không phải prefab.
+
+Ở v0.22, generator bổ sung `GameplayFoundations/ProfilePanel.prefab` và `GameplayFoundations/LevelUpPopup.prefab` vào FoundationMenu.

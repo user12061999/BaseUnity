@@ -19,6 +19,7 @@ namespace BaseUnity.Features
         public AdsService Ads { get; }
         public ConsentService Consent { get; }
         public FirebaseService Firebase { get; }
+        public PlayerPreferencesService PlayerPreferences { get; private set; }
         public GameplayService Gameplay { get; private set; }
         public AdvancedSettingsService Preferences { get; private set; }
         public InGameNoticeService Notices { get; private set; }
@@ -43,6 +44,7 @@ namespace BaseUnity.Features
             Offline = new OfflineService(runtimeConfig.offline, saves, gameplay: runtimeConfig.gameplay);
             services.TryGet<BaseUnity.Audio.AudioService>(out var audio);
             UI = new UIFeedbackService(runtimeConfig.feedback, audio, runtimeConfig.uiFeedbackProfile);
+            PlayerPreferences = new PlayerPreferencesService(saves); services.Register(PlayerPreferences);
             Gameplay = new GameplayService(runtimeConfig.gameplay, Offline);
             Preferences = new AdvancedSettingsService(runtimeConfig.advancedSettings, saves, UI); Notices = new InGameNoticeService();
             services.Register(Gameplay); services.Register(Preferences); services.Register(Notices);

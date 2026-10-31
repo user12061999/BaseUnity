@@ -10,6 +10,7 @@ namespace BaseUnity.Features
         public int energy;
         public long experience;
         public double energyAnchor, lastVisit, playSeconds;
+        public System.Collections.Generic.List<string> energyAdReceipts = new System.Collections.Generic.List<string>();
         public List<string> claimedGifts = new List<string>(), returnGifts = new List<string>();
         public List<GiftClock> giftClocks = new List<GiftClock>();
     }
@@ -46,11 +47,11 @@ namespace BaseUnity.Features
             LastError = ConfigurationError;
         }
         internal static void Normalize(GameplayState state)
-        { state.claimedGifts = state.claimedGifts ?? new List<string>(); state.returnGifts = state.returnGifts ?? new List<string>(); state.giftClocks = state.giftClocks ?? new List<GiftClock>(); }
+        { state.energyAdReceipts = state.energyAdReceipts ?? new List<string>(); state.claimedGifts = state.claimedGifts ?? new List<string>(); state.returnGifts = state.returnGifts ?? new List<string>(); state.giftClocks = state.giftClocks ?? new List<GiftClock>(); }
         internal static bool Valid(GameplayState s)
         {
             Normalize(s);
-            return s.energy >= 0 && s.experience >= 0 && Finite(s.energyAnchor) && Finite(s.lastVisit) && Finite(s.playSeconds) &&
+            return s.energyAdReceipts.All(x => !string.IsNullOrWhiteSpace(x)) && s.energyAdReceipts.Distinct().Count() == s.energyAdReceipts.Count && s.energy >= 0 && s.experience >= 0 && Finite(s.energyAnchor) && Finite(s.lastVisit) && Finite(s.playSeconds) &&
                 s.claimedGifts.All(x => !string.IsNullOrWhiteSpace(x)) && s.claimedGifts.Distinct().Count() == s.claimedGifts.Count &&
                 s.returnGifts.All(x => !string.IsNullOrWhiteSpace(x)) && s.returnGifts.Distinct().Count() == s.returnGifts.Count &&
                 s.giftClocks.All(x => x != null && !string.IsNullOrWhiteSpace(x.id) && Finite(x.next)) && s.giftClocks.Select(x => x.id).Distinct().Count() == s.giftClocks.Count;
@@ -97,6 +98,22 @@ namespace BaseUnity.Features
             if (!EnergyEnabled || amount <= 0) return Reject("Energy is disabled or amount is invalid");
             return Commit(p => { RefreshEnergy(p.gameplay); p.gameplay.energy = (int)Math.Min(Capacity, (long)p.gameplay.energy + amount); });
         }
+        public bool RewardedEnergyEnabled => EnergyEnabled && settings.rewardedEnergy;
+        public bool GrantVerifiedEnergy(string receipt)
+        {
+            if (!RewardedEnergyEnabled || string.IsNullOrWhiteSpace(receipt) || receipt.Length > 100) return Reject("Invalid energy reward");
+            if (State.energyAdReceipts.Contains(receipt)) return true;
+            return Commit(p => { RefreshEnergy(p.gameplay); p.gameplay.energy = (int)Math.Min(Capacity,(long)p.gameplay.energy + Math.Max(1,settings.energyPerAd)); p.gameplay.energyAdReceipts.Add(receipt); });
+        }
+        public bool GiftClaimed(string id) => State.claimedGifts.Contains(id);
+        public double GiftRemaining(GiftDefinition gift)
+        {
+            if (gift == null) return 0; var s=State;
+            if (gift.kind == GiftKind.Playtime) return Math.Max(0,gift.seconds - s.playSeconds - pendingPlay);
+            if (gift.kind == GiftKind.Periodic) return Math.Max(0,(s.giftClocks.FirstOrDefault(x=>x.id==gift.id)?.next ?? 0) - Now);
+            return Math.Max(0,gift.seconds);
+        }
+        public float ExperienceFraction => PlayerLevel >= settings.maximumPlayerLevel ? 1 : (float)(Experience % Math.Max(1,settings.experiencePerLevel)) / Math.Max(1,settings.experiencePerLevel);
         public long Experience => State.experience;
         public int PlayerLevel => LevelFor(Experience, settings);
         public static int LevelFor(long xp, GameplaySettings settings) => (int)(1 + Math.Min((long)Math.Max(1, settings.maximumPlayerLevel) - 1, Math.Max(0, xp) / Math.Max(1, settings.experiencePerLevel)));

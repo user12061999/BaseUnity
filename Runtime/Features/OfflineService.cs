@@ -113,7 +113,7 @@ namespace BaseUnity.Features
         }
         private static bool ValidateProfile(Profile p)
         {
-            if (p.schemaVersion > 5) throw new NotSupportedException("Offline profile needs a newer BaseUnity version.");
+            if (p.schemaVersion > 6) throw new NotSupportedException("Offline profile needs a newer BaseUnity version.");
             Normalize(p);
             return GameplayService.Valid(p.gameplay) && p.schemaVersion >= 0 && p.lifetimeScore >= 0 && p.claimedAchievements.All(x => !string.IsNullOrWhiteSpace(x)) && p.claimedAchievements.Distinct().Count() == p.claimedAchievements.Count && p.coins >= 0 && p.gems >= 0 && p.dailyClaims >= 0 && p.lastReward >= 0 &&
                 p.inventory.All(x => x != null && !string.IsNullOrWhiteSpace(x.id) && x.value >= 0) &&
@@ -159,7 +159,7 @@ namespace BaseUnity.Features
             try
             {
                 var next = JsonUtility.FromJson<Profile>(JsonUtility.ToJson(profile));
-                Normalize(next); change(next); next.schemaVersion = 5;
+                Normalize(next); change(next); next.schemaVersion = 6;
                 saves.Save(settings.saveSlot, next); profile = next; LastError = null;
             }
             catch (Exception e) { LastError = e.Message; return false; }

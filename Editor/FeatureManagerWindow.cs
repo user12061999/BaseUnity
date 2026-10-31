@@ -201,7 +201,7 @@ namespace BaseUnity.Editor
             if (Field("gameplay.enabled", "Enable gameplay foundations").boolValue)
             {
                 foreach (string name in new[] { "energy", "progression", "gifts", "badges", "effects", "interactions", "mobileControls" }) Field("gameplay." + name, ObjectNames.NicifyVariableName(name));
-                if (serialized.FindProperty("gameplay.energy").boolValue) foreach (string name in new[] { "maximumEnergy", "energyPerRun", "energyRefillSeconds" }) Field("gameplay." + name, ObjectNames.NicifyVariableName(name));
+                if (serialized.FindProperty("gameplay.energy").boolValue) foreach (string name in new[] { "maximumEnergy", "energyPerRun", "energyRefillSeconds", "rewardedEnergy", "energyPerAd" }) Field("gameplay." + name, ObjectNames.NicifyVariableName(name));
                 if (serialized.FindProperty("gameplay.progression").boolValue) foreach (string name in new[] { "experiencePerWin", "experiencePerLoss", "experiencePerLevel", "maximumPlayerLevel", "levelUpCoins" }) Field("gameplay." + name, ObjectNames.NicifyVariableName(name));
                 if (serialized.FindProperty("gameplay.gifts").boolValue) Field("gameplay.giftCatalog", "Gift catalog", true);
                 EditorGUILayout.HelpBox("Achievements use Offline > Achievements. Energy/XP/gifts share the atomic offline profile; old configs keep these modules off.", MessageType.Info);

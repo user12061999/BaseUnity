@@ -57,12 +57,13 @@ namespace BaseUnity.GameFlow.Tests
         }
         public sealed class Backend : IAdsBackend
         {
+            public int shows;
             public AdResult result = AdResult.Closed;
             public TaskCompletionSource<AdResult> pending;
             public Task InitializeAsync(AdsSettings settings, CancellationToken token) => Task.CompletedTask;
             public Task<bool> LoadAsync(AdFormat format, CancellationToken token) => Task.FromResult(true);
             public bool IsReady(AdFormat format) => true;
-            public Task<AdResult> ShowAsync(AdFormat format, CancellationToken token) => pending == null ? Task.FromResult(result) : pending.Task;
+            public Task<AdResult> ShowAsync(AdFormat format, CancellationToken token) { shows++; return pending == null ? Task.FromResult(result) : pending.Task; }
             public void HideBanner() { }
             public void Dispose() { }
         }
@@ -112,6 +113,7 @@ namespace BaseUnity.GameFlow.Tests
                 config.uiPrefab = installed.uiPrefab; config.levelSelectionPrefab = installed.levelSelectionPrefab;
                 config.mobileModulesPrefab = installed.mobileModulesPrefab; config.offlineOverlayPrefab = installed.offlineOverlayPrefab;
                 config.offlineMenuPrefab = installed.offlineMenuPrefab;
+                if(TestContext.CurrentContext.Test.Name.StartsWith("ThemePrefabEnergy")) { config.foundationPrefab=installed.foundationPrefab; features.gameplay.enabled=true; features.gameplay.maximumEnergy=2; }
             }
 #endif
             var root = new GameObject("Offline test bootstrap"); root.SetActive(false);
@@ -122,6 +124,17 @@ namespace BaseUnity.GameFlow.Tests
             yield return null;
         }
 #if UNITY_EDITOR
+        [UnityTest] public IEnumerator ThemePrefabEnergyAdsRequireRewardAndRetrySaveWithoutShowingAgain()
+        {
+            var modules=flow.Services.Get<FeatureServices>(); Assert.IsTrue(modules.Gameplay.SpendRunEnergy()); Assert.IsTrue(modules.Gameplay.SpendRunEnergy());
+            flow.Play(); var view=flow.GetComponentInChildren<GameplayFoundationView>(); Assert.IsTrue(view.modal.activeSelf); Assert.AreEqual(FlowPhase.Home,flow.Phase);
+            provider.backend.result=AdResult.Closed; view.rows[3].onClick.Invoke(); yield return null; Assert.AreEqual(0,modules.Gameplay.Energy); Assert.AreEqual(1,provider.backend.shows);
+            provider.backend.result=AdResult.Rewarded;
+            string file=System.IO.Path.Combine(BaseUnity.Core.BuildEnvironment.SaveDirectory,slot+".json");
+            using(var locked=new System.IO.FileStream(file,System.IO.FileMode.Open,System.IO.FileAccess.ReadWrite,System.IO.FileShare.None)) { view.rows[3].onClick.Invoke(); yield return null; Assert.AreEqual(0,modules.Gameplay.Energy); }
+            view.rows[3].onClick.Invoke(); yield return null; Assert.AreEqual(1,modules.Gameplay.Energy); Assert.AreEqual(2,provider.backend.shows);
+            flow.Features.Language.SetLanguage("vi"); var details=view.GetComponent<FoundationDetailsView>(); details.profile.onClick.Invoke(); Assert.AreEqual("HỒ SƠ",view.title.text); Assert.IsTrue(details.profilePanel.activeSelf); Assert.AreEqual("TÊN NGƯỜI CHƠI",details.nameCaption.text);
+        }
         [UnityTest] public IEnumerator ThemePrefabScreensKeepBindingsAndAuthoredResultLayout()
         {
             var view = flow.GetComponentInChildren<GameFlowView>(); Assert.IsNotNull(view);

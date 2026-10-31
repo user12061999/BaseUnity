@@ -90,8 +90,36 @@ namespace BaseUnity.GameFlow.Editor
                     string levelPath=path+"GameplayDemoLevel.asset"; if(!AssetDatabase.LoadAssetAtPath<LevelData>(levelPath)) { var level=ScriptableObject.CreateInstance<LevelData>(); level.title="Gameplay foundations demo"; level.targetScore=100; level.timeLimitSeconds=120; level.gameplayPrefab=prefab; AssetDatabase.CreateAsset(level,levelPath); }
                 } finally { UnityEngine.Object.DestroyImmediate(root.gameObject); }
             }
+            UpgradeDetails(config,path);
             EditorUtility.SetDirty(config); AssetDatabase.SaveAssetIfDirty(config);
             Debug.Log("Gameplay foundation prefabs ready at "+path+". Existing assets preserved. Backup="+backup);
+        }
+        private static void UpgradeDetails(GameFlowConfig config,string folder)
+        {
+            if(config.foundationPrefab.GetComponent<FoundationDetailsView>()) return;
+            string path=AssetDatabase.GetAssetPath(config.foundationPrefab); var root=PrefabUtility.LoadPrefabContents(path);
+            try {
+                var view=root.GetComponent<GameplayFoundationView>(); var details=root.AddComponent<FoundationDetailsView>(); var panel=view.title.transform.parent;
+                foreach(var tab in new[]{view.gifts,view.achievements,view.settings}) { var r=(RectTransform)tab.transform; r.anchoredPosition=new Vector2(r.anchoredPosition.x,450); }
+                details.energy=Button(panel,"Energy","ENERGY",-270,350,245,75); details.profile=Button(panel,"Profile","PROFILE",0,350,265,75); details.controls=Button(panel,"Controls","CONTROLS",270,350,245,75);
+                for(int i=0;i<view.rows.Length;i++) ((RectTransform)view.rows[i].transform).anchoredPosition=new Vector2(0,220-i*110);
+                var profile=Rect(panel,"Profile detail",800,700,0,-40); details.profilePanel=profile.gameObject;
+                details.profileTitle=Label(profile,"Player level","PLAYER LV 1",0,280,740,70,32);
+                details.avatar=Button(profile,"Avatar","1",0,170,100,100); details.avatarLabel=details.avatar.GetComponentInChildren<Text>(); details.avatarBackground=details.avatar.image;
+                details.nameCaption=Label(profile,"Player name caption","PLAYER NAME",0,80,700,65,26);
+                var input=Box(profile,"Player name",680,90,0,0); details.playerName=input.gameObject.AddComponent<InputField>(); details.playerName.targetGraphic=input.GetComponent<Image>(); input.GetComponent<Image>().color=new Color(.12f,.24f,.4f); var inputStyle=input.gameObject.AddComponent<UIThemeBinding>(); inputStyle.role=UIThemeRole.Panel; inputStyle.graphic=input.GetComponent<Image>(); inputStyle.useGraphicColor=false; details.playerName.characterLimit=20; details.playerName.lineType=InputField.LineType.SingleLine;
+                var name=Label(input,"Text","PLAYER",0,0,640,80,28); name.supportRichText=false; name.alignment=TextAnchor.MiddleLeft; details.playerName.textComponent=name;
+                details.saveName=Button(profile,"Save name","SAVE NAME",0,-110,500,85);
+                var track=Box(profile,"XP track",650,36,0,-210); var fill=Box(track,"XP fill",650,36,0,0); details.experienceFill=fill.GetComponent<Image>(); details.experienceFill.sprite=UIBarBuilder.WhiteSprite(UIThemeBuilder.Folder(config)+"/UI/Theme"); details.experienceFill.type=Image.Type.Filled; details.experienceFill.fillMethod=Image.FillMethod.Horizontal; details.experienceFill.color=Color.green; details.experienceFill.raycastTarget=false;
+                details.experience=Label(profile,"XP description","Next level: 100 XP",0,-285,700,70,26);
+                PrefabUtility.SaveAsPrefabAssetAndConnect(profile.gameObject,AssetDatabase.GenerateUniqueAssetPath(folder+"ProfilePanel.prefab"),UnityEditor.InteractionMode.AutomatedAction); profile.gameObject.SetActive(false);
+                var popup=Rect(root.transform,"Level up popup",900,1600,0,0); Stretch(popup); details.levelPopup=popup.gameObject;
+                var blocker=Box(popup,"Raycast blocker",4000,4000,0,0); blocker.GetComponent<Image>().color=new Color(0,0,0,.75f);
+                var safe=Rect(popup,"Safe Area",900,1600,0,0); var area=popup.gameObject.AddComponent<GameFlowSafeArea>(); area.canvas=root.GetComponent<Canvas>(); area.content=safe;
+                var box=Box(safe,"Level reward panel",800,650,0,0); details.levelMessage=Label(box,"Level message","LEVEL 2\nLevel reward: +50 Coin",0,80,740,260,40); details.closeLevel=Button(box,"Continue","OK",0,-190,500,100);
+                PrefabUtility.SaveAsPrefabAssetAndConnect(popup.gameObject,AssetDatabase.GenerateUniqueAssetPath(folder+"LevelUpPopup.prefab"),UnityEditor.InteractionMode.AutomatedAction); popup.gameObject.SetActive(false);
+                PrefabUtility.SaveAsPrefabAsset(root,path);
+            } finally { PrefabUtility.UnloadPrefabContents(root); }
         }
         private static void Stretch(RectTransform rect) { rect.anchorMin=Vector2.zero; rect.anchorMax=Vector2.one; rect.offsetMin=rect.offsetMax=Vector2.zero; }
         private static RectTransform Canvas(string name,int order) { var rect=Rect(null,name,900,1600,0,0); var canvas=rect.gameObject.AddComponent<Canvas>(); canvas.renderMode=RenderMode.ScreenSpaceOverlay; canvas.sortingOrder=order; rect.gameObject.AddComponent<GraphicRaycaster>(); var scaler=rect.gameObject.AddComponent<CanvasScaler>(); scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution=new Vector2(900,1600); scaler.matchWidthOrHeight=.5f; return rect; }

@@ -5,6 +5,7 @@ namespace BaseUnity.GameFlow
     public sealed class MobileActionButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     {
         public string action = "Fire";
+        private void OnEnable() { if(Application.isPlaying) { var layout=GetComponent<MobileControlLayout>(); if(!layout) layout=gameObject.AddComponent<MobileControlLayout>(); layout.SetActionButton(); } }
         private int pointer = int.MinValue;
         public void OnPointerDown(PointerEventData data)
         { if (!GameplayInputGate.Open || !GameplayInputGate.Services.Gameplay.ControlsEnabled || pointer != int.MinValue) return; pointer = data.pointerId; GameplayInputGate.Manual?.SetButton(action, true); }

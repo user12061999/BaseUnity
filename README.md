@@ -2,7 +2,15 @@
 
 Base game Unity tái sử dụng qua **Git submodule trong `Assets/BaseUnity`**.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.21.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.22.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+
+## UI năng lượng, hồ sơ và điều khiển
+
+v0.22 bổ sung tab năng lượng với countdown/quảng cáo thưởng được xác nhận; hồ sơ tên/avatar/thanh EXP;
+popup lên cấp; trạng thái quà/thành tích và tiếng Việt cho UI mới. Tab Controls lưu kích thước, độ nhạy,
+vùng chết, tay thuận và preset vị trí joystick/nút bấm. Chạy lại **Prepare Gameplay Foundations** để
+nâng cấp prefab có backup; xem [hướng dẫn](Samples~/GameFlow/GAMEPLAY_FOUNDATIONS.md).
+Kiểm thử v0.22: **164 EditMode + 62 PlayMode đạt**, 56 trường hợp UI EN/VI mới và 144 layout hiện có không có lỗi.
 
 ## Gameplay foundations
 

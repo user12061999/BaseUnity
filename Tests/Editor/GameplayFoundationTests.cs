@@ -81,6 +81,31 @@ namespace BaseUnity.Tests
         }
         [Test] public void PlayerLevelIsCappedWithoutOverflowAtMaximumExperience()
         { Assert.AreEqual(settings.maximumPlayerLevel, GameplayService.LevelFor(long.MaxValue, settings)); }
+        [Test] public void VerifiedEnergyReceiptIsAtomicAndIdempotentAfterReload()
+        {
+            service.SpendRunEnergy(); service.SpendRunEnergy(); int before=service.Energy;
+            store.fail=true; Assert.IsFalse(service.GrantVerifiedEnergy("verified-1")); Assert.AreEqual(before,service.Energy);
+            store.fail=false; Assert.IsTrue(service.GrantVerifiedEnergy("verified-1")); Assert.AreEqual(before+1,service.Energy);
+            Reload(); Assert.IsTrue(service.GrantVerifiedEnergy("verified-1")); Assert.AreEqual(before+1,service.Energy);
+        }
+        [Test] public void PlayerNameAvatarAndControlsPersistAndFailedSaveDoesNotChangeThem()
+        {
+            var prefs=new PlayerPreferencesService(store); var next=prefs.Current; next.playerName="Người chơi"; next.avatar=2; next.controlScale=1.2f; next.sensitivity=1.5f; next.leftHanded=true; next.joystickOffset=new Vector2(-60,80);
+            store.fail=true; Assert.IsFalse(prefs.Save(next)); Assert.AreEqual("PLAYER",prefs.Current.playerName);
+            store.fail=false; Assert.IsTrue(prefs.Save(next)); var reloaded=new PlayerPreferencesService(store); Assert.AreEqual("Người chơi",reloaded.Current.playerName); Assert.AreEqual(2,reloaded.Current.avatar); Assert.AreEqual(1.2f,reloaded.Current.controlScale); Assert.IsTrue(reloaded.Current.leftHanded);
+            Assert.IsTrue(reloaded.ResetControls()); Assert.AreEqual("Người chơi",reloaded.Current.playerName); Assert.AreEqual(1,reloaded.Current.controlScale);
+            next=reloaded.Current; next.playerName="<b>bad</b>"; Assert.IsFalse(reloaded.Save(next)); next.playerName="OK"; next.sensitivity=float.NaN; Assert.IsFalse(reloaded.Save(next));
+        }
+        [Test] public void GiftCountdownAndClaimedStateRemainDistinctAfterReload()
+        {
+            var gift=service.Gifts[2]; Assert.AreEqual(GiftKind.Playtime,gift.kind); Assert.AreEqual(300,service.GiftRemaining(gift)); service.TickPlaytime(100); Assert.AreEqual(200,service.GiftRemaining(gift));
+            service.TickPlaytime(200); Assert.IsTrue(service.CanClaim(gift.id)); Assert.IsTrue(service.Claim(gift.id)); Reload(); Assert.IsTrue(service.GiftClaimed(gift.id)); Assert.IsFalse(service.CanClaim(gift.id));
+        }
+        [Test] public void FoundationTranslationsUseVietnameseAndUserOverrides()
+        {
+            var language=new LocalizationService(new LocalizationSettings { enabled=true, defaultLanguage="vi", translations=new[]{new Translation { english="PROFILE", vietnamese="HỒ SƠ RIÊNG" }} },store);
+            Assert.AreEqual("HỒ SƠ RIÊNG",language.Text("PROFILE")); Assert.AreEqual("NĂNG LƯỢNG 2/5",language.Text("ENERGY 2/5")); Assert.AreEqual("Có thể nhận sau 00:05:00",language.Text("Available in 00:05:00"));
+        }
         [Test] public void BadgeCountsAreDerivedAndClearingRemovesTheBadge()
         {
             var notices=new InGameNoticeService(); int changes=0; notices.Changed+=()=>changes++;

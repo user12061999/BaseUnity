@@ -1,4 +1,4 @@
-# Gameplay foundations (v0.21)
+# Gameplay foundations (v0.22)
 
 ## Bật và cấu hình
 
@@ -84,9 +84,9 @@ Effect vị trí nhận screen coordinates; truyền destination để bay về 
 
 ## Lưu trữ và giới hạn
 
-Energy, EXP, giờ chơi, mốc quà, coin và trạng thái đã nhận nằm trong cùng Offline profile schema **5**.
-Profile schema cũ 0–4 được bổ sung dữ liệu mặc định, giữ wallet/tiến độ; lần ghi tiếp theo nâng lên schema 5.
-Bản base cũ chỉ hiểu schema 4 sẽ từ chối profile mới: backup dữ liệu trước khi downgrade.
+Energy, EXP, giờ chơi, mốc quà, coin và trạng thái đã nhận nằm trong cùng Offline profile schema **6**.
+Profile schema cũ 0–5 được bổ sung dữ liệu mặc định, giữ wallet/tiến độ; lần ghi tiếp theo nâng lên schema 6.
+Bản base cũ chỉ hiểu schema 4/5 sẽ từ chối profile mới: backup dữ liệu trước khi downgrade.
 Advanced preferences dùng slot riêng `baseunity_advanced_settings`; rung giữ slot cũ của HapticService.
 
 Thời gian dùng UTC cục bộ, bảo vệ đơn giản khi đồng hồ đi lùi bằng anchor đã lưu. Đây không phải chống gian lận
@@ -96,3 +96,30 @@ Level coin bonus theo cấp cũng ghi trong transaction kết quả. Save thất
 
 Quality/FPS cần thử trên thiết bị mục tiêu; mức 120 FPS là giới hạn yêu cầu, không bảo đảm phần cứng đạt được.
 Các sample UI hiện dùng theme/font của dự án và có thể chỉnh bằng Prefab Mode.
+
+## Nâng cấp UI v0.22
+
+Chạy lại **Prepare Gameplay Foundations**. Công cụ thêm FoundationDetailsView khi còn thiếu,
+thêm hàng tab Energy/Profile/Controls, xếp lại các action row và tạo nested ProfilePanel.prefab,
+LevelUpPopup.prefab. Các thay đổi có backup; chạy lại sau khi đã nâng cấp không xếp lại layout đã chỉnh.
+Mở các prefab này hoặc FoundationMenu.prefab để tự đổi sprite/font/layout.
+
+- **Energy:** lượng hiện tại/tối đa, countdown hồi thêm, giá mỗi lượt. Khi thiếu năng lượng ở Home/Result/LevelSelect,
+  lệnh chơi mở tab này. Có thể bật/tắt rewardedEnergy và chỉnh energyPerAd trong Feature Manager.
+  Ads/Firebase không tự bật; cần provider Ads và consent hợp lệ để nút quảng cáo hoạt động.
+- Chỉ AdResult.Rewarded mới cấp năng lượng. Đóng quảng cáo/SDK lỗi không có thưởng.
+  Nếu save lỗi sau callback, nút chuyển sang thử lưu lại cùng receipt, không phát quảng cáo mới.
+  Receipt ghi cùng năng lượng trong profile; retry đã lưu không cộng lại. Receipt chờ trong RAM có thể mất
+  nếu app bị kill trước khi ghi thành công; phần này không thay thế server-side reward verification.
+- **Profile:** tên tối đa 20 ký tự, 4 avatar dạng huy hiệu màu mặc định (có thể thay art trong prefab),
+  thanh EXP theo cấp; tên và màu avatar được đồng bộ với Home khi bật progression. Popup lên cấp chỉ thông báo coin đã được cấp trong transaction kết quả, không cấp lại khi đóng.
+  Không tự mở lại popup tăng cấp khi load save; tiến trình và coin vẫn được giữ.
+- **Gifts/Achievements:** Ready/Claimed/In progress hoặc điều kiện/countdown; hiệu ứng nhận thưởng chỉ chạy sau save thành công.
+- **Controls:** chạm từng dòng để đổi preset kích thước 80/100/120%, sensitivity, dead zone,
+  tay thuận và vị trí joystick/nút bấm. Vị trí có các offset (0,0), (-60,0), (0,80), (60,0)
+  theo layout mẫu; control được clamp vào parent. Lựa chọn áp dụng cho prefab mobile hiện có khi chơi.
+  Khi đổi layout hoặc tắt control sẽ nhả input đang giữ. Các parent mẫu dùng anchor/pivot ở giữa.
+- `PlayerPreferencesService.ResetControls()` khôi phục control, giữ tên/avatar. Tên/avatar và control dùng slot
+  `baseunity_player_preferences`, tách khỏi quality/FPS. Tên từ chối markup/control characters.
+- Bật Localization và chọn vi bằng menu ngôn ngữ hiện có để xem tiếng Việt. Translation tùy chỉnh của game
+  được ưu tiên hơn bảng mặc định; thông báo lỗi SDK/IO nguyên bản có thể vẫn dùng ngôn ngữ của SDK/hệ thống.

@@ -1,9 +1,7 @@
-# BaseUnity selective modules — v0.23
+# BaseUnity selective modules — v0.24
 
-Đây là đợt tách đầu tiên: **Core, Save, Audio, Pooling, MobileInput**. Source trong repository là nguồn chuẩn;
-Module Manager chỉ đóng gói/cài các file trong `catalog.json`. Mỗi module có package UPM và assembly riêng.
-GameFlow/UI/Economy/Progression/Rewards/Energy/Ads/Firebase/Localization của v0.22 vẫn ở bản legacy,
-chưa quảng cáo là những package có thể cài riêng. Chúng không bị kéo vào năm module mới.
+Các module cài riêng: **Core, Save, Audio, Pooling, MobileInput, GameFlow, UI** và bridge tùy chọn **GameFlow UI**.
+Module Manager chỉ đóng gói file trong catalog thành package/assembly riêng. Economy/Progression/Ads/Firebase và các nhóm còn lại vẫn ở legacy, không bị kéo vào các module mới.
 
 ## Cài vào project mới
 
@@ -44,6 +42,9 @@ Source submodule vẫn ở Tools, giúp theo dõi phiên bản và cập nhật.
 | Audio | core + save + audio | BaseUnity.Audio |
 | Pooling | core + pooling | BaseUnity.Pooling |
 | MobileInput | core + mobile-input + Unity UI | BaseUnity.MobileInput |
+| GameFlow | core + gameflow | BaseUnity.Flow |
+| UI | core + ui + Unity UI + built-in Audio | BaseUnity.UI |
+| GameFlow UI bridge | core + gameflow + ui + gameflow-ui | BaseUnity.FlowUI |
 
 Core có EventBus, ServiceRegistry, StateMachine, TimerService, BuildEnvironment và ModuleBootstrap.
 Không có Save/Audio/Input/FeatureConfig hoặc SDK trong Core.
@@ -112,7 +113,7 @@ Project demo hiện có giữ nguyên bundle v0.22 để không làm mất scrip
 Module Manager **từ chối cài bộ package mới chồng lên BaseUnity.Runtime** vì trùng class/GUID.
 Dùng project sạch để bắt đầu selective modules; có thể mở Export only trong demo cũ.
 Không di chuyển hoặc xóa junction/runtime/SDK của project demo bằng tay trong lúc Editor đang mở.
-Đợt sau sẽ tách GameFlow và những nhóm còn lại, rồi bổ sung migration cụ thể cho prefab/config cũ.
+Module mới không phải toàn bộ demo cũ. Prefab Layer Lab, Store, Quest và config legacy cần migration riêng.
 
 ## Kiểm chứng trong project sạch
 
@@ -120,3 +121,49 @@ Không di chuyển hoặc xóa junction/runtime/SDK của project demo bằng ta
 Core-only tạo đúng một assembly BaseUnity.Core; Core+MobileInput tạo đúng hai assembly;
 chọn cả năm tạo đúng năm assembly. Cả ba không có BaseUnity.Features.FeatureServices.
 Module Manager cũng biên dịch trong project sạch mà không tham chiếu bundle cũ.
+Đợt v0.24: 15 EditMode + 2 PlayMode đạt (logic, package lifecycle, view và luồng scene thật).
+GameFlow-only chỉ có Core/Flow, UI-only chỉ có Core/UI; kết hợp bridge có đúng 4 assembly.
+Bảy prefab không thiếu script; GameRoot giữ các persistent button target sau khi lưu.
+Đây là kiểm thử tập trung cho phần modular mới; không phải chạy lại toàn bộ suite legacy.
+
+## GameFlow độc lập (v0.24)
+
+Attach `BaseUnity.Flow.GameFlowModule` cùng root ModuleBootstrap. Auto-start Home sau khi bootstrap sẵn sàng.
+Bỏ trống homeScene/ingameScene cho game một scene; nếu dùng nhiều scene, gán đường dẫn scene đã thêm vào build settings.
+Lấy `Services.Get<BaseUnity.Flow.GameFlowService>()`, theo dõi Changed, Phase, Level, CanPlay, CanNext.
+
+- HomeAsync → PlayAsync → Win/Lose → RetryAsync/NextAsync/HomeAsync.
+- Pause/Resume chỉ chạy khi đúng trạng thái; mất focus tự Pause, người chơi Resume chủ động.
+- Level từ 1 đến levelCount; Next chỉ sau Win và không vượt level cuối; Retry giữ level.
+- Loading chặn lệnh trùng; tải scene thất bại trả lỗi và khôi phục phase/level trước đó.
+- Component cung cấp entry point UnityEvent Home/Play/Pause/Resume/Win/Lose/Retry/Next và ghi lỗi Console.
+- Game kiểm tra **CanPlay** để khóa gameplay/input/timer. Module không thay đổi Time.timeScale.
+- Với single-scene, game tự reset vật thể khi vào Playing qua Changed. Với nhiều scene, thêm gameplay vào Ingame.
+- Tiến trình theo phiên chạy: không tự lưu level, cấp reward hay chọn level prefab. Tích hợp Save riêng khi cần.
+
+## UI và bộ mẫu tùy chọn (v0.24)
+
+UI cần Core, Unity UI và built-in Audio; không cần GameFlow, AudioService hoặc Save.
+UIModule đăng ký UIService: ShowScreen/PushPopup/Back/ClosePopups. UIPanel cung cấp Show/Hide override.
+UITheme/Binding quản lý background, primary, text, font/size. Sau khi đổi theme runtime, gọi Apply trên binding hoặc bật lại UI.
+UIButtonFeedback hỗ trợ press scale/reducedMotion và clicked (cả submit bàn phím).
+UIAudioFeedback là âm thanh cục bộ tùy chọn: gán clip, nối Play vào clicked. Clip mặc định trống;
+volume/mute độc lập AudioService. Có thể nối clicked sang AudioService của game thay thế.
+
+Chọn **Game Flow UI bridge** để UI tự đổi theo flow. GameFlowView đặt trên root luôn active,
+gán panel/levelLabel/nextButton; chỉ dùng một view điều khiển cùng UIService.
+
+Sau khi compile, bấm **Create optional portrait GameFlow/UI sample** trong Module Manager:
+
+- Chọn thư mục mới trong Assets; không ghi đè nội dung sẵn có.
+- Sinh scene Bootstrap/Home/Ingame, Theme.asset và **7 prefab: GameRoot, Home, Ingame, Loading, Pause, Win, Lose**.
+- Panel là nested prefab. Sửa prefab hoặc tạo variant để đổi theme/layout; GameRoot giữ wiring.
+- Canvas 720×1280 màn dọc; GameRoot gồm bootstrap/UI/EventSystem, tồn tại qua scene load.
+- Công cụ bổ sung 3 scene vào build settings và giữ entries cũ. **Mở Bootstrap để Play**;
+  nếu build, đặt Bootstrap mẫu đầu danh sách scene của game.
+- Home có Play; Ingame có Pause và Demo Win/Demo Lose; Pause có Resume/Retry/Home;
+  Win có Next/Retry/Home; Lose có Retry/Home. Next khóa ở level cuối.
+- Thêm game vào Ingame, gọi Win/Lose từ gameplay thực tế và bỏ hai nút Demo khi hoàn thiện.
+- Không copy Layer Lab/clip âm thanh/Shop/Quest/SDK. Không tự khóa hướng màn hình trong Player Settings.
+- Sample tạo trong Assets thuộc game: Module Manager không tự cập nhật hay xóa. Trước khi gỡ module,
+  gỡ sample/component và sửa code game đang tham chiếu module đó.

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.24.0
+
+- Add standalone GameFlow package: guarded Home/Playing/Pause/Win/Lose/Retry/Next, scene loading, failure recovery and final-level bounds; no UI/Save/economy dependency.
+- Add standalone UI package: screens/popups, theme, button feedback and optional local audio, independent of GameFlow.
+- Add optional GameFlow UI bridge and separate portrait sample generator: 3 scenes, 7 editable nested prefabs, theme and persistent button wiring.
+- Extend Module Manager bootstrap generation and dependency catalog while preserving the legacy demo.
+
 ## 0.23.0
 
 - Add standalone Core/Save/Audio/Pooling/MobileInput package catalog and dependency-aware selective source export.

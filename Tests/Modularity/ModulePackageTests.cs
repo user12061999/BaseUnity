@@ -21,6 +21,9 @@ namespace BaseUnity.Modularity.Tests
             var catalog=ModulePackageStore.ReadCatalog(source);
             CollectionAssert.AreEqual(new[]{"core","save","audio"},ModulePackageStore.Resolve(catalog,new[]{"audio"}).Select(x=>x.id));
             CollectionAssert.AreEqual(new[]{"core","pooling"},ModulePackageStore.Resolve(catalog,new[]{"pooling"}).Select(x=>x.id));
+            CollectionAssert.AreEqual(new[]{"core","gameflow"},ModulePackageStore.Resolve(catalog,new[]{"gameflow"}).Select(x=>x.id));
+            CollectionAssert.AreEqual(new[]{"core","ui"},ModulePackageStore.Resolve(catalog,new[]{"ui"}).Select(x=>x.id));
+            CollectionAssert.AreEqual(new[]{"core","gameflow","ui","gameflow-ui"},ModulePackageStore.Resolve(catalog,new[]{"gameflow-ui"}).Select(x=>x.id));
             CollectionAssert.AreEqual(new[]{"core","mobile-input"},ModulePackageStore.Resolve(catalog,new[]{"mobile-input"}).Select(x=>x.id));
             Assert.Throws<InvalidDataException>(()=>ModulePackageStore.Resolve(catalog,new[]{"unknown"}));
             catalog.modules[0].requires=new[]{"audio"}; Assert.Throws<InvalidDataException>(()=>ModulePackageStore.Resolve(catalog,new[]{"audio"}));
@@ -33,6 +36,16 @@ namespace BaseUnity.Modularity.Tests
             Assert.IsFalse(scripts.Any(x=>Path.GetFileName(x)=="GameBootstrap.cs"));
             Assert.IsFalse(scripts.Select(File.ReadAllText).Any(x=>x.Contains("BaseUnity.Features")||x.Contains("AudioService")||x.Contains("ISaveStore")));
             Assert.Throws<IOException>(()=>ModulePackageStore.Export(source,output,new[]{"core"}));
+        }
+        [Test] public void FlowUIExportExcludesLegacyFeaturesAndGeneratedSamples()
+        {
+            string output=Path.Combine(temp,"FlowUI"); ModulePackageStore.Export(source,output,new[]{"gameflow-ui"});
+            Assert.AreEqual(4,Directory.GetDirectories(output).Length);
+            var scripts=Directory.GetFiles(output,"*.cs",SearchOption.AllDirectories);
+            Assert.AreEqual(17,scripts.Length);
+            Assert.IsFalse(scripts.Select(File.ReadAllText).Any(x=>x.Contains("BaseUnity.Features")||x.Contains("ISaveStore")||x.Contains("Firebase")));
+            Assert.AreEqual(0,Directory.GetFiles(output,"*.prefab",SearchOption.AllDirectories).Length);
+            Assert.IsFalse(Directory.Exists(Path.Combine(output,"com.baseunity.audio")));
         }
         [Test] public void InstallRemoveAndRestorePreserveProjectManifest()
         {

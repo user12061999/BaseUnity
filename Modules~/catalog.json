@@ -104,6 +104,73 @@
         "Runtime/PortableMobileInput/TouchButton.cs",
         "Runtime/PortableMobileInput/SwipeArea.cs"
       ]
+    },
+    {
+      "id": "gameflow",
+      "name": "Game Flow",
+      "package": "com.baseunity.gameflow",
+      "assembly": "BaseUnity.Flow",
+      "description": "Bootstrap, Home, Playing, Pause, Win/Lose, Retry and Next Level. No UI, Save or SDK.",
+      "requires": [
+        "core"
+      ],
+      "references": [
+        "BaseUnity.Core"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/PortableGameFlow/GameFlowService.cs",
+        "Runtime/PortableGameFlow/GameFlowModule.cs",
+        "Runtime/Scenes/SceneService.cs"
+      ]
+    },
+    {
+      "id": "ui",
+      "name": "UI",
+      "package": "com.baseunity.ui",
+      "assembly": "BaseUnity.UI",
+      "description": "Screens, popup stack, editable themes, button feedback and optional local sounds. No GameFlow or economy.",
+      "requires": [
+        "core"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "Unity.ugui"
+      ],
+      "engineDependencies": [
+        "com.unity.ugui@2.0.0",
+        "com.unity.modules.audio@1.0.0"
+      ],
+      "files": [
+        "Runtime/UI/UIService.cs",
+        "Runtime/UI/UIPanel.cs",
+        "Runtime/UI/UIModule.cs",
+        "Runtime/PortableUI/UITheme.cs",
+        "Runtime/PortableUI/UIThemeBinding.cs",
+        "Runtime/PortableUI/UIButtonFeedback.cs",
+        "Runtime/PortableUI/UIAudioFeedback.cs"
+      ]
+    },
+    {
+      "id": "gameflow-ui",
+      "name": "Game Flow UI bridge",
+      "package": "com.baseunity.gameflow-ui",
+      "assembly": "BaseUnity.FlowUI",
+      "description": "Optional view binding for GameFlow. Enables the separate portrait sample generator.",
+      "requires": [
+        "gameflow",
+        "ui"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.Flow",
+        "BaseUnity.UI",
+        "Unity.ugui"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/PortableFlowUI/GameFlowView.cs"
+      ]
     }
   ]
 }

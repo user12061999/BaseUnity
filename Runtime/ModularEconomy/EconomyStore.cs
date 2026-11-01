@@ -67,6 +67,7 @@ namespace BaseUnity.EconomyModules
         private static bool Safe(string id,int length) => !string.IsNullOrWhiteSpace(id)&&id.Length<=length&&!id.Any(char.IsControl);
         public static void ValidateId(string id) { if(!Safe(id,64)||id.Any(c=>!(char.IsLetterOrDigit(c)||c=='_'||c=='-')))throw new ArgumentException("ID: 1-64 letters, digits, underscore or hyphen"); }
         public static void ValidateKey(string key) { if(!Safe(key,512))throw new ArgumentException("Invalid transaction key/receipt"); }
+        public string[] Keys(string prefix) { ValidateKey(prefix);return state.values.Where(x=>x.key.StartsWith(prefix,StringComparison.Ordinal)).Select(x=>x.key).ToArray(); }
         public long Read(string key) { ValidateKey(key);return state.values.FirstOrDefault(x=>x.key==key)?.value??0; }
         public long Balance(string currency) { ValidateId(currency);return Read("money:"+currency); }
         public long Owned(string item) { ValidateId(item);return Read("item:"+item); }

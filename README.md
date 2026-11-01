@@ -3,16 +3,19 @@
 Base game Unity tái sử dụng qua Git submodule. **Dự án mới dùng `Tools/BaseUnity` và cài theo module**;
 `Assets/BaseUnity` là cách dùng bundle legacy.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.25.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.26.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
 
-## Cài theo module (v0.25)
+## Cài theo module (v0.26)
 
 Dự án mới: đặt submodule ở **Tools/BaseUnity**, ngoài Assets/Packages. Chỉ copy thư mục
 `Editor/Modularity` vào `Assets/Editor/BaseUnityModules`, mở **Tools > BaseUnity > Module Manager**
 rồi chọn phần cần cài. Hiện có **Core, Save, Audio, Pooling, MobileInput, GameFlow, UI, Wallet/Rewards, Shop, Daily Reward, Quests, Achievements**, mỗi phần có assembly/package riêng.
 Công cụ tự thêm dependency, backup và kiểm tra file đã chỉnh khi cài/gỡ; không tự nhập Ads/Firebase. GameFlow và UI có thể cài riêng; bridge và bộ scene/prefab mẫu được chọn thêm khi cần.
+Có preset Minimal / GameFlow + UI / Mobile Offline / SDK simulation, validator tự chạy trước build, Localization EN/VI và cầu nối thưởng theo RunId. Ads/Consent/Firebase có facade, simulation và SDK adapter riêng.
 Wallet/Rewards và từng chức năng có UI module riêng; tạo scene/prefab mẫu khi cần bằng Module Manager.
 [Xem hướng dẫn cài/gỡ và giới hạn migration](Modules~/README.md).
+Kiểm chứng v0.26: **50 EditMode + 7 PlayMode đạt** trong project modular; Localization, GameFlow Economy và Ads simulation biên dịch riêng.
+Adapter AdMob/MAX/UMP/Firebase biên dịch với SDK trên máy; chưa xác minh ads thật/Firebase tài khoản hoặc build thiết bị.
 Kiểm chứng v0.25: **32 EditMode + 5 PlayMode đạt** trong project sạch (kiểm thử tập trung); Wallet-only, Shop UI-only và Quests-only biên dịch độc lập.
 Bộ UI mẫu đã kiểm tra nút bấm/lưu dữ liệu qua mở lại game; cài riêng Shop UI chỉ sinh WalletBar, ShopPopup và EconomyRoot.
 Kiểm chứng v0.24: **15 EditMode + 2 PlayMode đạt** trong project sạch; GameFlow-only và UI-only biên dịch độc lập. Bộ mẫu có 3 scene, 7 prefab đã kiểm tra wiring.

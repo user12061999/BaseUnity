@@ -11,6 +11,7 @@ namespace BaseUnity.Modularity
     {
         [SerializeField] private string repository;
         private readonly HashSet<string> selected=new HashSet<string>();
+        private int preset;
         private ModuleCatalog catalog;
         private ModulePlan plan;
         private string notice;
@@ -43,6 +44,11 @@ namespace BaseUnity.Modularity
             }
             scroll=EditorGUILayout.BeginScrollView(scroll);
             if(catalog!=null) {
+                using(new EditorGUILayout.HorizontalScope()) {
+                    preset=EditorGUILayout.Popup("Preset",preset,ModulePresets.All.Select(p=>p.name).ToArray());
+                    if(GUILayout.Button("Use preset",GUILayout.Width(90))) { selected.Clear();foreach(string id in ModulePresets.All[preset].modules)selected.Add(id);plan=null; }
+                }
+                EditorGUILayout.LabelField(ModulePresets.Summary(catalog,selected),EditorStyles.wordWrappedLabel);
                 var closure=ModulePackageStore.Resolve(catalog,selected).Select(x=>x.id).ToArray();
                 foreach(var module in catalog.modules) {
                     bool required=selected.Where(x=>x!=module.id).Any(x=>ModulePackageStore.Resolve(catalog,new[]{x}).Any(m=>m.id==module.id));
@@ -56,7 +62,9 @@ namespace BaseUnity.Modularity
                     EditorGUILayout.EndVertical();
                 }
                 EditorGUILayout.LabelField("Resolved modules: "+string.Join(", ",closure),EditorStyles.wordWrappedLabel);
-                EditorGUILayout.HelpBox("GameFlow and UI can be installed independently. Select Game Flow UI bridge to connect them; create sample scenes/prefabs separately below. Wallet, Shop, Daily Reward, Quests and Achievements have independent UI modules. Ads/Firebase remain legacy.",MessageType.None);
+                EditorGUILayout.HelpBox("GameFlow and UI can be installed independently. Select Game Flow UI bridge to connect them; create sample scenes/prefabs separately below. Wallet, Shop, Daily Reward, Quests and Achievements have independent UI modules. Ads/Consent/Firebase facades and provider adapters are separately selectable; simulation providers are development-only.",MessageType.None);
+                var missingSdk=ModulePackageStore.MissingSdkTypes(ModulePackageStore.Resolve(catalog,selected));
+                if(missingSdk.Length>0)EditorGUILayout.HelpBox("Install official SDKs before Apply: "+string.Join(", ",missingSdk),MessageType.Warning);
                 using(new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode||EditorApplication.isCompiling)) {
                     using(new EditorGUILayout.HorizontalScope()) {
                         if(GUILayout.Button("Preview changes"))Run(()=> { plan=ModulePackageStore.Preview(repository,Project,selected); notice=plan.Summary; });
@@ -72,6 +80,8 @@ namespace BaseUnity.Modularity
                         if(GUILayout.Button("Restore last module backup"))Run(()=> { string backup=ModulePackageStore.Apply(repository,Project,new string[0],last); EditorPrefs.SetString(BackupKey,backup); notice="Restored. Undo backup: "+backup; AssetDatabase.Refresh(); Client.Resolve(); Reload(); });
                         if(GUILayout.Button("Show last backup"))EditorUtility.RevealInFinder(last);
                     }
+                    if(GUILayout.Button("Configure integrations on selected bootstrap"))Run(IntegrationSetupWindow.Open);
+                    if(GUILayout.Button("Validate enabled build scenes"))Run(ModularBuildValidator.ValidateMenu);
                     if(GUILayout.Button("Create bootstrap with installed modules"))Run(CreateBootstrap);
                     if(GUILayout.Button("Create optional portrait GameFlow/UI sample"))Run(ModularGameSampleBuilder.Create);
                     if(GUILayout.Button("Create optional Economy UI sample (installed features only)"))Run(ModularEconomySampleBuilder.Create);
@@ -86,7 +96,7 @@ namespace BaseUnity.Modularity
             var core=Find("BaseUnity.Core.ModuleBootstrap"); if(core==null)throw new InvalidOperationException("Install Core and wait for compilation first");
             if(AppDomain.CurrentDomain.GetAssemblies().Any(x=>x.GetName().Name=="BaseUnity.Runtime"))throw new InvalidOperationException("Use the clean modular project, not the legacy sample");
             var root=new GameObject("BaseUnity Module Bootstrap"); Undo.RegisterCreatedObjectUndo(root,"Create modular bootstrap");
-            foreach(var name in new[]{"BaseUnity.Save.SaveModule","BaseUnity.Audio.AudioModule","BaseUnity.MobileInput.MobileInputModule","BaseUnity.Flow.GameFlowModule","BaseUnity.UI.UIModule","BaseUnity.EconomyModules.WalletModule","BaseUnity.EconomyModules.ShopModule","BaseUnity.EconomyModules.DailyRewardModule","BaseUnity.EconomyModules.QuestModule","BaseUnity.EconomyModules.AchievementModule"}) { var type=Find(name); if(type!=null)root.AddComponent(type); }
+            foreach(var name in new[]{"BaseUnity.Save.SaveModule","BaseUnity.Audio.AudioModule","BaseUnity.MobileInput.MobileInputModule","BaseUnity.Flow.GameFlowModule","BaseUnity.UI.UIModule","BaseUnity.EconomyModules.WalletModule","BaseUnity.EconomyModules.ShopModule","BaseUnity.EconomyModules.DailyRewardModule","BaseUnity.EconomyModules.QuestModule","BaseUnity.EconomyModules.AchievementModule","BaseUnity.Localization.LocalizationModule","BaseUnity.FlowEconomy.FlowEconomyModule","BaseUnity.IntegrationModules.ConsentModule","BaseUnity.IntegrationModules.AdsModule","BaseUnity.IntegrationModules.FirebaseModule"}) { var type=Find(name); if(type!=null)root.AddComponent(type); }
             root.AddComponent(core); Selection.activeGameObject=root; notice="Bootstrap created. Assign installed feature catalogs/schedules before Play; then save the scene.";
         }
     }

@@ -10,7 +10,7 @@ using UnityEngine;
 namespace BaseUnity.Modularity
 {
     [Serializable] public sealed class ModuleDefinition
-    { public string id,name,package,assembly,description; public string[] requires,references,engineDependencies,files; }
+    { public string id,name,package,assembly,description; public string[] requires,references,engineDependencies,files,editorFiles,assets,sdkTypes; }
     [Serializable] public sealed class ModuleCatalog { public int format; public ModuleDefinition[] modules; }
     [Serializable] public sealed class ModuleFile { public string path,hash; }
     [Serializable] public sealed class ModuleReceipt
@@ -46,8 +46,9 @@ namespace BaseUnity.Modularity
             var names=new HashSet<string>(); var packages=new HashSet<string>(); var sources=new HashSet<string>();
             foreach(var module in catalog.modules) {
                 if(module==null||!Regex.IsMatch(module.id ?? "",@"\A[a-z][a-z0-9-]*\z")||!Regex.IsMatch(module.package ?? "",@"\Acom\.baseunity\.[a-z0-9-]+\z")||!names.Add(module.id)||!packages.Add(module.package)||module.files==null||module.files.Length==0) throw new InvalidDataException("Invalid/duplicate module definition");
-                foreach(var file in module.files) { Relative(repository,file); if(!file.EndsWith(".cs",StringComparison.Ordinal)||!sources.Add(file)) throw new InvalidDataException("Duplicate or unsupported source: "+file); }
+                foreach(var file in module.files.Concat(module.editorFiles??new string[0])) { Relative(repository,file); if(!file.EndsWith(".cs",StringComparison.Ordinal)||!sources.Add(file)) throw new InvalidDataException("Duplicate or unsupported source: "+file); }
             }
+            foreach(var module in catalog.modules)foreach(string file in module.assets??new string[0]) { Relative(repository,file);if(!sources.Add(file)||!file.StartsWith("Samples~/Integrations/",StringComparison.Ordinal)||file.EndsWith(".dll",StringComparison.OrdinalIgnoreCase))throw new InvalidDataException("Invalid integration asset: "+file); }
             Resolve(catalog,catalog.modules.Select(x=>x.id)); return catalog;
         }
         public static ModuleDefinition[] Resolve(ModuleCatalog catalog,IEnumerable<string> selected)
@@ -95,10 +96,25 @@ namespace BaseUnity.Modularity
             string json="{\n  \"name\": "+Quote(module.package)+",\n  \"version\": "+Quote(Version(repository))+",\n  \"displayName\": "+Quote("BaseUnity "+module.name)+",\n  \"unity\": \"6000.0\",\n  \"description\": "+Quote(module.description)+",\n  \"dependencies\": {"+string.Join(",",dependencies.Select(x=>Quote(x.Key)+":"+Quote(x.Value)))+"}\n}\n";
             TextFile(directory,"package.json",json); Meta(directory,"package.json",module.package);
             TextFile(directory,"Runtime/"+module.assembly+".asmdef","{\"name\":"+Quote(module.assembly)+",\"rootNamespace\":\"BaseUnity\",\"references\":["+string.Join(",",(module.references ?? new string[0]).Select(Quote))+"]}"); Meta(directory,"Runtime/"+module.assembly+".asmdef",module.package);
-            foreach(var file in module.files) { string source=Relative(repository,file); if(!File.Exists(source)||!File.Exists(source+".meta")) throw new FileNotFoundException("Missing distributable source/meta; import the source repository once before publishing: "+file); string relative="Runtime/"+file.Substring("Runtime/".Length); WriteFile(directory,relative,File.ReadAllBytes(source)); WriteFile(directory,relative+".meta",File.ReadAllBytes(source+".meta")); }
+            foreach(var file in module.files.Concat(module.assets??new string[0]))CopySource(repository,directory,file,SourceTarget(file),module.package);
+            if((module.editorFiles?.Length??0)>0) {
+                string asm="Editor/"+module.assembly+".Editor.asmdef";
+                TextFile(directory,asm,"{\"name\":"+Quote(module.assembly+".Editor")+",\"includePlatforms\":[\"Editor\"],\"references\":["+Quote(module.assembly)+"]}");Meta(directory,asm,module.package);
+                foreach(var file in module.editorFiles)CopySource(repository,directory,file,"Editor/"+Path.GetFileName(file),module.package);
+            }
             var receipt=new ModuleReceipt { id=module.id,version=Version(repository),files=Directory.GetFiles(directory,"*",SearchOption.AllDirectories).OrderBy(x=>x,StringComparer.Ordinal).Select(x=>new ModuleFile { path=x.Substring(Root(directory).Length+1).Replace('\\','/'),hash=Hash(File.ReadAllBytes(x)) }).ToArray() };
             TextFile(directory,Marker,JsonUtility.ToJson(receipt,true));
         }
+        private static string SourceTarget(string file)
+        {
+            if(file.StartsWith("Runtime/",StringComparison.Ordinal))return file;
+            if(file.StartsWith("Samples~/Integrations/",StringComparison.Ordinal))return "Runtime/Integrations/"+file.Substring("Samples~/Integrations/".Length);
+            throw new InvalidDataException("Unsupported source root: "+file);
+        }
+        private static void CopySource(string repository,string directory,string file,string target,string id)
+        { string source=Relative(repository,file);if(!File.Exists(source)||!File.Exists(source+".meta"))throw new FileNotFoundException("Missing source/meta: "+file);WriteFile(directory,target,File.ReadAllBytes(source));WriteFile(directory,target+".meta",File.ReadAllBytes(source+".meta")); }
+        public static string[] MissingSdkTypes(IEnumerable<ModuleDefinition> modules)
+        { return modules.SelectMany(m=>m.sdkTypes??new string[0]).Distinct().Where(name=>!AppDomain.CurrentDomain.GetAssemblies().Any(a=>a.GetType(name)!=null)).ToArray(); }
         public static void Export(string repository,string output,IEnumerable<string> selected)
         {
             var catalog=ReadCatalog(repository); output=Root(output); PlainPath(output); if(Directory.Exists(output)&&Directory.EnumerateFileSystemEntries(output).Any())throw new IOException("Export folder must be empty");
@@ -120,7 +136,11 @@ namespace BaseUnity.Modularity
         {
             repository=Root(repository); project=Root(project); ValidateProject(repository,project); var catalog=ReadCatalog(repository);
             if(restoreBackup!=null) { restoreBackup=Root(restoreBackup); if(!Inside(restoreBackup,Path.Combine(project,"ProjectSettings/BaseUnityModuleBackups")))throw new IOException("Backup must belong to this project"); PlainPath(restoreBackup); selected=JsonUtility.FromJson<ModuleBackup>(File.ReadAllText(Path.Combine(restoreBackup,"operation.json"))).before; }
-            var plan=Preview(repository,project,selected); var installed=Installed(repository,project); CheckDependents(project,catalog,plan.removed,installed);
+            var plan=Preview(repository,project,selected);
+            if(restoreBackup==null&&Root(Path.Combine(Application.dataPath,"..")).Equals(project,StringComparison.OrdinalIgnoreCase)) {
+                var missing=MissingSdkTypes(Resolve(catalog,plan.selected));if(missing.Length>0)throw new InvalidOperationException("Install the official SDK first, then retry: "+string.Join(", ",missing));
+            }
+            var installed=Installed(repository,project); CheckDependents(project,catalog,plan.removed,installed);
             string stamp=DateTime.UtcNow.ToString("yyyyMMdd-HHmmss")+"-"+Guid.NewGuid().ToString("N"); string stage=Relative(project,"Library/BaseUnityModuleStaging/"+stamp); string backup=Relative(project,"ProjectSettings/BaseUnityModuleBackups/"+stamp);
             Directory.CreateDirectory(stage);
             foreach(var module in Resolve(catalog,plan.selected)) {

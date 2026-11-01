@@ -9,7 +9,7 @@ namespace BaseUnity.FlowUI
     public sealed class GameFlowView : MonoBehaviour
     {
         public UIPanel home,ingame,loading,pause,win,lose;
-        public Text levelLabel;
+        public Text levelLabel,resultStatus;
         public Button nextButton;
         private GameFlowService flow;
         private UIService ui;
@@ -27,6 +27,7 @@ namespace BaseUnity.FlowUI
         {
             if(levelLabel)levelLabel.text="Level "+flow.Level+" / "+flow.LevelCount;
             if(nextButton)nextButton.interactable=flow.CanNext;
+            if(resultStatus)resultStatus.text=flow.CanLeaveResult?"":"Saving rewards... retrying";
             var phase=flow.Phase;
             if(phase==GamePhase.Home) { if(home)ui.ShowScreen(home); }
             else if(phase==GamePhase.Loading||phase==GamePhase.Bootstrap) { if(loading)ui.ShowScreen(loading); }

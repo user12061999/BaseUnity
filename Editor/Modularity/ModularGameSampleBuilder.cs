@@ -40,6 +40,14 @@ namespace BaseUnity.Modularity
             var action=(UnityAction)Delegate.CreateDelegate(typeof(UnityAction),target,method);
             UnityEventTools.AddVoidPersistentListener(evt,action); return button;
         }
+        internal static void AttachLocalization(GameObject root,GameObject canvas,ScriptableObject theme,string output)
+        {
+            var module=Find("BaseUnity.Localization.LocalizationModule");if(module==null||Find("BaseUnity.Localization.UI.LocalizedCanvas")==null)return;
+            var save=Need("BaseUnity.Save.SaveModule");if(!root.GetComponent(save))root.AddComponent(save);
+            root.AddComponent(module);var localizer=Add(canvas,"BaseUnity.Localization.UI.LocalizedCanvas");
+            var en=Button("EN",canvas.transform,.01f,theme,localizer,"English");Rect(en.gameObject,new Vector2(.02f,.005f),new Vector2(.15f,.05f),Vector2.zero,Vector2.zero);
+            var vi=Button("VI",canvas.transform,.01f,theme,localizer,"Vietnamese");Rect(vi.gameObject,new Vector2(.85f,.005f),new Vector2(.98f,.05f),Vector2.zero,Vector2.zero);
+        }
         [MenuItem("Tools/BaseUnity/Create Modular Game Sample")]
         public static void Create()
         {
@@ -72,12 +80,28 @@ namespace BaseUnity.Modularity
                 var scaler=Add(canvas,"UnityEngine.UI.CanvasScaler");Set(scaler,"uiScaleMode",Enum.ToObject(Need("UnityEngine.UI.CanvasScaler+ScaleMode"),1));Set(scaler,"referenceResolution",new Vector2(720,1280));
                 Add(canvas,"UnityEngine.UI.GraphicRaycaster");
                 var view=Add(canvas,"BaseUnity.FlowUI.GameFlowView");
+                if(Find("BaseUnity.FlowEconomy.FlowEconomyModule")!=null) {
+                    Add(root,"BaseUnity.Save.SaveModule");var wallet=Add(root,"BaseUnity.EconomyModules.WalletModule");Set(wallet,"saveSlot","baseunity_modular_game_demo");
+                    var config=ScriptableObject.CreateInstance(Need("BaseUnity.FlowEconomy.FlowRewardConfig"));AssetDatabase.CreateAsset(config,output+"/FlowRewardConfig.asset");
+                    Set(Add(root,"BaseUnity.FlowEconomy.FlowEconomyModule"),"config",config);
+                    foreach(string kind in new[]{"Quest","Achievement"})if(Find("BaseUnity.EconomyModules."+kind+"Module")!=null) {
+                        var catalog=ScriptableObject.CreateInstance(Need("BaseUnity.EconomyModules."+kind+"Catalog"));
+                        var definitions=Array.CreateInstance(Need("BaseUnity.EconomyModules.ObjectiveDefinition"),1);definitions.SetValue(Activator.CreateInstance(Need("BaseUnity.EconomyModules.ObjectiveDefinition")),0);
+                        AssetDatabase.CreateAsset(catalog,output+"/"+kind+"Catalog.asset");Set(catalog,"objectives",definitions);Set(Add(root,"BaseUnity.EconomyModules."+kind+"Module"),"catalog",catalog);
+                    }
+                }
                 string[] names={"Home","Ingame","Loading","Pause","Win","Lose"};
                 foreach(string name in names) {
                     var panel=Node(name,canvas.transform);Full(panel);Add(panel,"UnityEngine.UI.Image");BindTheme(panel,theme,true);
                     var component=Add(panel,"BaseUnity.UI.UIPanel");Set(view,name.ToLowerInvariant(),component);
                     Label(name, panel.transform,.8f,theme);
-                    if(name=="Home")Button("Play",panel.transform,.45f,theme,flow,"Play");
+                    if(name=="Home") {
+                        Button("Play",panel.transform,.45f,theme,flow,"Play");
+                        var walletType=Find("BaseUnity.EconomyModules.WalletModule");
+                        if(walletType!=null&&root.GetComponent(walletType)&&Find("BaseUnity.EconomyModules.UI.WalletBarView")!=null) {
+                            var bar=Add(panel,"BaseUnity.EconomyModules.UI.WalletBarView");Set(bar,"coinLabel",Label("coin: 0",panel.transform,.68f,theme));Set(bar,"gemLabel",Label("gem: 0",panel.transform,.58f,theme));
+                        }
+                    }
                     if(name=="Ingame") {
                         Set(view,"levelLabel",Label("Level",panel.transform,.7f,theme));
                         Button("Pause",panel.transform,.54f,theme,flow,"Pause");
@@ -93,6 +117,8 @@ namespace BaseUnity.Modularity
                     // Save each screen as a nested prefab for independent theme/layout edits.
                     PrefabUtility.SaveAsPrefabAssetAndConnect(panel,output+"/"+name+".prefab",InteractionMode.AutomatedAction);
                 }
+                if(Find("BaseUnity.FlowEconomy.FlowEconomyModule")!=null)Set(view,"resultStatus",Label("",canvas.transform,.92f,theme));
+                AttachLocalization(root,canvas,theme,output);
                 var events=new GameObject("EventSystem");events.transform.SetParent(root.transform,false);Add(events,"UnityEngine.EventSystems.EventSystem");
                 // Prefer the active input backend when the Input System package is installed.
 #if ENABLE_INPUT_SYSTEM

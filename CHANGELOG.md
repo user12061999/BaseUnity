@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.26.0
+
+- Add Minimal/GameFlow UI/Mobile Offline/SDK simulation presets with dependency/script-count previews.
+- Add reflection-only modular configuration validation, read-only preview scene checks and automatic pre-build failure for invalid configuration/release simulation.
+- Add independent Localization and Localization UI modules: persisted EN/VI, custom tables, locale formatting and dynamic sample text.
+- Add per-run GameFlow outcomes and a configurable economy bridge with atomic reward journal, durable progress outbox, idempotent replay and result navigation guards.
+- Split Ads/Consent/Firebase contracts/facades, separate development simulation providers and selectively export AdMob/MAX/UMP/Firebase SDK adapters; require native SDK types before installation.
+- Add modular integration setup window with conditional fields, SDK editor/assets export and localized GameFlow/Economy sample integration.
+
 ## 0.25.0
 
 - Add independently selectable Wallet/Rewards, Shop, Daily Reward, Quests and Achievements, with a shared optional objective engine.

@@ -1,8 +1,8 @@
-# BaseUnity selective modules — v0.25
+# BaseUnity selective modules — v0.26
 
 Các module cài riêng: **Core, Save, Audio, Pooling, MobileInput, GameFlow, UI, Wallet/Rewards, Shop, Daily Reward, Quests, Achievements**.
 Mỗi chức năng kinh tế có UI module riêng; prefab mẫu chỉ sinh khi bấm tạo mẫu. Source chỉ được đóng gói theo catalog.
-Economy legacy không tự migrate sang các module mới. Ads/Firebase và các nhóm legacy còn lại không bị kéo vào các module này.
+Localization, GameFlow Economy, Ads/Consent/Firebase facades, simulation và SDK adapter cũng có package riêng. Các package SDK không kèm SDK vendor. Save/config legacy không tự migrate.
 
 ## Cài vào project mới
 
@@ -278,3 +278,120 @@ UI button states và scene/prefab mẫu qua mở lại game. Không thiếu scri
 Wallet-only, Shop UI-only và Quests-only biên dịch thành công ở các project riêng.
 Shop UI-only sinh đúng 3 prefab (WalletBar, ShopPopup, EconomyRoot), không sinh daily/quest/achievement config/UI.
 Đây là kiểm thử tập trung cho phân phối modular; chưa chạy lại toàn bộ suite của project legacy hay kiểm thử thiết bị thật.
+
+## Preset và kiểm tra build (v0.26)
+
+Sau khi pull repo, copy lại **toàn bộ Editor/Modularity** sang project game để cập nhật manager/validator cùng phiên bản catalog.
+Trong Module Manager chọn preset rồi **Use preset → Preview changes → Apply**:
+
+- Minimal: chỉ Core.
+- GameFlow + UI: Core + GameFlow + UI + bridge.
+- Mobile Offline: luồng game/UI, input, audio/pooling, economy/UI, localization/UI và GameFlow Economy; không có SDK/ads/firebase.
+- SDK simulation: facade + provider mô phỏng Ads/Consent/Firebase; không có SDK vendor và không kéo Wallet/GameFlow.
+
+Use preset **thay thế lựa chọn hiện tại**; Preview hiển thị các package sẽ cài/gỡ. Dòng summary hiển thị dependency và số script,
+không tính mã SDK vendor. Bạn vẫn có thể sửa từng checkbox trước Apply. Backup và bảo vệ file đã chỉnh giữ nguyên.
+
+**Tools > BaseUnity > Validate Modular Build** (hoặc nút trong manager) kiểm tra scene enabled trong Build Settings bằng preview scene.
+Kiểm tra không khởi tạo SDK và không lưu/thay scene đang mở: missing script/reference, panel/button chưa gán,
+bootstrap/installer/dependency, scene GameFlow, catalog/schedule/config bắt buộc, ID trùng, reward/target/cooldown không hợp lệ,
+provider/SDK/App ID/app config bị thiếu và mô phỏng trong release.
+`IPreprocessBuildWithReport` tự chạy kiểm tra trước build; lỗi chặn build, warning được ghi Console.
+Simulation chỉ được phép trong Development Build; build hook lấy cờ từ BuildReport, không chỉ dựa vào checkbox Editor.
+Validator kiểm tra wiring/config, không chứng minh SDK có thể lấy quảng cáo, kết nối mạng hay cấu hình account/server đúng.
+
+## Localization độc lập (v0.26)
+
+`localization` cần Core + Save, không cần UI; `localization-ui` thêm Unity UI.
+Attach `BaseUnity.Localization.LocalizationModule`, chọn defaultLanguage en/vi; table tùy chọn.
+Tạo **BaseUnity > Modules > Localization Table** để thêm key/English/Vietnamese hoặc ghi đè built-in.
+API: `SetLanguage`, `Text`, `Format(key, args)`, `Number(value, format)`, `Language`, `Culture`, `Changed`, `LastError`.
+Ngôn ngữ lưu ở slot riêng `baseunity_modular_language`; lỗi lưu không đổi ngôn ngữ hiện tại.
+Thiếu key trả về source; VI dùng vi-VN, EN dùng en-US khi Format/Number. Built-in phủ các nhãn và template của UI mẫu.
+
+- `LocalizedText` cho Text theo key cố định.
+- `LocalizedCanvas` cho mẫu có cả Text động: giữ source English riêng và cập nhật lại sau khi số dư/tiến độ thay đổi.
+  Gọi Capture sau khi thêm Text mới runtime. Dùng LocalizedText hoặc LocalizedCanvas cho cùng Text, tránh hai component cùng ghi.
+- Template nhận dạng từ source English dùng `{0}`…`{7}`; template VI có thể dùng format số, ví dụ `Xu: {0:N0}`.
+- Đây là Unity UI Text; không tự import TMP, font mới hoặc localization package của Unity.
+- Khi localization-ui đã cài, các generator GameFlow/Economy tự thêm LocalizationModule và nút EN/VI.
+
+## Cầu nối GameFlow → Rewards / Quest / Achievement (v0.26)
+
+Chọn `gameflow-economy`: cần GameFlow + Wallet/Save + Objective engine; **không tự kéo Quests/Achievements/UI**.
+Attach `BaseUnity.FlowEconomy.FlowEconomyModule` cùng bootstrap, gán FlowRewardConfig (Create > BaseUnity > Modules).
+Config gồm winRewards (mặc định 100 coin), loseRewards (mặc định rỗng), publishProgress.
+Cài/attach QuestModule và AchievementModule riêng nếu game cần chúng.
+
+- Mỗi lần vào Playing thành công có **GameFlowService.RunId** mới. Pause/Resume giữ ID; Retry/Next sinh ID mới.
+- Completed phát snapshot GameOutcome(runId, level, won). Lệnh rời result bị khóa trong khi các callback xử lý outcome.
+- Bridge lưu reward + metadata + outbox trong **một** giao dịch Wallet, receipt `flow:<runId>:reward`.
+- Sau đó phát GameplayProgressEvent `play` và `win`/`lose`, có receipt theo runId. Các module đã cài cập nhật tiến độ và dedup riêng.
+- Chỉ xóa trạng thái pending sau khi listener và acknowledgement lưu thành công. Restart sẽ đọc lại outbox để tiếp tục;
+  phát lại không cộng reward/progress đã lưu.
+- Nếu lưu lỗi: HasPending/LastError cho biết tình trạng; module thử lại mỗi giây hoặc gọi RetryPending.
+  Home/Retry/Next từ result bị chặn khi còn pending; GameFlowView có resultStatus tùy chọn để hiện trạng thái đang lưu.
+- Outcome chưa kịp lưu lần đầu chỉ giữ trong RAM: nếu tắt app/crash trước lần lưu thành công thì không thể khôi phục kết quả đó.
+  Không có bảo đảm exactly-once qua crash trước journal; outbox bảo vệ phần đã commit.
+- Không gọi wallet.Grant hoặc phát lại event win thủ công cho cùng kết quả khi đã dùng bridge; tránh tạo receipt khác cho cùng reward.
+- Namespace `flow:` trong Wallet do bridge quản lý. Journal/receipt chưa compact; level hiện tại vẫn theo phiên chạy của GameFlow.
+
+Khi bridge đã cài, **Create optional portrait GameFlow/UI sample** tự thêm Save/Wallet/FlowRewardConfig và bridge;
+nếu đã cài Quests/Achievements thì thêm catalog win_3 và installer. Nếu Wallet UI đã cài, Home hiện số dư.
+Mẫu dùng slot `baseunity_modular_game_demo`, khác slot Economy sample. Có thể kéo QuestPopup/AchievementPopup vào Canvas
+đã có các service tương ứng; dùng cùng catalog ID để hiện tiến độ thật.
+
+## Ads / Consent / Firebase theo package (v0.26)
+
+| Chọn | Phần được import | SDK cần sẵn |
+|---|---|---|
+| integrations-core | status, async cancellation | Không |
+| consent | ConsentService + ConsentModule/provider API | Không |
+| ads | AdsService + AdsModule, phụ thuộc consent | Không |
+| firebase | FirebaseService + FirebaseModule, local defaults | Không |
+| consent-simulation / ads-simulation / firebase-simulation | provider mô phỏng, chọn riêng từng loại | Không |
+| consent-google-ump | GoogleUmpProvider | Google Mobile Ads UMP |
+| ads-admob | AdMobProvider | Google Mobile Ads |
+| ads-max | AppLovinMaxProvider | AppLovin MAX (MaxSdk.Scripts); Unity Web Request dependency được thêm |
+| firebase-sdk | FirebaseSdkProvider + Android library/iOS collection build hook | Firebase App + Analytics + Crashlytics + Remote Config |
+
+Facade giữ API ở namespace **BaseUnity.Features**; installer ở **BaseUnity.IntegrationModules**.
+Các contract được tách ra khỏi FeatureConfig/FeatureProviders nhưng giữ tên type để bản legacy tiếp tục biên dịch.
+Không chọn adapter thì không có mã gọi SDK trong package facade; không cài SDK qua Module Manager.
+Apply trong project hiện tại chặn adapter có sdkTypes chưa được load. Export chỉ đóng gói adapter để chuyển sang project có SDK;
+không cam kết export có thể biên dịch khi project nhận chưa cài SDK.
+
+### Thiết lập
+
+1. Chọn facade/provider adapter cần dùng, cài official SDK trước khi Apply adapter thật.
+2. Tạo provider asset từ **Create > BaseUnity > Providers** hoặc **BaseUnity > Simulation**.
+3. Create bootstrap trong Module Manager; gán provider/config cho các installer.
+4. Mở **Tools > BaseUnity > Modular Integration Setup**, chọn bootstrap. Tắt chức năng thì ẩn phần thông tin bên dưới;
+   Ads chỉ hiện ID theo format/network đã bật, Firebase chỉ hiện defaults/fetch settings khi bật Remote Config.
+5. Ads cần ConsentModule cùng root. Consent mặc định bật và thiếu provider sẽ chặn ads; muốn không dùng consent gate phải tắt rõ settings.enabled.
+6. Chọn đúng AdsSettings.network theo provider. Điền App IDs/unit IDs hoặc MAX key và cấu hình **official SDK settings** tương ứng;
+   các trường trên module không tự sửa GoogleMobileAdsSettings/AppLovinSettings/manifest của vendor.
+7. Firebase cần file chính thức google-services.json hoặc GoogleService-Info.plist đúng app. Adapter package cung cấp tắt auto-collection
+   trên Android/iOS; collection bật theo flags khi FirebaseService khởi tạo. UMP gate dùng cho Ads, không tự điều khiển flags Firebase.
+8. Validate Modular Build trước khi build thiết bị. Dừng Play mode để chỉnh startup settings trong cửa sổ setup.
+
+Dùng service qua `ModuleBootstrap.Instance.Services.Get<AdsService>()` / ConsentService / FirebaseService.
+Ads hỗ trợ LoadAsync/ShowAsync/IsReady/SetEnabled/SetNoAds; reward chỉ khi AdResult.Rewarded, không cấp khi Closed/Unavailable.
+Consent cung cấp InitializeAsync/RetryAsync/ShowPrivacyOptionsAsync và CanRequestAds, không coi permission này là flag personalized ads.
+Firebase có LogEvent/RecordException/FetchRemoteConfigAsync/GetString/GetBool/GetLong; defaults dùng được offline hoặc khi disabled.
+SDK native error trả qua Status/LastError; không tự chuyển sang backend mô phỏng khi SDK lỗi.
+
+### Mô phỏng
+
+Provider mô phỏng chỉ Create được trong Editor/Development player; validator chặn khi build release.
+SimulatedAdsProvider mặc định trả **Closed** cho rewarded. Chỉ khi bạn đặt rewardedResult=Rewarded mới thử nhánh cấp thưởng.
+SimulatedConsentProvider.allowRequests cho phép thử nhánh chặn ads. SimulatedFirebaseProvider.remoteValues mô phỏng fetch,
+events ghi log trong RAM, không gửi về Firebase. Chúng là công cụ test luồng, không phải dữ liệu quảng cáo thật.
+
+### Kiểm chứng v0.26
+
+**50 EditMode + 7 PlayMode đạt** trong project modular: ngôn ngữ/số, preset, validation, session ID, reward/outbox/retry, mô phỏng,
+và luồng scene thật Win → coin → Quest/Achievement → mở lại game. Các sample GameFlow/Economy đã qua validator.
+Localization-only, GameFlow Economy-only và Ads simulation-only biên dịch trong các project độc lập không có SDK vendor.
+Bốn adapter thật biên dịch với SDK hiện có trên máy (Google Mobile Ads, MAX, Firebase); còn cảnh báo API cũ của Google SDK.
+Chưa gọi ads thật/Firebase tài khoản, chưa build APK/iOS hoặc xác minh mediation/native consent trên thiết bị.

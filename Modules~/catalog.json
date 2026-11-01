@@ -405,6 +405,291 @@
       "files": [
         "Runtime/ModularAchievementUI/AchievementItemView.cs"
       ]
+    },
+    {
+      "id": "localization",
+      "name": "Localization",
+      "package": "com.baseunity.localization",
+      "assembly": "BaseUnity.Localization",
+      "description": "Persisted EN/VI, custom tables, text fallback and locale-aware formatting. No UI required.",
+      "requires": [
+        "save"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.Save"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularLocalization/LocalizationModule.cs",
+        "Runtime/ModularLocalization/LocalizationService.cs",
+        "Runtime/ModularLocalization/LocalizationTable.cs"
+      ]
+    },
+    {
+      "id": "localization-ui",
+      "name": "Localization UI",
+      "package": "com.baseunity.localization-ui",
+      "assembly": "BaseUnity.LocalizationUI",
+      "description": "Localized Text/Canvas and EN/VI switching; sample builders add it only when installed.",
+      "requires": [
+        "localization",
+        "ui"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.Localization",
+        "Unity.ugui"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularLocalizationUI/LocalizedCanvas.cs",
+        "Runtime/ModularLocalizationUI/LocalizedText.cs"
+      ]
+    },
+    {
+      "id": "gameflow-economy",
+      "name": "GameFlow Economy bridge",
+      "package": "com.baseunity.gameflow-economy",
+      "assembly": "BaseUnity.FlowEconomy",
+      "description": "Configured result rewards + durable progress outbox and per-run deduplication; no Quest/Achievement UI required.",
+      "requires": [
+        "gameflow",
+        "objectives"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.Flow",
+        "BaseUnity.Wallet",
+        "BaseUnity.Objectives"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularFlowEconomy/FlowEconomyBridge.cs",
+        "Runtime/ModularFlowEconomy/FlowEconomyModule.cs",
+        "Runtime/ModularFlowEconomy/FlowRewardConfig.cs"
+      ]
+    },
+    {
+      "id": "integrations-core",
+      "name": "Integration contracts",
+      "package": "com.baseunity.integrations-core",
+      "assembly": "BaseUnity.IntegrationCore",
+      "description": "Shared async cancellation and integration status. No SDK.",
+      "requires": [
+        "core"
+      ],
+      "references": [
+        "BaseUnity.Core"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/Features/FeatureCommon.cs"
+      ]
+    },
+    {
+      "id": "consent",
+      "name": "Consent",
+      "package": "com.baseunity.consent",
+      "assembly": "BaseUnity.Consent",
+      "description": "Consent gate and provider API; real UMP or explicit development simulation chosen separately.",
+      "requires": [
+        "integrations-core"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.IntegrationCore"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/Features/ConsentService.cs",
+        "Runtime/ModularConsent/ConsentModule.cs"
+      ]
+    },
+    {
+      "id": "ads",
+      "name": "Ads",
+      "package": "com.baseunity.ads",
+      "assembly": "BaseUnity.Ads",
+      "description": "Consent-gated ads facade. Select AdMob/MAX adapter or simulation separately.",
+      "requires": [
+        "consent"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.IntegrationCore",
+        "BaseUnity.Consent"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/Features/AdsContracts.cs",
+        "Runtime/Features/AdsService.cs",
+        "Runtime/ModularAds/AdsModule.cs"
+      ]
+    },
+    {
+      "id": "firebase",
+      "name": "Firebase",
+      "package": "com.baseunity.firebase",
+      "assembly": "BaseUnity.Firebase",
+      "description": "Analytics, Crashlytics and Remote Config facade with local defaults. No SDK until adapter is selected.",
+      "requires": [
+        "integrations-core"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.IntegrationCore"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/Features/FirebaseContracts.cs",
+        "Runtime/Features/FirebaseService.cs",
+        "Runtime/ModularFirebase/FirebaseModule.cs"
+      ]
+    },
+    {
+      "id": "consent-simulation",
+      "name": "Consent simulation",
+      "package": "com.baseunity.consent-simulation",
+      "assembly": "BaseUnity.ConsentSimulation",
+      "description": "Explicit Editor/development-only fake provider; never used as an automatic SDK fallback.",
+      "requires": [
+        "consent"
+      ],
+      "references": [
+        "BaseUnity.Consent"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularConsentSimulation/SimulatedConsentProvider.cs"
+      ]
+    },
+    {
+      "id": "ads-simulation",
+      "name": "Ads simulation",
+      "package": "com.baseunity.ads-simulation",
+      "assembly": "BaseUnity.AdsSimulation",
+      "description": "Explicit Editor/development-only fake provider; never used as an automatic SDK fallback.",
+      "requires": [
+        "ads"
+      ],
+      "references": [
+        "BaseUnity.Ads"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularAdsSimulation/SimulatedAdsProvider.cs"
+      ]
+    },
+    {
+      "id": "firebase-simulation",
+      "name": "Firebase simulation",
+      "package": "com.baseunity.firebase-simulation",
+      "assembly": "BaseUnity.FirebaseSimulation",
+      "description": "Explicit Editor/development-only fake provider; never used as an automatic SDK fallback.",
+      "requires": [
+        "firebase"
+      ],
+      "references": [
+        "BaseUnity.Firebase"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularFirebaseSimulation/SimulatedFirebaseProvider.cs"
+      ]
+    },
+    {
+      "id": "ads-admob",
+      "name": "AdMob SDK adapter",
+      "package": "com.baseunity.ads-admob",
+      "assembly": "BaseUnity.AdMob",
+      "description": "Official SDK must already be installed. This package only includes the BaseUnity adapter.",
+      "requires": [
+        "ads"
+      ],
+      "references": [
+        "BaseUnity.Ads"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Samples~/Integrations/AdMob/AdMobProvider.cs"
+      ],
+      "sdkTypes": [
+        "GoogleMobileAds.Api.MobileAds"
+      ]
+    },
+    {
+      "id": "ads-max",
+      "name": "AppLovin MAX SDK adapter",
+      "package": "com.baseunity.ads-max",
+      "assembly": "BaseUnity.Max",
+      "description": "Official SDK must already be installed. This package only includes the BaseUnity adapter.",
+      "requires": [
+        "ads"
+      ],
+      "references": [
+        "BaseUnity.Ads",
+        "MaxSdk.Scripts"
+      ],
+      "engineDependencies": [
+        "com.unity.modules.unitywebrequest@1.0.0"
+      ],
+      "files": [
+        "Samples~/Integrations/AppLovinMax/AppLovinMaxProvider.cs"
+      ],
+      "sdkTypes": [
+        "MaxSdk"
+      ]
+    },
+    {
+      "id": "consent-google-ump",
+      "name": "Google UMP SDK adapter",
+      "package": "com.baseunity.consent-google-ump",
+      "assembly": "BaseUnity.GoogleUmp",
+      "description": "Official SDK must already be installed. This package only includes the BaseUnity adapter.",
+      "requires": [
+        "consent"
+      ],
+      "references": [
+        "BaseUnity.Consent"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Samples~/Integrations/GoogleConsent/GoogleUmpProvider.cs"
+      ],
+      "sdkTypes": [
+        "GoogleMobileAds.Ump.Api.ConsentInformation"
+      ]
+    },
+    {
+      "id": "firebase-sdk",
+      "name": "Firebase SDK adapter",
+      "package": "com.baseunity.firebase-sdk",
+      "assembly": "BaseUnity.FirebaseSdk",
+      "description": "Official SDK must already be installed. This package only includes the BaseUnity adapter.",
+      "requires": [
+        "firebase"
+      ],
+      "references": [
+        "BaseUnity.Firebase"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Samples~/Integrations/Firebase/FirebaseSdkProvider.cs"
+      ],
+      "sdkTypes": [
+        "Firebase.FirebaseApp",
+        "Firebase.Analytics.FirebaseAnalytics",
+        "Firebase.Crashlytics.Crashlytics",
+        "Firebase.RemoteConfig.FirebaseRemoteConfig"
+      ],
+      "editorFiles": [
+        "Samples~/Integrations/Firebase/Editor/FirebaseCollectionBuild.cs"
+      ],
+      "assets": [
+        "Samples~/Integrations/Firebase/Plugins/Android/BaseUnityFirebase.androidlib/AndroidManifest.xml",
+        "Samples~/Integrations/Firebase/Plugins/Android/BaseUnityFirebase.androidlib/project.properties"
+      ]
     }
   ]
 }

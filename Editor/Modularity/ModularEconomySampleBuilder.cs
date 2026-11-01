@@ -76,6 +76,7 @@ namespace BaseUnity.Modularity
                     var row=Row(kind+"Item",panel.transform,0);var view=Add(row,Ns+"UI."+kind+"ItemView");Set(view,"titleLabel",RowLabel("Title",row.transform,.72f,theme));Set(view,"progressLabel",RowLabel("Progress",row.transform,.49f,theme));Set(view,"rewardLabel",RowLabel("Reward",row.transform,.26f,theme));var b=Button("Claim",row.transform,0,theme,view,"Claim");RowRect(b,0,.23f);Set(view,"claimButton",b);Set(view,"message",Label("",panel.transform,.16f,theme));Button("Demo win +1",panel.transform,.27f,theme,view,"RecordDemoWin");
                     Finish(panel,menu,theme,output);Button(kind+"s",home.transform,y,theme,menu,quest?"Quests":"Achievements");y-=.11f;
                 }
+                AttachLocalization(root,canvas,theme,output);
                 var events=new GameObject("EventSystem");events.transform.SetParent(root.transform,false);Add(events,"UnityEngine.EventSystems.EventSystem");
 #if ENABLE_INPUT_SYSTEM
                 Add(events,"UnityEngine.InputSystem.UI.InputSystemUIInputModule");

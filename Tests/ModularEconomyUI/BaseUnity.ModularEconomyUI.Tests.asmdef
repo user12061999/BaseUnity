@@ -1,0 +1,27 @@
+{
+  "name": "BaseUnity.ModularEconomyUI.Tests",
+  "references": [
+    "BaseUnity.Runtime",
+    "BaseUnity.ModularWalletUI",
+    "BaseUnity.ModularShopUI",
+    "BaseUnity.ModularDailyUI",
+    "BaseUnity.ModularQuestUI",
+    "BaseUnity.ModularAchievementUI",
+    "Unity.ugui"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS",
+    "BASEUNITY_UGUI"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.unity.ugui",
+      "expression": "1.0.0",
+      "define": "BASEUNITY_UGUI"
+    }
+  ],
+  "autoReferenced": false
+}

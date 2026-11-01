@@ -171,6 +171,240 @@
       "files": [
         "Runtime/PortableFlowUI/GameFlowView.cs"
       ]
+    },
+    {
+      "id": "wallet-rewards",
+      "name": "Wallet / Rewards",
+      "package": "com.baseunity.wallet-rewards",
+      "assembly": "BaseUnity.Wallet",
+      "description": "Atomic currencies, inventory and receipt-based rewards. Requires Save; no UI or SDK.",
+      "requires": [
+        "save"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.Save"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularEconomy/EconomyStore.cs",
+        "Runtime/ModularEconomy/WalletModule.cs"
+      ]
+    },
+    {
+      "id": "shop",
+      "name": "Shop",
+      "package": "com.baseunity.shop",
+      "assembly": "BaseUnity.Shop",
+      "description": "Shop with persisted transactions; independent of UI and other optional features.",
+      "requires": [
+        "wallet-rewards"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.Wallet"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularShop/ShopCatalog.cs",
+        "Runtime/ModularShop/ShopModule.cs",
+        "Runtime/ModularShop/ShopService.cs"
+      ]
+    },
+    {
+      "id": "daily-reward",
+      "name": "Daily Reward",
+      "package": "com.baseunity.daily-reward",
+      "assembly": "BaseUnity.Daily",
+      "description": "Daily Reward with persisted transactions; independent of UI and other optional features.",
+      "requires": [
+        "wallet-rewards"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.Wallet"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularDaily/DailyRewardModule.cs",
+        "Runtime/ModularDaily/DailyRewardSchedule.cs",
+        "Runtime/ModularDaily/DailyRewardService.cs"
+      ]
+    },
+    {
+      "id": "objectives",
+      "name": "Objective engine",
+      "package": "com.baseunity.objectives",
+      "assembly": "BaseUnity.Objectives",
+      "description": "Objective engine with persisted transactions; independent of UI and other optional features.",
+      "requires": [
+        "wallet-rewards"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.Wallet"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularObjectives/ObjectiveService.cs"
+      ]
+    },
+    {
+      "id": "quests",
+      "name": "Quests",
+      "package": "com.baseunity.quests",
+      "assembly": "BaseUnity.Quests",
+      "description": "Quests with persisted transactions; independent of UI and other optional features.",
+      "requires": [
+        "objectives"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.Wallet",
+        "BaseUnity.Objectives"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularQuests/QuestCatalog.cs",
+        "Runtime/ModularQuests/QuestModule.cs"
+      ]
+    },
+    {
+      "id": "achievements",
+      "name": "Achievements",
+      "package": "com.baseunity.achievements",
+      "assembly": "BaseUnity.Achievements",
+      "description": "Achievements with persisted transactions; independent of UI and other optional features.",
+      "requires": [
+        "objectives"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.Wallet",
+        "BaseUnity.Objectives"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularAchievements/AchievementCatalog.cs",
+        "Runtime/ModularAchievements/AchievementModule.cs"
+      ]
+    },
+    {
+      "id": "wallet-ui",
+      "name": "Wallet UI",
+      "package": "com.baseunity.wallet-ui",
+      "assembly": "BaseUnity.WalletUI",
+      "description": "Wallet UI views; prefabs are generated only on request. No GameFlow or SDK dependency.",
+      "requires": [
+        "wallet-rewards",
+        "ui"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.Wallet",
+        "BaseUnity.UI",
+        "Unity.ugui"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularWalletUI/EconomyViewBase.cs",
+        "Runtime/ModularWalletUI/WalletBarView.cs",
+        "Runtime/ModularWalletUI/EconomyMenuView.cs"
+      ]
+    },
+    {
+      "id": "shop-ui",
+      "name": "Shop UI",
+      "package": "com.baseunity.shop-ui",
+      "assembly": "BaseUnity.ShopUI",
+      "description": "Shop UI views; prefabs are generated only on request. No GameFlow or SDK dependency.",
+      "requires": [
+        "shop",
+        "wallet-ui"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.Wallet",
+        "BaseUnity.UI",
+        "Unity.ugui",
+        "BaseUnity.Shop",
+        "BaseUnity.WalletUI"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularShopUI/ShopItemView.cs"
+      ]
+    },
+    {
+      "id": "daily-reward-ui",
+      "name": "Daily Reward UI",
+      "package": "com.baseunity.daily-reward-ui",
+      "assembly": "BaseUnity.DailyUI",
+      "description": "Daily Reward UI views; prefabs are generated only on request. No GameFlow or SDK dependency.",
+      "requires": [
+        "daily-reward",
+        "wallet-ui"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.Wallet",
+        "BaseUnity.UI",
+        "Unity.ugui",
+        "BaseUnity.Daily",
+        "BaseUnity.WalletUI"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularDailyUI/DailyRewardView.cs"
+      ]
+    },
+    {
+      "id": "quests-ui",
+      "name": "Quest UI",
+      "package": "com.baseunity.quests-ui",
+      "assembly": "BaseUnity.QuestUI",
+      "description": "Quest UI views; prefabs are generated only on request. No GameFlow or SDK dependency.",
+      "requires": [
+        "quests",
+        "wallet-ui"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.Wallet",
+        "BaseUnity.UI",
+        "Unity.ugui",
+        "BaseUnity.Quests",
+        "BaseUnity.Objectives",
+        "BaseUnity.WalletUI"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularQuestUI/QuestItemView.cs"
+      ]
+    },
+    {
+      "id": "achievements-ui",
+      "name": "Achievement UI",
+      "package": "com.baseunity.achievements-ui",
+      "assembly": "BaseUnity.AchievementUI",
+      "description": "Achievement UI views; prefabs are generated only on request. No GameFlow or SDK dependency.",
+      "requires": [
+        "achievements",
+        "wallet-ui"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.Wallet",
+        "BaseUnity.UI",
+        "Unity.ugui",
+        "BaseUnity.Achievements",
+        "BaseUnity.Objectives",
+        "BaseUnity.WalletUI"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularAchievementUI/AchievementItemView.cs"
+      ]
     }
   ]
 }

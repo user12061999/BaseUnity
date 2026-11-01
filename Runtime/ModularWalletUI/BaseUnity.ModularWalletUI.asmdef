@@ -1,0 +1,17 @@
+{
+  "name": "BaseUnity.ModularWalletUI",
+  "references": [
+    "BaseUnity.Runtime",
+    "Unity.ugui"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.unity.ugui",
+      "expression": "1.0.0",
+      "define": "BASEUNITY_UGUI"
+    }
+  ],
+  "defineConstraints": [
+    "BASEUNITY_UGUI"
+  ]
+}

@@ -3,15 +3,18 @@
 Base game Unity tái sử dụng qua Git submodule. **Dự án mới dùng `Tools/BaseUnity` và cài theo module**;
 `Assets/BaseUnity` là cách dùng bundle legacy.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.24.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.25.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
 
-## Cài theo module (v0.24)
+## Cài theo module (v0.25)
 
 Dự án mới: đặt submodule ở **Tools/BaseUnity**, ngoài Assets/Packages. Chỉ copy thư mục
 `Editor/Modularity` vào `Assets/Editor/BaseUnityModules`, mở **Tools > BaseUnity > Module Manager**
-rồi chọn phần cần cài. Hiện có **Core, Save, Audio, Pooling, MobileInput, GameFlow, UI**, mỗi phần có assembly/package riêng.
+rồi chọn phần cần cài. Hiện có **Core, Save, Audio, Pooling, MobileInput, GameFlow, UI, Wallet/Rewards, Shop, Daily Reward, Quests, Achievements**, mỗi phần có assembly/package riêng.
 Công cụ tự thêm dependency, backup và kiểm tra file đã chỉnh khi cài/gỡ; không tự nhập Ads/Firebase. GameFlow và UI có thể cài riêng; bridge và bộ scene/prefab mẫu được chọn thêm khi cần.
+Wallet/Rewards và từng chức năng có UI module riêng; tạo scene/prefab mẫu khi cần bằng Module Manager.
 [Xem hướng dẫn cài/gỡ và giới hạn migration](Modules~/README.md).
+Kiểm chứng v0.25: **32 EditMode + 5 PlayMode đạt** trong project sạch (kiểm thử tập trung); Wallet-only, Shop UI-only và Quests-only biên dịch độc lập.
+Bộ UI mẫu đã kiểm tra nút bấm/lưu dữ liệu qua mở lại game; cài riêng Shop UI chỉ sinh WalletBar, ShopPopup và EconomyRoot.
 Kiểm chứng v0.24: **15 EditMode + 2 PlayMode đạt** trong project sạch; GameFlow-only và UI-only biên dịch độc lập. Bộ mẫu có 3 scene, 7 prefab đã kiểm tra wiring.
 Kiểm chứng v0.23: **173 EditMode + 65 PlayMode đạt**; project sạch đã biên dịch Core-only,
 Core+MobileInput và cả 5 module, không kéo FeatureServices của bundle legacy.

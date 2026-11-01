@@ -47,6 +47,18 @@ namespace BaseUnity.Modularity.Tests
             Assert.AreEqual(0,Directory.GetFiles(output,"*.prefab",SearchOption.AllDirectories).Length);
             Assert.IsFalse(Directory.Exists(Path.Combine(output,"com.baseunity.audio")));
         }
+        [Test] public void EconomyModulesResolveOnlyRequiredFeatures()
+        {
+            var catalog=ModulePackageStore.ReadCatalog(source);
+            CollectionAssert.AreEquivalent(new[]{"core","save","wallet-rewards","shop"},ModulePackageStore.Resolve(catalog,new[]{"shop"}).Select(x=>x.id));
+            CollectionAssert.AreEquivalent(new[]{"core","save","wallet-rewards","daily-reward"},ModulePackageStore.Resolve(catalog,new[]{"daily-reward"}).Select(x=>x.id));
+            CollectionAssert.AreEquivalent(new[]{"core","save","wallet-rewards","objectives","quests"},ModulePackageStore.Resolve(catalog,new[]{"quests"}).Select(x=>x.id));
+            var ids=ModulePackageStore.Resolve(catalog,new[]{"shop-ui"}).Select(x=>x.id).ToArray();
+            Assert.Contains("ui",ids);Assert.Contains("wallet-ui",ids);Assert.IsFalse(ids.Contains("quests"));Assert.IsFalse(ids.Contains("daily-reward"));Assert.IsFalse(ids.Contains("gameflow"));
+            string output=Path.Combine(temp,"Shop");ModulePackageStore.Export(source,output,new[]{"shop"});
+            Assert.AreEqual(0,Directory.GetFiles(output,"*.prefab",SearchOption.AllDirectories).Length);
+            Assert.IsFalse(Directory.GetFiles(output,"*.cs",SearchOption.AllDirectories).Select(File.ReadAllText).Any(x=>x.Contains("UnityEngine.UI")||x.Contains("BaseUnity.Features")));
+        }
         [Test] public void InstallRemoveAndRestorePreserveProjectManifest()
         {
             string manifest=File.ReadAllText(Path.Combine(project,"Packages/manifest.json"));

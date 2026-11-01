@@ -110,6 +110,6 @@ namespace BaseUnity.Save
             recovered.Add(path); Save(slot, data, version); LastLoadState = SaveLoadState.RecoveredFromBackup;
         }
         public void Delete(string slot)
-        { string path = FilePath(slot); foreach (string suffix in new[] { "", ".bak", ".tmp" }) File.Delete(path + suffix); recovered.Remove(path); }
+        { string path = FilePath(slot); foreach (string suffix in new[] { "", ".bak", ".tmp" }) if (File.Exists(path + suffix)) File.Delete(path + suffix); recovered.Remove(path); }
     }
 }

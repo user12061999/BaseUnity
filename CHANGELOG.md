@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.25.0
+
+- Add independently selectable Wallet/Rewards, Shop, Daily Reward, Quests and Achievements, with a shared optional objective engine.
+- Commit balances, inventory, progress, claim markers and receipts together; preserve state on failed saves, reject duplicate rewards and overflows.
+- Add per-feature UI packages and an optional sample generator: wallet, shop, daily, quest and achievement prefabs, editable catalogs/theme and a demo scene. Generate only installed UI features.
+- Persist daily reward cooldown/cycle and UTC daily quests; support receipt-based gameplay progress events and separate lifetime achievements.
+- Make missing-save deletion idempotent and ignore externally hidden popups in Back navigation; sample popup Close buttons work without the demo menu.
+
 ## 0.24.0
 
 - Add standalone GameFlow package: guarded Home/Playing/Pause/Win/Lose/Retry/Next, scene loading, failure recovery and final-level bounds; no UI/Save/economy dependency.

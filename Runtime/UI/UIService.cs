@@ -20,7 +20,7 @@ namespace BaseUnity.UI
         {
             if (!panel) throw new ArgumentNullException(nameof(panel));
             if (panel == screen) throw new InvalidOperationException("A screen cannot also be a popup.");
-            popups.RemoveAll(item => !item || item == panel);
+            popups.RemoveAll(item => !item || !item.IsVisible || item == panel);
             popups.Add(panel);
             panel.transform.SetAsLastSibling();
             panel.Show();
@@ -32,7 +32,7 @@ namespace BaseUnity.UI
                 int last = popups.Count - 1;
                 var panel = popups[last];
                 popups.RemoveAt(last);
-                if (!panel) continue;
+                if (!panel || !panel.IsVisible) continue;
                 panel.Hide();
                 return true;
             }

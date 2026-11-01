@@ -13,24 +13,24 @@ namespace BaseUnity.Modularity
     /// <summary>Reflection keeps the standalone manager free of runtime/UGUI references.</summary>
     public static class ModularGameSampleBuilder
     {
-        private static Type Find(string name) => AppDomain.CurrentDomain.GetAssemblies().Select(a=>a.GetType(name)).FirstOrDefault(t=>t!=null);
-        private static Type Need(string name) => Find(name) ?? throw new InvalidOperationException("Install the Game Flow UI bridge and wait for compilation: "+name);
-        private static Component Add(GameObject go,string name) => go.AddComponent(Need(name));
-        private static void Set(object target,string name,object value)
-        { var type=target.GetType(); var field=type.GetField(name); if(field!=null)field.SetValue(target,value); else type.GetProperty(name).SetValue(target,value,null); }
-        private static GameObject Node(string name,Transform parent)
+        internal static Type Find(string name) => AppDomain.CurrentDomain.GetAssemblies().Select(a=>a.GetType(name)).FirstOrDefault(t=>t!=null);
+        internal static Type Need(string name) => Find(name) ?? throw new InvalidOperationException("Install the required module and wait for compilation: "+name);
+        internal static Component Add(GameObject go,string name) => go.AddComponent(Need(name));
+        internal static void Set(object target,string name,object value)
+        { var type=target.GetType(); var field=type.GetField(name); if(field!=null)field.SetValue(target,value); else type.GetProperty(name).SetValue(target,value,null); if(target is UnityEngine.Object asset && EditorUtility.IsPersistent(asset))EditorUtility.SetDirty(asset); }
+        internal static GameObject Node(string name,Transform parent)
         { var go=new GameObject(name,typeof(RectTransform)); if(parent)go.transform.SetParent(parent,false); return go; }
-        private static void Rect(GameObject go,Vector2 min,Vector2 max,Vector2 offsetMin,Vector2 offsetMax)
+        internal static void Rect(GameObject go,Vector2 min,Vector2 max,Vector2 offsetMin,Vector2 offsetMax)
         { var rect=(RectTransform)go.transform;rect.anchorMin=min;rect.anchorMax=max;rect.offsetMin=offsetMin;rect.offsetMax=offsetMax; }
-        private static void Full(GameObject go) { Rect(go,Vector2.zero,Vector2.one,Vector2.zero,Vector2.zero); }
-        private static void BindTheme(GameObject go,ScriptableObject theme,bool background=false)
+        internal static void Full(GameObject go) { Rect(go,Vector2.zero,Vector2.one,Vector2.zero,Vector2.zero); }
+        internal static void BindTheme(GameObject go,ScriptableObject theme,bool background=false)
         { var binding=Add(go,"BaseUnity.UI.UIThemeBinding"); Set(binding,"theme",theme);Set(binding,"background",background);binding.GetType().GetMethod("Apply").Invoke(binding,null); }
-        private static Component Label(string text,Transform parent,float y,ScriptableObject theme)
+        internal static Component Label(string text,Transform parent,float y,ScriptableObject theme)
         {
             var go=Node(text,parent); Rect(go,new Vector2(.08f,y),new Vector2(.92f,y+.08f),Vector2.zero,Vector2.zero);
             var label=Add(go,"UnityEngine.UI.Text");Set(label,"text",text);Set(label,"alignment",TextAnchor.MiddleCenter);Set(label,"raycastTarget",false);BindTheme(go,theme); return label;
         }
-        private static Component Button(string text,Transform parent,float y,ScriptableObject theme,Component target,string method)
+        internal static Component Button(string text,Transform parent,float y,ScriptableObject theme,Component target,string method)
         {
             var go=Node(text,parent);Rect(go,new Vector2(.15f,y),new Vector2(.85f,y+.08f),Vector2.zero,Vector2.zero);
             var image=Add(go,"UnityEngine.UI.Image");var button=Add(go,"UnityEngine.UI.Button");Set(button,"targetGraphic",image);BindTheme(go,theme);

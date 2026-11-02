@@ -49,6 +49,12 @@ namespace BaseUnity.Flow
                 Level=level;if(!home)RunId=Guid.NewGuid().ToString("N"); Phase=home?GamePhase.Home:GamePhase.Playing; Notify(); return true;
             } catch { if(!disposed) { Level=oldLevel; Phase=previous; Notify(); } throw; }
         }
+        /// <summary>Restore a saved selection before a run. Scene transitions and active runs are never modified.</summary>
+        public bool RestoreLevel(int level)
+        {
+            if(level<1||level>LevelCount)throw new ArgumentOutOfRangeException(nameof(level));
+            if(disposed||(Phase!=GamePhase.Bootstrap&&Phase!=GamePhase.Home))return false;Level=level;Notify();return true;
+        }
         public Task<bool> HomeAsync() => Move(true,Level);
         public Task<bool> PlayAsync() => Phase==GamePhase.Home?Move(false,Level):Task.FromResult(false);
         public Task<bool> RetryAsync() => Phase==GamePhase.Won||Phase==GamePhase.Lost||Phase==GamePhase.Paused?Move(false,Level):Task.FromResult(false);

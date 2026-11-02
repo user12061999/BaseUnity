@@ -48,6 +48,7 @@ namespace BaseUnity.EconomyModules
         private readonly ISaveStore saves;
         private readonly string slot;
         private EconomyState state;
+        private Dictionary<string,long> values;
         private bool busy,disposed;
         public event Action Changed;
         public event Action<Exception> ObserverError;
@@ -58,6 +59,7 @@ namespace BaseUnity.EconomyModules
             if(json!=null) { if(json.LoadVersioned(slot,out state,1,Valid)==SaveLoadState.Missing)state=new EconomyState(); }
             else if(!saves.TryLoad(slot,out state))state=new EconomyState();
             if(!Valid(state))throw new InvalidOperationException("Invalid economy save; refusing to overwrite");
+            values=state.values.ToDictionary(e=>e.key,e=>e.value,StringComparer.Ordinal);
         }
         private static EconomyState Copy(EconomyState source) => new EconomyState {
             values=source.values.Select(x=>new EconomyEntry { key=x.key,value=x.value }).ToList(),receipts=new List<string>(source.receipts) };
@@ -67,8 +69,8 @@ namespace BaseUnity.EconomyModules
         private static bool Safe(string id,int length) => !string.IsNullOrWhiteSpace(id)&&id.Length<=length&&!id.Any(char.IsControl);
         public static void ValidateId(string id) { if(!Safe(id,64)||id.Any(c=>!(char.IsLetterOrDigit(c)||c=='_'||c=='-')))throw new ArgumentException("ID: 1-64 letters, digits, underscore or hyphen"); }
         public static void ValidateKey(string key) { if(!Safe(key,512))throw new ArgumentException("Invalid transaction key/receipt"); }
-        public string[] Keys(string prefix) { ValidateKey(prefix);return state.values.Where(x=>x.key.StartsWith(prefix,StringComparison.Ordinal)).Select(x=>x.key).ToArray(); }
-        public long Read(string key) { ValidateKey(key);return state.values.FirstOrDefault(x=>x.key==key)?.value??0; }
+        public string[] Keys(string prefix) { ValidateKey(prefix);return values.Keys.Where(key=>key.StartsWith(prefix,StringComparison.Ordinal)).ToArray(); }
+        public long Read(string key) { ValidateKey(key);return values.TryGetValue(key,out var value)?value:0; }
         public long Balance(string currency) { ValidateId(currency);return Read("money:"+currency); }
         public long Owned(string item) { ValidateId(item);return Read("item:"+item); }
         public bool HasReceipt(string receipt) { ValidateKey(receipt);return state.receipts.Contains(receipt); }
@@ -87,7 +89,7 @@ namespace BaseUnity.EconomyModules
                 catch(OverflowException) { return TransactionResult.Rejected; }
                 next.receipts.Add(receipt);
                 // Snapshot again so a callback retaining its transaction cannot edit committed state.
-                var committed=Copy(next);saves.Save(slot,committed,1);state=Copy(committed);
+                var committed=Copy(next);saves.Save(slot,committed,1);state=Copy(committed);values=state.values.ToDictionary(e=>e.key,e=>e.value,StringComparer.Ordinal);
             } finally { busy=false; }
             if(Changed!=null)foreach(Action observer in Changed.GetInvocationList())try { observer(); }catch(Exception error) { try { ObserverError?.Invoke(error); }catch { } }
             return TransactionResult.Success;

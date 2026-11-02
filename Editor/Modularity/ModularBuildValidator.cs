@@ -86,6 +86,25 @@ namespace BaseUnity.Modularity
                     else { var days=Items(Get(schedule,"days"));if(!Id(Get(schedule,"id"))||Convert.ToInt32(Get(schedule,"cooldownSeconds"))<1||days.Length==0)add(true,"Invalid daily schedule ID/cooldown/days",component);foreach(var d in days)Rewards(Get(d,"rewards"),component,add,false); }
                     Require(components,component,"BaseUnity.EconomyModules.WalletModule",add);
                 }
+                if(name=="BaseUnity.Energy.EnergyModule"||name=="BaseUnity.Progression.PlayerProgressionModule") {
+                    var config=Get(component,"config") as UnityEngine.Object;
+                    if(!config)add(true,"Assign module config: "+name,component);
+                    else try { config.GetType().GetMethod("Validate").Invoke(config,null); }catch(Exception error) { add(true,error.InnerException?.Message??error.Message,component); }
+                    Require(components,component,"BaseUnity.EconomyModules.WalletModule",add);
+                }
+                if(name=="BaseUnity.ProgressionEvents.ProgressionEventsModule") {
+                    Require(components,component,"BaseUnity.Progression.PlayerProgressionModule",add);
+                    if(Convert.ToInt64(Get(component,"experiencePerWin"))<0||Convert.ToInt64(Get(component,"experiencePerLoss"))<0)add(true,"Progression event XP cannot be negative",component);
+                }
+                if(name=="BaseUnity.Demo.PlayableDemoController") {
+                    var config=Get(component,"config") as UnityEngine.Object;
+                    if(!config)add(true,"Assign PlayableDemoConfig",component);
+                    else try { config.GetType().GetMethod("Validate").Invoke(config,null); }catch(Exception error) { add(true,error.InnerException?.Message??error.Message,component); }
+                    foreach(string field in new[]{"board","target","scoreLabel","timeLabel"})if(!(Get(component,field) is UnityEngine.Object linked)||!linked)add(true,"Demo missing reference: "+field,component);
+                    foreach(string dependency in new[]{"BaseUnity.Energy.EnergyModule","BaseUnity.Progression.PlayerProgressionModule","BaseUnity.ProgressionEvents.ProgressionEventsModule","BaseUnity.FlowEconomy.FlowEconomyModule"})Require(components,component,dependency,add);
+                    var energyModule=components.FirstOrDefault(c=>c.gameObject==component.gameObject&&c.GetType().FullName=="BaseUnity.Energy.EnergyModule");
+                    var energyConfig=Get(energyModule,"config");if(config&&energyConfig!=null&&Convert.ToInt32(Get(config,"energyPerRun"))>Convert.ToInt32(Get(energyConfig,"capacity")))add(true,"Demo run energy cost exceeds energy capacity",component);
+                }
                 if(name=="BaseUnity.IntegrationModules.AdsModule")Require(components,component,"BaseUnity.IntegrationModules.ConsentModule",add);
                 if(name.StartsWith("BaseUnity.IntegrationModules.",StringComparison.Ordinal)&&name.EndsWith("Module",StringComparison.Ordinal))ValidateIntegration(component,target,development??EditorUserBuildSettings.development,add);
             }

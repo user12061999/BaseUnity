@@ -1,6 +1,6 @@
-# BaseUnity selective modules — v0.26
+# BaseUnity selective modules — v0.27
 
-Các module cài riêng: **Core, Save, Audio, Pooling, MobileInput, GameFlow, UI, Wallet/Rewards, Shop, Daily Reward, Quests, Achievements**.
+Các module cài riêng: **Core, Save, Audio, Pooling, MobileInput, GameFlow, UI, Wallet/Rewards, Shop, Daily Reward, Quests, Achievements, Energy, Player Progression**.
 Mỗi chức năng kinh tế có UI module riêng; prefab mẫu chỉ sinh khi bấm tạo mẫu. Source chỉ được đóng gói theo catalog.
 Localization, GameFlow Economy, Ads/Consent/Firebase facades, simulation và SDK adapter cũng có package riêng. Các package SDK không kèm SDK vendor. Save/config legacy không tự migrate.
 
@@ -56,12 +56,18 @@ Source submodule vẫn ở Tools, giúp theo dõi phiên bản và cập nhật.
 | Daily Reward UI | daily-reward + wallet-ui + daily-reward-ui | BaseUnity.DailyUI |
 | Quests UI | quests + wallet-ui + quests-ui | BaseUnity.QuestUI |
 | Achievements UI | achievements + wallet-ui + achievements-ui | BaseUnity.AchievementUI |
+| Energy | wallet-rewards + energy | BaseUnity.Energy |
+| Player Progression | wallet-rewards + player-progression | BaseUnity.Progression |
+| Energy UI | energy + wallet-ui + energy-ui | BaseUnity.EnergyUI |
+| Player Progression UI | player-progression + wallet-ui + player-progression-ui | BaseUnity.ProgressionUI |
+| XP event bridge | player-progression + objectives + progression-events | BaseUnity.ProgressionEvents |
+| Complete Playable Demo | Flow/Economy/UI/Localization/Energy/XP và bridge cần thiết | BaseUnity.PlayableDemo |
 
 Core có EventBus, ServiceRegistry, StateMachine, TimerService, BuildEnvironment và ModuleBootstrap.
 Không có Save/Audio/Input/FeatureConfig hoặc SDK trong Core.
 Audio phụ thuộc Save vì AudioService hiện lưu volume qua ISaveStore. Save dùng built-in JSONSerialize;
 Audio dùng built-in Audio; MobileInput yêu cầu Unity UI 2.0.0. Pooling không kéo UniTask.
-Không module nào trong đợt này kéo Ads, Firebase, consent, IAP, shop hay prefab Layer Lab.
+Core/Save/Audio/Pooling/MobileInput không tự kéo Ads, Firebase, consent, IAP, Shop hay prefab Layer Lab.
 
 `ModuleBootstrap` là bootstrap tối thiểu mới. `GameBootstrap` cũ không nằm trong Core package.
 ModuleInstaller trên cùng root được cài theo Priority; SaveModule chạy trước AudioModule.
@@ -395,3 +401,97 @@ và luồng scene thật Win → coin → Quest/Achievement → mở lại game.
 Localization-only, GameFlow Economy-only và Ads simulation-only biên dịch trong các project độc lập không có SDK vendor.
 Bốn adapter thật biên dịch với SDK hiện có trên máy (Google Mobile Ads, MAX, Firebase); còn cảnh báo API cũ của Google SDK.
 Chưa gọi ads thật/Firebase tài khoản, chưa build APK/iOS hoặc xác minh mediation/native consent trên thiết bị.
+
+## Complete Playable Demo (v0.27)
+
+Đây là mẫu mới nối đầy đủ luồng game và các popup trên **một profile duy nhất**.
+Cài preset **Complete Playable Demo** (hoặc module playable-demo), đợi Unity compile rồi bấm
+**Create complete playable demo** trong Module Manager / **Tools > BaseUnity > Create Complete Playable Demo**.
+Chọn thư mục mới trong Assets, mở scene Bootstrap vừa tạo để Play. Không ghi đè sample đã có.
+
+- Gameplay màn dọc: chạm mục tiêu xuất hiện trong bảng trước khi hết giờ; mặc định màn đầu 5 mục tiêu/30 giây,
+  mỗi màn tiếp theo thêm 1 mục tiêu. Thu đủ thì Win, hết giờ thì Lose; có Pause/Resume/Retry/Next/Home.
+- Mỗi run bắt đầu thành công tốn 1 năng lượng. Không trừ khi tải scene thất bại; trừ lượt và lưu level trong cùng giao dịch.
+  Nếu không lưu được lượt, game Pause và Resume thử lại cùng receipt, không trừ hai lần.
+- Năng lượng mặc định 5/5, hồi 1 mỗi 300 giây. Home có nút đổi 50 coin lấy tối đa 5 năng lượng còn thiếu.
+  Phí coin và năng lượng được lưu chung một giao dịch; đầy năng lượng hoặc thiếu coin không làm mất tiền.
+- Win nhận 100 coin qua Flow Economy bridge; win/lose cho 25/5 XP qua progression-events.
+  Mỗi 100 XP lên một cấp và nhận 25 coin; tối đa cấp 100 (có thể chỉnh config).
+- Home có Wallet, Energy/countdown, Player Level/XP, Shop, Daily Reward, Quest và Achievement.
+  Các nút Demo Win/Lose, quà coin miễn phí và tăng Quest thủ công được bỏ khỏi mẫu hoàn chỉnh.
+- Tất cả service dùng slot **baseunity_complete_demo**; Quest/Achievement tăng từ kết quả thật qua outbox.
+  Shop, Daily Reward và level-up thay đổi cùng Wallet; các view bind service từ cùng ModuleBootstrap.
+- Continue khôi phục level đã lưu hoặc màn sau level cao nhất đã thắng (giới hạn theo levelCount).
+  Score/timer trong một round không được khôi phục sau khi tắt app; lượt đã tiêu vẫn giữ nguyên.
+- Một EventSystem, một bootstrap bền qua các scene. Hai Canvas chia sẻ LocalizationService và một cặp nút EN/VI.
+- Tạo 3 scene ở thư mục gốc Bootstrap/Home/Ingame; các scene trung gian của generator nằm trong Flow/Economy để tham khảo,
+  được bỏ khỏi Build Settings của mẫu mới. Scene cũ của game ngoài thư mục này được giữ nguyên.
+- Prefab chính: CompleteGameRoot; các screen/popup Home/Ingame/Loading/Pause/Win/Lose/ShopPopup/DailyRewardPopup/QuestPopup/AchievementPopup;
+  WalletBar, EnergyBar, PlayerProgressionBar và TapTarget. Sửa theme chung ở Flow/Theme.asset hoặc tạo prefab variant.
+- Chỉnh PlayableDemoConfig (mục tiêu/thời gian/phí lượt/refill), FlowRewardConfig và các catalog/config đi kèm;
+  các module snapshot thông số khi bootstrap, cần khởi chạy lại để áp dụng thay đổi balance.
+
+Generator ghép lại hai bộ mẫu Flow/Economy và tạo prefab mới, không sửa prefab nguồn trong repository.
+Không gắn EconomyRoot/CompleteGameRoot thứ hai vào phiên game đã có bootstrap. Với game riêng,
+có thể kéo các popup/bar vào Canvas và dùng service hiện có; TapTarget tự tìm PlayableDemoController ở parent.
+
+## Energy độc lập (v0.27)
+
+Module **energy** chỉ cần Wallet/Save/Core; **energy-ui** thêm UI/Wallet UI, không kéo Ads, GameFlow hay XP.
+Tạo **Create > BaseUnity > Modules > Energy Config**, gán EnergyModule cùng root bootstrap.
+Config có ID, capacity, initialEnergy, refillSeconds. EnergyService ghi trạng thái khởi tạo một lần;
+đọc Current/RemainingSeconds chỉ chiếu thời gian UTC, không ghi save mỗi giây.
+
+- Consume(amount, receipt), Grant(amount, receipt) có kết quả Success/Duplicate/Rejected và kiểm tra số dư/giới hạn.
+- Khi đầy, thời gian dư không được tích trữ; lúc tiêu từ đầy bắt đầu chu kỳ mới. Tiêu khi chưa đầy giữ phần thời gian đang hồi.
+- Grant bị giới hạn capacity; đang đầy thì Rejected và không tiêu receipt. Chỉnh lùi giờ không tạo thêm năng lượng;
+  clock offline vẫn có thể bị chỉnh tiến, không thay thế giờ server.
+- ConsumeInto/GrantInto dùng bên trong EconomyStore.Transact để ghép phí tiền/đổi lượt với các thay đổi khác;
+  outer transaction phải có receipt ổn định. Không dùng các hàm Into ngoài một transaction.
+- Lỗi IO không commit trạng thái. Khởi tạo Energy cần lưu thành công; nếu không, bootstrap báo lỗi thay vì cho tài nguyên tạm không được lưu.
+- Đổi config ID tạo pool dữ liệu khác; capacity mới nhỏ hơn chỉ giới hạn số hiển thị/tiêu, không tự chạy migration.
+
+## Player Progression độc lập (v0.27)
+
+Module **player-progression** chỉ cần Wallet/Save/Core; UI và **progression-events** chọn riêng.
+Tạo Player Progression Config và gán PlayerProgressionModule. XP mỗi cấp cố định, mức tối đa và reward lên cấp chỉnh trong config.
+API PlayerProgressionService: TotalExperience, Level, IsMaximumLevel, ExperienceIntoLevel, ExperienceToNextLevel,
+ExperiencePerLevel, GrantExperience(amount, receipt).
+
+XP, mốc đã cấp reward và tất cả phần thưởng lên cấp commit cùng giao dịch. Một lần nhận nhiều cấp được cộng đủ reward;
+overflow/lỗi lưu không cấp một phần. Receipt trùng không cộng XP lại; đạt cấp tối đa thì GrantExperience trả Rejected.
+Dữ liệu giữ mốc level đã thưởng để tránh nhận lại khi đổi cấu hình; thay đổi ngưỡng không tự cấp bù reward hoặc migrate dữ liệu.
+
+ProgressionEventsModule là integration tùy chọn, cần Objective engine/EventBus; win/lose mặc định 25/5 XP mỗi event unit.
+Nó dùng receipt của GameplayProgressEvent. Với Flow Economy outbox, lỗi lưu XP được trả về EventBus để retry;
+XP đã commit không được cộng lại. Không gắn bridge này rồi tự cộng XP lần nữa cho cùng kết quả.
+
+## Xem phiên bản và xử lý file sửa trong module (v0.27)
+
+Copy lại toàn bộ Editor/Modularity, mở **Review versions, changes and local edits** trong Module Manager
+hoặc **Tools > BaseUnity > Review Module Updates**.
+
+- Hiện version đã cài → version repo đang checkout, trạng thái up to date/update available/installed newer/source changed.
+  Không tự fetch/pull GitHub. Pull/checkout submodule rồi Refresh review để xem bản mới.
+- So sánh 3 nguồn: hash baseline trong receipt, file hiện tại của project và package sẽ tạo từ repo.
+  SOURCE/LOCAL/CONFLICT phân biệt thay đổi repo và chỉnh sửa local; chọn file để xem hai nội dung cạnh nhau.
+  Bản so sánh được tạo ở Library/BaseUnityModuleReview, không thay file đang cài.
+- Có thể tự merge chỉnh sửa về repo/fork, rồi Refresh review. Công cụ không tự merge code.
+- Hoặc đánh dấu rõ từng module **Replace this module with repository files; preserve my current files in backup**,
+  sau đó Update installed modules. Đây là thay cả module, gồm việc bỏ các file thêm local khỏi bản đang cài;
+  mọi file cũ vẫn được giữ nguyên trong backup.
+- Update này áp dụng nhất quán toàn bộ module đã cài cùng release; không tự cài chức năng chưa chọn.
+  Downgrade cần bật tùy chọn riêng. Package lạ/receipt hỏng/symlink được chặn để xử lý thủ công.
+- Nếu file hoặc source thay đổi sau lần review, thao tác chỉ refresh báo cáo và yêu cầu review lại, chưa ghi đè project.
+- Backup ở ProjectSettings/BaseUnityModuleBackups, cùng vị trí của Module Manager. Snapshot chứa hash hiện trạng và marker gốc;
+  Restore last module backup có thể khôi phục cả file đã sửa/thêm/xóa. Marker baseline gốc được trả lại,
+  vì vậy những chỉnh sửa đã khôi phục vẫn được nhận diện và bảo vệ ở lần update sau.
+- Apply bình thường tiếp tục chặn file đã chỉnh. Chỉ luồng chấp nhận thay thế rõ ràng mới có quyền thay module đó.
+- Không tự chuyển save/config legacy, sửa Assets game hoặc đảm bảo API mới tương thích code tùy biến.
+  Rollback file-system có sẵn; lỗi compile/UPM sau cập nhật cần sửa source hoặc khôi phục backup.
+
+## Phạm vi xác minh v0.27
+
+Theo yêu cầu mới, đợt này **chỉ cập nhật code**: không chạy Unity, test suite, build APK hoặc thử thiết bị/SDK.
+Các số kiểm chứng v0.23–v0.26 ở trên là lịch sử, không phải kết quả của v0.27.
+Bộ demo/generator và luồng update cần được compile/chạy thử khi bạn chủ động quay lại bước kiểm thử.

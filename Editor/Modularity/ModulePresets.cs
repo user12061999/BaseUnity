@@ -13,7 +13,8 @@ namespace BaseUnity.Modularity
         public static ModulePreset[] All => new[]{
             new ModulePreset("Minimal","core"),
             new ModulePreset("GameFlow + UI","gameflow-ui"),
-            new ModulePreset("Mobile Offline","gameflow-ui","mobile-input","audio","pooling","shop-ui","daily-reward-ui","quests-ui","achievements-ui","localization-ui","gameflow-economy"),
+            new ModulePreset("Mobile Offline","gameflow-ui","mobile-input","audio","pooling","shop-ui","daily-reward-ui","quests-ui","achievements-ui","localization-ui","gameflow-economy","energy-ui","player-progression-ui","progression-events"),
+            new ModulePreset("Complete Playable Demo","playable-demo"),
             new ModulePreset("SDK simulation","ads-simulation","consent-simulation","firebase-simulation")
         };
         public static string Summary(ModuleCatalog catalog,System.Collections.Generic.IEnumerable<string> ids)

@@ -12,6 +12,8 @@ namespace BaseUnity.Modularity
         [SerializeField] private string repository;
         private readonly HashSet<string> selected=new HashSet<string>();
         private int preset;
+        private readonly Dictionary<string,string> versions=new Dictionary<string,string>();
+        private string sourceVersion;
         private ModuleCatalog catalog;
         private ModulePlan plan;
         private string notice;
@@ -29,8 +31,8 @@ namespace BaseUnity.Modularity
         private void Reload()
         {
             catalog=null; plan=null;
-            try { catalog=ModulePackageStore.ReadCatalog(repository); selected.Clear(); foreach(var id in ModulePackageStore.Installed(repository,Project)) selected.Add(id); if(selected.Count==0)selected.Add("core"); notice=null; }
-            catch(Exception error) { notice=error.Message; }
+            try { catalog=ModulePackageStore.ReadCatalog(repository);sourceVersion=ModulePackageStore.SourceVersion(repository);versions.Clear();foreach(var module in catalog.modules)versions[module.id]=ModulePackageStore.InstalledVersion(repository,Project,module.id); selected.Clear(); foreach(var id in ModulePackageStore.Installed(repository,Project)) selected.Add(id); if(selected.Count==0)selected.Add("core"); notice=null; }
+            catch(Exception error) { catalog=null;plan=null;notice=error.Message; }
         }
         private void Run(Action action) { try { action(); } catch(Exception error) { notice=error.Message; Debug.LogWarning("BaseUnity Module Manager: "+error.Message); } Repaint(); }
         private void OnGUI()
@@ -59,6 +61,7 @@ namespace BaseUnity.Modularity
                     }
                     EditorGUILayout.LabelField(module.description,EditorStyles.wordWrappedLabel);
                     EditorGUILayout.LabelField(module.files.Length+" scripts • "+module.package,EditorStyles.miniLabel);
+                    EditorGUILayout.LabelField("Installed: "+(versions.TryGetValue(module.id,out var installedVersion)?installedVersion??"not installed":"unknown")+"  /  Repository: "+sourceVersion,EditorStyles.miniLabel);
                     EditorGUILayout.EndVertical();
                 }
                 EditorGUILayout.LabelField("Resolved modules: "+string.Join(", ",closure),EditorStyles.wordWrappedLabel);
@@ -80,6 +83,8 @@ namespace BaseUnity.Modularity
                         if(GUILayout.Button("Restore last module backup"))Run(()=> { string backup=ModulePackageStore.Apply(repository,Project,new string[0],last); EditorPrefs.SetString(BackupKey,backup); notice="Restored. Undo backup: "+backup; AssetDatabase.Refresh(); Client.Resolve(); Reload(); });
                         if(GUILayout.Button("Show last backup"))EditorUtility.RevealInFinder(last);
                     }
+                    if(GUILayout.Button("Review versions, changes and local edits"))Run(()=>ModuleUpdateWindow.Open(repository));
+                    if(GUILayout.Button("Create complete playable demo"))Run(PlayableDemoBuilder.Create);
                     if(GUILayout.Button("Configure integrations on selected bootstrap"))Run(IntegrationSetupWindow.Open);
                     if(GUILayout.Button("Validate enabled build scenes"))Run(ModularBuildValidator.ValidateMenu);
                     if(GUILayout.Button("Create bootstrap with installed modules"))Run(CreateBootstrap);
@@ -96,7 +101,7 @@ namespace BaseUnity.Modularity
             var core=Find("BaseUnity.Core.ModuleBootstrap"); if(core==null)throw new InvalidOperationException("Install Core and wait for compilation first");
             if(AppDomain.CurrentDomain.GetAssemblies().Any(x=>x.GetName().Name=="BaseUnity.Runtime"))throw new InvalidOperationException("Use the clean modular project, not the legacy sample");
             var root=new GameObject("BaseUnity Module Bootstrap"); Undo.RegisterCreatedObjectUndo(root,"Create modular bootstrap");
-            foreach(var name in new[]{"BaseUnity.Save.SaveModule","BaseUnity.Audio.AudioModule","BaseUnity.MobileInput.MobileInputModule","BaseUnity.Flow.GameFlowModule","BaseUnity.UI.UIModule","BaseUnity.EconomyModules.WalletModule","BaseUnity.EconomyModules.ShopModule","BaseUnity.EconomyModules.DailyRewardModule","BaseUnity.EconomyModules.QuestModule","BaseUnity.EconomyModules.AchievementModule","BaseUnity.Localization.LocalizationModule","BaseUnity.FlowEconomy.FlowEconomyModule","BaseUnity.IntegrationModules.ConsentModule","BaseUnity.IntegrationModules.AdsModule","BaseUnity.IntegrationModules.FirebaseModule"}) { var type=Find(name); if(type!=null)root.AddComponent(type); }
+            foreach(var name in new[]{"BaseUnity.Save.SaveModule","BaseUnity.Audio.AudioModule","BaseUnity.MobileInput.MobileInputModule","BaseUnity.Flow.GameFlowModule","BaseUnity.UI.UIModule","BaseUnity.EconomyModules.WalletModule","BaseUnity.EconomyModules.ShopModule","BaseUnity.EconomyModules.DailyRewardModule","BaseUnity.EconomyModules.QuestModule","BaseUnity.EconomyModules.AchievementModule","BaseUnity.Localization.LocalizationModule","BaseUnity.FlowEconomy.FlowEconomyModule","BaseUnity.IntegrationModules.ConsentModule","BaseUnity.IntegrationModules.AdsModule","BaseUnity.IntegrationModules.FirebaseModule","BaseUnity.Energy.EnergyModule","BaseUnity.Progression.PlayerProgressionModule","BaseUnity.ProgressionEvents.ProgressionEventsModule"}) { var type=Find(name); if(type!=null)root.AddComponent(type); }
             root.AddComponent(core); Selection.activeGameObject=root; notice="Bootstrap created. Assign installed feature catalogs/schedules before Play; then save the scene.";
         }
     }

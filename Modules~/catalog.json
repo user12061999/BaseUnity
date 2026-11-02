@@ -690,6 +690,144 @@
         "Samples~/Integrations/Firebase/Plugins/Android/BaseUnityFirebase.androidlib/AndroidManifest.xml",
         "Samples~/Integrations/Firebase/Plugins/Android/BaseUnityFirebase.androidlib/project.properties"
       ]
+    },
+    {
+      "id": "energy",
+      "name": "Energy",
+      "package": "com.baseunity.energy",
+      "assembly": "BaseUnity.Energy",
+      "description": "Offline UTC regeneration, capacity and atomic consume/grant. No gameplay or UI dependency.",
+      "requires": [
+        "wallet-rewards"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.Wallet"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularEnergy/EnergyConfig.cs",
+        "Runtime/ModularEnergy/EnergyModule.cs",
+        "Runtime/ModularEnergy/EnergyService.cs"
+      ]
+    },
+    {
+      "id": "player-progression",
+      "name": "Player Progression",
+      "package": "com.baseunity.player-progression",
+      "assembly": "BaseUnity.Progression",
+      "description": "Persisted XP, capped levels and atomic level-up rewards. No GameFlow dependency.",
+      "requires": [
+        "wallet-rewards"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.Wallet"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularProgression/PlayerProgressionConfig.cs",
+        "Runtime/ModularProgression/PlayerProgressionModule.cs",
+        "Runtime/ModularProgression/PlayerProgressionService.cs"
+      ]
+    },
+    {
+      "id": "progression-events",
+      "name": "Progression event bridge",
+      "package": "com.baseunity.progression-events",
+      "assembly": "BaseUnity.ProgressionEvents",
+      "description": "Optional XP from win/lose events with receipt-based retry; works with the GameFlow outbox.",
+      "requires": [
+        "player-progression",
+        "objectives"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.Wallet",
+        "BaseUnity.Progression",
+        "BaseUnity.Objectives"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularProgressionEvents/ProgressionEventsModule.cs"
+      ]
+    },
+    {
+      "id": "energy-ui",
+      "name": "Energy UI",
+      "package": "com.baseunity.energy-ui",
+      "assembly": "BaseUnity.EnergyUI",
+      "description": "Optional resource/countdown display; no ads dependency.",
+      "requires": [
+        "energy",
+        "wallet-ui"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.Wallet",
+        "BaseUnity.Energy",
+        "BaseUnity.WalletUI",
+        "Unity.ugui"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularEnergyUI/EnergyBarView.cs"
+      ]
+    },
+    {
+      "id": "player-progression-ui",
+      "name": "Player Progression UI",
+      "package": "com.baseunity.player-progression-ui",
+      "assembly": "BaseUnity.ProgressionUI",
+      "description": "Optional level/XP display and slider.",
+      "requires": [
+        "player-progression",
+        "wallet-ui"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.Wallet",
+        "BaseUnity.Progression",
+        "BaseUnity.WalletUI",
+        "Unity.ugui"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularProgressionUI/PlayerProgressionBarView.cs"
+      ]
+    },
+    {
+      "id": "playable-demo",
+      "name": "Complete Playable Demo",
+      "package": "com.baseunity.playable-demo",
+      "assembly": "BaseUnity.PlayableDemo",
+      "description": "Optional portrait tap-target game sharing one profile with Shop/Quest/Daily/Energy/XP. Assets generated separately; no SDK.",
+      "requires": [
+        "gameflow-ui",
+        "gameflow-economy",
+        "shop-ui",
+        "daily-reward-ui",
+        "quests-ui",
+        "achievements-ui",
+        "localization-ui",
+        "energy-ui",
+        "player-progression-ui",
+        "progression-events"
+      ],
+      "references": [
+        "BaseUnity.Core",
+        "BaseUnity.Flow",
+        "BaseUnity.Wallet",
+        "BaseUnity.Energy",
+        "BaseUnity.Progression",
+        "Unity.ugui"
+      ],
+      "engineDependencies": [],
+      "files": [
+        "Runtime/ModularPlayableDemo/PlayableDemoConfig.cs",
+        "Runtime/ModularPlayableDemo/PlayableDemoController.cs",
+        "Runtime/ModularPlayableDemo/TapTargetView.cs"
+      ]
     }
   ]
 }

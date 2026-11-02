@@ -14,11 +14,11 @@ namespace BaseUnity.Modularity
     [Serializable] public sealed class ModuleCatalog { public int format; public ModuleDefinition[] modules; }
     [Serializable] public sealed class ModuleFile { public string path,hash; }
     [Serializable] public sealed class ModuleReceipt
-    { public string owner="BaseUnity.ModuleManager",id,version; public ModuleFile[] files; }
+    { public string owner="BaseUnity.ModuleManager",id,version,originalMarkerBase64; public ModuleFile[] files,backupSnapshot; public bool hasBackupSnapshot; }
     [Serializable] public sealed class ModuleBackup { public string[] before,after; public string version; }
     public sealed class ModulePlan
     { public string[] selected,added,updated,removed; public string version; public string Summary => "Install/update: "+string.Join(", ",added.Concat(updated))+"\nRemove: "+string.Join(", ",removed); }
-    public static class ModulePackageStore
+    public static partial class ModulePackageStore
     {
         private const string Marker=".baseunity-module.json";
         [Serializable] private sealed class VersionInfo { public string name,version; }
@@ -64,18 +64,18 @@ namespace BaseUnity.Modularity
             string path=Path.Combine(directory,Marker); if(!File.Exists(path))throw new IOException("Package is not owned by BaseUnity Module Manager: "+directory);
             var receipt=JsonUtility.FromJson<ModuleReceipt>(File.ReadAllText(path)); if(receipt==null||receipt.owner!="BaseUnity.ModuleManager"||receipt.files==null)throw new IOException("Invalid package receipt"); return receipt;
         }
-        private static void Clean(string directory,ModuleDefinition module)
+        private static void Clean(string directory,ModuleDefinition module,bool snapshot=false)
         {
-            PlainPath(directory); var receipt=Receipt(directory); if(receipt.id!=module.id)throw new IOException("Package receipt ID mismatch"); var known=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach(var item in receipt.files) { var path=Relative(directory,item.path); if(!known.Add(item.path)||!File.Exists(path)||Hash(File.ReadAllBytes(path))!=item.hash)throw new IOException("Local edits detected. Copy them back to your source or restore the file first: "+path); }
+            PackageFiles(directory); var receipt=Receipt(directory); if(snapshot&&receipt.hasBackupSnapshot&&receipt.backupSnapshot==null)throw new IOException("Invalid backup snapshot"); if(receipt.id!=module.id)throw new IOException("Package receipt ID mismatch"); var known=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach(var item in snapshot&&receipt.hasBackupSnapshot?receipt.backupSnapshot:receipt.files) { var path=Relative(directory,item.path); if(!known.Add(item.path)||!File.Exists(path)||Hash(File.ReadAllBytes(path))!=item.hash)throw new IOException("Local edits detected. Copy them back to your source or restore the file first: "+path); }
             foreach(string path in Directory.GetFiles(directory,"*",SearchOption.AllDirectories)) { string relative=path.Substring(Root(directory).Length+1).Replace('\\','/'); if(relative==Marker||known.Contains(relative))continue; if(path.EndsWith(".meta",StringComparison.OrdinalIgnoreCase)&&Directory.Exists(path.Substring(0,path.Length-5)))continue; throw new IOException("Unmanaged file in package; preserved: "+path); }
         }
         public static string[] Installed(string repository,string project)
         { return ReadCatalog(repository).modules.Where(x=>Directory.Exists(PackagePath(project,x))).Select(x=>x.id).ToArray(); }
-        public static ModulePlan Preview(string repository,string project,IEnumerable<string> selected)
+        public static ModulePlan Preview(string repository,string project,IEnumerable<string> selected,string[] replaceLocalModuleIds=null)
         {
             var catalog=ReadCatalog(repository); var resolved=Resolve(catalog,selected); var installed=Installed(repository,project); var desired=resolved.Select(x=>x.id).ToArray();
-            foreach(var module in catalog.modules.Where(x=>installed.Contains(x.id)))Clean(PackagePath(project,module),module);
+            foreach(var module in catalog.modules.Where(x=>installed.Contains(x.id)))CheckForUpdate(PackagePath(project,module),module,replaceLocalModuleIds);
             return new ModulePlan { selected=desired,added=desired.Except(installed).ToArray(),updated=desired.Intersect(installed).ToArray(),removed=installed.Except(desired).ToArray(),version=Version(repository) };
         }
         private static void ValidateProject(string repository,string project)
@@ -121,7 +121,7 @@ namespace BaseUnity.Modularity
             Directory.CreateDirectory(output); foreach(var module in Resolve(catalog,selected))Generate(repository,Relative(output,module.package),module,catalog);
         }
         private static void CopyPackage(string source,string target)
-        { foreach(var path in Directory.GetFiles(source,"*",SearchOption.AllDirectories))WriteFile(target,path.Substring(Root(source).Length+1),File.ReadAllBytes(path)); }
+        { foreach(var path in PackageFiles(source))WriteFile(target,path.Substring(Root(source).Length+1),File.ReadAllBytes(path)); }
         private static void CheckDependents(string project,ModuleCatalog catalog,IEnumerable<string> removed,IEnumerable<string> owned)
         {
             var removedModules=catalog.modules.Where(x=>removed.Contains(x.id)).ToArray();
@@ -132,11 +132,14 @@ namespace BaseUnity.Modularity
             }
             foreach(var path in Directory.GetFiles(Path.Combine(project,"Assets"),"*.asmdef",SearchOption.AllDirectories)) { string text=File.ReadAllText(path); foreach(var module in removedModules)if(text.Contains(Quote(module.assembly)) || text.IndexOf(Quote("GUID:"+Hash(Encoding.UTF8.GetBytes(module.package+":Runtime/"+module.assembly+".asmdef")).Substring(0,32)),StringComparison.OrdinalIgnoreCase)>=0)throw new IOException("Remove the assembly reference before removing "+module.id+": "+path); }
         }
-        public static string Apply(string repository,string project,IEnumerable<string> selected,string restoreBackup=null)
+        public static string Apply(string repository,string project,IEnumerable<string> selected,string restoreBackup=null,string[] replaceLocalModuleIds=null)
         {
             repository=Root(repository); project=Root(project); ValidateProject(repository,project); var catalog=ReadCatalog(repository);
             if(restoreBackup!=null) { restoreBackup=Root(restoreBackup); if(!Inside(restoreBackup,Path.Combine(project,"ProjectSettings/BaseUnityModuleBackups")))throw new IOException("Backup must belong to this project"); PlainPath(restoreBackup); selected=JsonUtility.FromJson<ModuleBackup>(File.ReadAllText(Path.Combine(restoreBackup,"operation.json"))).before; }
-            var plan=Preview(repository,project,selected);
+            if(restoreBackup!=null&&(replaceLocalModuleIds?.Length??0)>0)throw new InvalidOperationException("Resolve edits separately before restoring a backup");
+            var desired=Resolve(catalog,selected).Select(m=>m.id).ToArray();
+            if((replaceLocalModuleIds??new string[0]).Any(id=>!desired.Contains(id)||!Installed(repository,project).Contains(id)))throw new InvalidOperationException("Only installed modules being updated can accept replacement of edits");
+            var plan=Preview(repository,project,desired,replaceLocalModuleIds);
             if(restoreBackup==null&&Root(Path.Combine(Application.dataPath,"..")).Equals(project,StringComparison.OrdinalIgnoreCase)) {
                 var missing=MissingSdkTypes(Resolve(catalog,plan.selected));if(missing.Length>0)throw new InvalidOperationException("Install the official SDK first, then retry: "+string.Join(", ",missing));
             }
@@ -146,18 +149,18 @@ namespace BaseUnity.Modularity
             foreach(var module in Resolve(catalog,plan.selected)) {
                 string target=Relative(stage,module.package);
                 if(restoreBackup==null)Generate(repository,target,module,catalog);
-                else { string source=Relative(restoreBackup,module.package); Clean(source,module); CopyPackage(source,target); }
+                else { string source=Relative(restoreBackup,module.package); Clean(source,module,true); CopyPackage(source,target); ClearSnapshot(target); }
             }
             // Recheck ownership/edits immediately before mutation. Staging has not touched installed packages.
-            foreach(var module in catalog.modules.Where(x=>installed.Contains(x.id)))Clean(PackagePath(project,module),module);
+            foreach(var module in catalog.modules.Where(x=>installed.Contains(x.id)))CheckForUpdate(PackagePath(project,module),module,replaceLocalModuleIds);
             Directory.CreateDirectory(backup); TextFile(backup,"operation.json",JsonUtility.ToJson(new ModuleBackup { before=installed,after=plan.selected,version=plan.version },true));
             var moved=new List<ModuleDefinition>(); var added=new List<ModuleDefinition>();
             try {
-                foreach(var module in catalog.modules.Where(x=>installed.Contains(x.id))) { Directory.Move(PackagePath(project,module),Relative(backup,module.package)); moved.Add(module); }
+                foreach(var module in catalog.modules.Where(x=>installed.Contains(x.id))) { Directory.Move(PackagePath(project,module),Relative(backup,module.package)); moved.Add(module);if((replaceLocalModuleIds??new string[0]).Contains(module.id))CaptureSnapshot(Relative(backup,module.package)); }
                 foreach(var module in Resolve(catalog,plan.selected)) { Directory.Move(Relative(stage,module.package),PackagePath(project,module)); added.Add(module); }
             } catch {
                 foreach(var module in added.AsEnumerable().Reverse())Directory.Move(PackagePath(project,module),Relative(stage,"rollback-"+module.package));
-                foreach(var module in moved.AsEnumerable().Reverse())Directory.Move(Relative(backup,module.package),PackagePath(project,module));
+                foreach(var module in moved.AsEnumerable().Reverse()) { try { ClearSnapshot(Relative(backup,module.package)); }catch(Exception error) { Debug.LogWarning("Restoring package data with snapshot marker retained: "+error.Message); }Directory.Move(Relative(backup,module.package),PackagePath(project,module)); }
                 throw;
             }
             return backup;

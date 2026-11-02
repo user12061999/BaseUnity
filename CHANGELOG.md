@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.27.0
+
+- Add independent Energy and Player Progression modules with optional UI, UTC regeneration, capped XP and atomic level-up rewards; add an optional win/lose XP event bridge.
+- Add Complete Playable Demo preset/generator: portrait tap-target rounds, timer, pause/retry/next, shared wallet/catalogs, energy entry costs/refills and result XP/coin feedback.
+- Add saved level restoration and continue selection from completed outcomes without changing the save envelope schema.
+- Add module version/change review with local-edit detection, side-by-side file content, explicit downgrade/replacement choices, full backups and restoration of original local-edit markers.
+- Cache EconomyStore reads to avoid repeatedly scanning journal entries during UI/outbox refresh.
+- Code-only release: Unity execution, tests, Android builds and device validation were deliberately not run at the user's request.
+
 ## 0.26.0
 
 - Add Minimal/GameFlow UI/Mobile Offline/SDK simulation presets with dependency/script-count previews.

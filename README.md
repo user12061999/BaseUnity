@@ -3,17 +3,19 @@
 Base game Unity tái sử dụng qua Git submodule. **Dự án mới dùng `Tools/BaseUnity` và cài theo module**;
 `Assets/BaseUnity` là cách dùng bundle legacy.
 Repository chứa thư viện, không chứa nguyên dự án Unity. Namespace: `BaseUnity`.
-Phiên bản hiện tại: **0.26.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
+Phiên bản hiện tại: **0.27.0**, dành cho Unity **6.0 trở lên**; môi trường kiểm thử: Unity **6000.3.26f1**, Windows.
 
-## Cài theo module (v0.26)
+## Cài theo module (v0.27)
 
 Dự án mới: đặt submodule ở **Tools/BaseUnity**, ngoài Assets/Packages. Chỉ copy thư mục
 `Editor/Modularity` vào `Assets/Editor/BaseUnityModules`, mở **Tools > BaseUnity > Module Manager**
 rồi chọn phần cần cài. Hiện có **Core, Save, Audio, Pooling, MobileInput, GameFlow, UI, Wallet/Rewards, Shop, Daily Reward, Quests, Achievements**, mỗi phần có assembly/package riêng.
-Công cụ tự thêm dependency, backup và kiểm tra file đã chỉnh khi cài/gỡ; không tự nhập Ads/Firebase. GameFlow và UI có thể cài riêng; bridge và bộ scene/prefab mẫu được chọn thêm khi cần.
-Có preset Minimal / GameFlow + UI / Mobile Offline / SDK simulation, validator tự chạy trước build, Localization EN/VI và cầu nối thưởng theo RunId. Ads/Consent/Firebase có facade, simulation và SDK adapter riêng.
+Công cụ tự thêm dependency, backup và kiểm tra file đã chỉnh khi cài/gỡ; không tự cài SDK Ads/Firebase. GameFlow và UI có thể cài riêng; bridge và bộ scene/prefab mẫu được chọn thêm khi cần.
+Có preset Minimal / GameFlow + UI / Mobile Offline / Complete Playable Demo / SDK simulation, validator tự chạy trước build, Localization EN/VI và cầu nối thưởng theo RunId. Ads/Consent/Firebase có facade, simulation và SDK adapter riêng.
 Wallet/Rewards và từng chức năng có UI module riêng; tạo scene/prefab mẫu khi cần bằng Module Manager.
 [Xem hướng dẫn cài/gỡ và giới hạn migration](Modules~/README.md).
+Mới ở v0.27: demo chạm mục tiêu dùng chung hồ sơ với Shop/Quest/Daily, Energy/XP tùy chọn và cửa sổ Review Module Updates.
+Đợt v0.27 chỉ cập nhật code: **không chạy Unity, kiểm thử hoặc build theo yêu cầu**; các số kiểm chứng bên dưới thuộc bản cũ.
 Kiểm chứng v0.26: **50 EditMode + 7 PlayMode đạt** trong project modular; Localization, GameFlow Economy và Ads simulation biên dịch riêng.
 Adapter AdMob/MAX/UMP/Firebase biên dịch với SDK trên máy; chưa xác minh ads thật/Firebase tài khoản hoặc build thiết bị.
 Kiểm chứng v0.25: **32 EditMode + 5 PlayMode đạt** trong project sạch (kiểm thử tập trung); Wallet-only, Shop UI-only và Quests-only biên dịch độc lập.
